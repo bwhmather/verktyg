@@ -82,6 +82,13 @@ class TemplateView(View):
         return env.get_renderer(self._template)(res)
 
 
+def expose(dispatcher, *args, **kwargs):
+    def decorator(f):
+        dispatcher.add(TemplateView(*args, **kwargs))
+        return f
+    return decorator
+
+
 class JsonView(View):
     def __init__(self, name, action, *, methods={'GET'}):
         super(JsonView, self).__init__(name, action, methods=methods,
@@ -92,6 +99,13 @@ class JsonView(View):
         if isinstance(res, Response):
             return res
         return Response(json.dumps(res), content_type='text/json')
+
+
+def expose_json(dispatcher, *args, **kwargs):
+    def decorator(f):
+        dispatcher.add(JsonView(*args, **kwargs))
+        return f
+    return decorator
 
 
 class ClassView(BindingFactory):
