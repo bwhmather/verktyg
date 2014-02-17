@@ -24,14 +24,12 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         dispatcher.lookup('GET', 'say-hello')
 
-
     def test_decorators(self):
         dispatcher = d.Dispatcher()
 
         @dispatcher.expose('foo')
         def foo(env, req):
             pass
-
 
     def test_head_fallback(self):
         dispatcher = d.Dispatcher(default_view=d.View)
@@ -42,6 +40,20 @@ class RoutingTestCase(WerkzeugTestCase):
 
         self.assertEqual('get', dispatcher.lookup('HEAD', 'get')(None, None))
 
+    def test_class_view(self):
+        dispatcher = d.Dispatcher(default_view=d.View)
+
+        class Foo(d.ClassView):
+            name='foo'
+            def GET(self, env, req):
+                return Response('get')
+
+            def POST(self, env, req):
+                return Response('post')
+
+        dispatcher.add(Foo())
+
+        dispatcher.lookup('POST', 'foo')
 
 def suite():
     suite = unittest.TestSuite()

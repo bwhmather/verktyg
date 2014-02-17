@@ -67,11 +67,11 @@ class JsonView(View):
         return Response(json.dumps(res))
 
 
-def ClassView(ViewFactory):
+class ClassView(ViewFactory):
     def get_views(self):
         for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
-                yield ((method, self._name), getattr(self, method))
+                yield ((method, self.name), getattr(self, method))
 
 
 class Dispatcher(ViewFactory):
