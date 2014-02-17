@@ -65,11 +65,11 @@ class DispatchTestCase(WerkzeugTestCase):
                     return lambda res: Response('hello %s' % res)
         env = HelloEnv()
 
-        @dispatcher.expose('say-hello', template='hello')
+        @d.expose(dispatcher, 'say-hello', template='hello')
         def say_hello(env, req):
             return 'world'
 
-        @dispatcher.expose('returns-response', template='hello')
+        @d.expose(dispatcher, 'returns-response', template='hello')
         def returns_response(env, req):
             return Response('too slow')
 
