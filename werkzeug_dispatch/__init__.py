@@ -12,8 +12,19 @@ import json
 
 
 class ViewFactory(object):
-    def get_views(self):
+    def get_bindings(self):
         raise NotImplementedError()
+
+
+class Binding(ViewFactory):
+    def __init__(self, name, method, action, accept='*'):
+        self.name = name
+        self.method = method
+        self.accept = accept
+        self.action = action
+
+    def get_bindings(self):
+        yield self
 
 
 class View(ViewFactory):
@@ -22,15 +33,16 @@ class View(ViewFactory):
     """
     def __init__(self, name, action, *, methods={'GET'}, accept='*'):
         self._name = name
-        self._action = action
         self._methods = methods
+        self._accept = accept
+        self._action = action
 
-    def __call__(self, environment, request, *args, **kwargs):
-        return self._action(environment, request, *args, **kwargs)
+    def __call__(self, env, req, *args, **kwargs):
+        return self._action(env, req, *args, **kwargs)
 
-    def get_views(self):
+    def get_bindings(self):
         for method in self._methods:
-            yield ((method, self._name), self)
+            yield Binding(self._name, method, self, self._accept)
 
 
 class TemplateView(View):
@@ -68,10 +80,10 @@ class JsonView(View):
 
 
 class ClassView(ViewFactory):
-    def get_views(self):
+    def get_bindings(self):
         for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
-                yield ((method, self.name), getattr(self, method))
+                yield Binding(self.name, method, getattr(self, method))
 
 
 class Dispatcher(ViewFactory):
@@ -99,15 +111,15 @@ class Dispatcher(ViewFactory):
         """ Add views from view factory to this dispatcher.
         Dispatchers can be nested
         """
-        for (method, name), action in view_factory.get_views():
-            if not name in self._views:
-                self._views[name] = {}
-            if not method in self._views[name]:
-                self._views[name][method] = {}
+        for view in view_factory.get_bindings():
+            if not view.name in self._views:
+                self._views[view.name] = {}
+            if not view.method in self._views[view.name]:
+                self._views[view.name][view.method] = {}
 
-            self._views[name][method] = action
+            self._views[view.name][view.method] = view.action
 
-    def get_views(self):
+    def get_bindings(self):
         return iter(self._views.items())
 
     def lookup(self, method, name):
