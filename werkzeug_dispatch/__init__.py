@@ -18,7 +18,8 @@ class BindingFactory(object):
 
 class Binding(BindingFactory):
     """Represents an action associated with a single combination of endpoint
-    name and method
+    name and method.  In most cases you probably want to be using subclasses of
+    `View` which can listen for multiple methods.
 
     `name`
         A hashable identifier.
@@ -82,9 +83,9 @@ class TemplateView(View):
         return env.get_renderer(self._template)(res)
 
 
-def expose(dispatcher, *args, **kwargs):
+def expose(dispatcher, name, *args, **kwargs):
     def decorator(f):
-        dispatcher.add(TemplateView(*args, **kwargs))
+        dispatcher.add(TemplateView(name, f, *args, **kwargs))
         return f
     return decorator
 
@@ -101,9 +102,9 @@ class JsonView(View):
         return Response(json.dumps(res), content_type='text/json')
 
 
-def expose_json(dispatcher, *args, **kwargs):
+def expose_json(dispatcher, name, f, *args, **kwargs):
     def decorator(f):
-        dispatcher.add(JsonView(*args, **kwargs))
+        dispatcher.add(JsonView(nae, f, *args, **kwargs))
         return f
     return decorator
 
