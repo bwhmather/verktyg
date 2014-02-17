@@ -104,7 +104,7 @@ class JsonView(View):
 
 def expose_json(dispatcher, name, f, *args, **kwargs):
     def decorator(f):
-        dispatcher.add(JsonView(nae, f, *args, **kwargs))
+        dispatcher.add(JsonView(name, f, *args, **kwargs))
         return f
     return decorator
 
