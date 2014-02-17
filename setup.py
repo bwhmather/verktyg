@@ -3,7 +3,7 @@
 Werkzeug Dispatch
 =================
 
-A simple disatcher for werkzeug.
+A simple dispatcher for werkzeug.
 """
 
 
