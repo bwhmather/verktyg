@@ -16,7 +16,7 @@ import werkzeug_dispatch as d
 from werkzeug.wrappers import Response
 
 
-class RoutingTestCase(WerkzeugTestCase):
+class DispatchTestCase(WerkzeugTestCase):
     def test_basic_dispatch(self):
         dispatcher = d.Dispatcher([
             d.View('say-hello', lambda env, req: Response('hello')),
@@ -44,7 +44,8 @@ class RoutingTestCase(WerkzeugTestCase):
         dispatcher = d.Dispatcher(default_view=d.View)
 
         class Foo(d.ClassView):
-            name='foo'
+            name = 'foo'
+
             def GET(self, env, req):
                 return Response('get')
 
@@ -55,7 +56,8 @@ class RoutingTestCase(WerkzeugTestCase):
 
         dispatcher.lookup('POST', 'foo')
 
+
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RoutingTestCase))
+    suite.addTest(unittest.makeSuite(DispatchTestCase))
     return suite
