@@ -91,7 +91,7 @@ class JsonView(View):
         res = super(JsonView, self).__call__(env, req, *args, **kwargs)
         if isinstance(res, Response):
             return res
-        return Response(json.dumps(res))
+        return Response(json.dumps(res), content_type='text/json')
 
 
 class ClassView(BindingFactory):
