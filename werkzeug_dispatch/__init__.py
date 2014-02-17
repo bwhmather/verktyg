@@ -6,9 +6,9 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug import Response
-
 import json
+
+from werkzeug import Response
 
 
 class BindingFactory(object):
@@ -79,7 +79,7 @@ class TemplateView(View):
         res = self._action(env, req, *args, **kwargs)
         if isinstance(res, Response):
             return res
-        return env.get_template(self._template).render(res)
+        return env.get_renderer(self._template)(res)
 
 
 class JsonView(View):
