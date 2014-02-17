@@ -56,6 +56,29 @@ class DispatchTestCase(WerkzeugTestCase):
 
         dispatcher.lookup('POST', 'foo')
 
+    def test_template_view(self):
+        dispatcher = d.Dispatcher(default_view=d.TemplateView)
+
+        class HelloEnv(object):
+            def get_renderer(self, name):
+                if name == 'hello':
+                    return lambda res: Response('hello %s' % res)
+        env = HelloEnv()
+
+        @dispatcher.expose('say-hello', template='hello')
+        def say_hello(env, req):
+            return 'world'
+
+        @dispatcher.expose('returns-response', template='hello')
+        def returns_response(env, req):
+            return Response('too slow')
+
+        self.assertEqual(
+                b'hello world',
+                dispatcher.lookup('GET', 'say-hello')(env, None).get_data())
+        self.assertEqual(
+                b'too slow',
+                dispatcher.lookup('GET', 'returns-response')(env, None).get_data())
 
 def suite():
     suite = unittest.TestSuite()
