@@ -17,6 +17,21 @@ class ViewFactory(object):
 
 
 class Binding(ViewFactory):
+    """Represents an action associated with a single combination of endpoint
+    name and method
+
+    `name`
+        A hashable identifier.
+
+    `method`
+        An http method as an upper case string.
+
+    `action`
+        The action to perform if the binding is matched
+
+    `accept`
+        TODO. A string in the same format as the http accept header
+    """
     def __init__(self, name, method, action, accept='*'):
         self.name = name
         self.method = method
