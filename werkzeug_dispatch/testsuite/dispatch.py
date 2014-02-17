@@ -25,6 +25,24 @@ class RoutingTestCase(WerkzeugTestCase):
         dispatcher.lookup('GET', 'say-hello')
 
 
+    def test_decorators(self):
+        dispatcher = d.Dispatcher()
+
+        @dispatcher.expose('foo')
+        def foo(env, req):
+            pass
+
+
+    def test_head_fallback(self):
+        dispatcher = d.Dispatcher(default_view=d.View)
+
+        @dispatcher.expose('get', methods={'GET'})
+        def get(env, req):
+            return 'get'
+
+        self.assertEqual('get', dispatcher.lookup('HEAD', 'get')(None, None))
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(RoutingTestCase))

@@ -26,7 +26,7 @@ class View(ViewFactory):
         self._methods = methods
 
     def __call__(self, environment, request, *args, **kwargs):
-        self._action(environment, request, *args, **kwargs)
+        return self._action(environment, request, *args, **kwargs)
 
     def get_views(self):
         for method in self._methods:
@@ -44,25 +44,25 @@ class TemplateView(View):
                      the environment or a callable applied to the result to
                      create an http `Response` object
     """
-    def __init__(self, name, action, *, methods, template):
-        super(TemplateView, self).__init__(name, action, methods)
+    def __init__(self, name, action, *, methods={'GET'}, template=None):
+        super(TemplateView, self).__init__(name, action, methods=methods)
         self._template = template
 
     def __call__(self, env, req, *args, **kwargs):
         res = self._action(env, req, *args, **kwargs)
-        if isinstance(Response, res):
+        if isinstance(res, Response):
             return res
         return env.get_template(self._template).render(res)
 
 
 class JsonView(View):
-    def __init__(self, name, action, *, methods):
-        super(JsonView, self).__init__(name, action, methods,
+    def __init__(self, name, action, *, methods={'GET'}):
+        super(JsonView, self).__init__(name, action, methods=methods,
                                        accept='text/json')
 
     def __call__(self, env, req, *args, **kwargs):
         res = super(JsonView, self).__call__(env, req, *args, **kwargs)
-        if isinstance(Response, res):
+        if isinstance(res, Response):
             return res
         return Response(json.dumps(res))
 
@@ -91,8 +91,9 @@ class Dispatcher(ViewFactory):
         Does not modify the wrapped function.
         """
         def decorator(f):
-            self.add(self._default_factory(name, f, *args, **kwargs))
+            self.add(self._default_view(name, f, *args, **kwargs))
             return f
+        return decorator
 
     def add(self, view_factory):
         """ Add views from view factory to this dispatcher.
@@ -116,4 +117,4 @@ class Dispatcher(ViewFactory):
         if method in self._views[name]:
             return self._views[name][method]
         elif method == 'HEAD' and 'GET' in self._views[name]:
-            return self._views[name][method]
+            return self._views[name]['GET']
