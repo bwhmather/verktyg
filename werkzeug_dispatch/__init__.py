@@ -11,12 +11,12 @@ from werkzeug import Response
 import json
 
 
-class ViewFactory(object):
+class BindingFactory(object):
     def get_bindings(self):
         raise NotImplementedError()
 
 
-class Binding(ViewFactory):
+class Binding(BindingFactory):
     """Represents an action associated with a single combination of endpoint
     name and method
 
@@ -42,7 +42,7 @@ class Binding(ViewFactory):
         yield self
 
 
-class View(ViewFactory):
+class View(BindingFactory):
     """ Wraps a function or callable so that it can be bound to a name in a
     dispatcher.
     """
@@ -94,18 +94,18 @@ class JsonView(View):
         return Response(json.dumps(res))
 
 
-class ClassView(ViewFactory):
+class ClassView(BindingFactory):
     def get_bindings(self):
         for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
                 yield Binding(self.name, method, getattr(self, method))
 
 
-class Dispatcher(ViewFactory):
+class Dispatcher(BindingFactory):
     def __init__(self, views=[], *, default_view=TemplateView):
         """
         :param default_view: callable used to construct new views from
-        functions decorated with the `expose` method
+                             functions decorated with the `expose` method
         """
         self._default_view = default_view
         self._views = {}
