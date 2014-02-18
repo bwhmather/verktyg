@@ -15,16 +15,10 @@ from werkzeug.testsuite import WerkzeugTestCase
 import werkzeug_dispatch as d
 from werkzeug.wrappers import Response
 from werkzeug.datastructures import Accept
+from werkzeug.exceptions import NotFound, MethodNotAllowed, NotAcceptable
 
 
 class DispatchTestCase(WerkzeugTestCase):
-    def test_basic_dispatch(self):
-        dispatcher = d.Dispatcher([
-            d.View('say-hello', lambda env, req: Response('hello')),
-            d.View('say-goodbye', lambda env, req: Response('goodbye')),
-            ])
-        dispatcher.lookup('GET', 'say-hello')
-
     def test_name_dispatch(self):
         dispatcher = d.Dispatcher([
             d.Binding('tweedle-dum', 'Tweedle Dum'),
@@ -35,6 +29,7 @@ class DispatchTestCase(WerkzeugTestCase):
 
         self.assert_equal('Tweedle Dum', dispatcher.lookup('tweedle-dum'))
         self.assert_equal('Tweedle Dee', dispatcher.lookup('tweedle-dee'))
+        self.assert_raises(NotFound, dispatcher.lookup, 'non-existant')
         self.assert_equal('overriding', dispatcher.lookup('same'))
 
     def test_method_dispatch(self):
@@ -57,7 +52,7 @@ class DispatchTestCase(WerkzeugTestCase):
         self.assert_equal('post', dispatcher.lookup('test', method='POST'))
 
         # `PUT` not found
-        self.assert_equal(None, dispatcher.lookup('test', method='PUT'))
+        self.assert_raises(MethodNotAllowed, dispatcher.lookup, 'test', method='PUT')
 
         # `HEAD` should fall back to `GET`
         self.assert_equal('head', dispatcher.lookup('head', method='HEAD'))
@@ -113,7 +108,7 @@ class DispatchTestCase(WerkzeugTestCase):
 
         self.assert_equal('get', dispatcher.lookup('foo', method='GET')(None, None))
         self.assert_equal('post', dispatcher.lookup('foo', method='POST')(None, None))
-        self.assert_equal(None, dispatcher.lookup('foo', method='PUT'))
+        self.assert_raises(MethodNotAllowed, dispatcher.lookup, 'foo', method='PUT')
 
 
     def test_template_view(self):

@@ -9,6 +9,7 @@
 import json
 
 from werkzeug import Response, Accept, parse_accept_header
+from werkzeug.exceptions import NotFound, MethodNotAllowed, NotAcceptable
 
 
 class BindingFactory(object):
@@ -176,17 +177,21 @@ class Dispatcher(BindingFactory):
     def lookup(self, name, method='GET', accept=Accept([('*', 1.0)])):
         with_name = self._index.get(name)
         if name not in self._index:
-            return None
+            raise NotFound()
 
         with_method = with_name.get(method)
         if with_method is None:
             if method == 'HEAD' and 'GET' in with_name:
                 with_method = with_name['GET']
             else:
-                return None
+                raise MethodNotAllowed()
 
         if isinstance(accept, str):
             accept = parse_accept_header(accept)
         content_type = accept.best_match(with_method.keys())
 
-        return with_method.get(content_type)
+        action = with_method.get(content_type)
+        if action is None:
+            raise NotAcceptable()
+        return action
+
