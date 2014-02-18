@@ -104,14 +104,17 @@ class DispatchTestCase(WerkzeugTestCase):
             name = 'foo'
 
             def GET(self, env, req):
-                return Response('get')
+                return 'get'
 
             def POST(self, env, req):
-                return Response('post')
+                return 'post'
 
         dispatcher.add(Foo())
 
-        dispatcher.lookup('POST', 'foo')
+        self.assert_equal('get', dispatcher.lookup('foo', method='GET')(None, None))
+        self.assert_equal('post', dispatcher.lookup('foo', method='POST')(None, None))
+        self.assert_equal(None, dispatcher.lookup('foo', method='PUT'))
+
 
     def test_template_view(self):
         dispatcher = d.Dispatcher(default_view=d.TemplateView)
