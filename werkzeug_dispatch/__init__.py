@@ -177,6 +177,7 @@ class Dispatcher(BindingFactory):
     def lookup(self, name, method='GET', accept=Accept([('*', 1.0)])):
         with_name = self._index.get(name)
         if name not in self._index:
+            # TODO this should possibly be 501 Not Implemented
             raise NotFound()
 
         with_method = with_name.get(method)
