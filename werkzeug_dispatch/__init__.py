@@ -133,26 +133,12 @@ class ClassView(BindingFactory):
 
 
 class Dispatcher(BindingFactory):
-    def __init__(self, views=[], *, default_view=TemplateView):
-        """
-        :param default_view: callable used to construct new views from
-                             functions decorated with the `expose` method
-        """
-        self._default_view = default_view
+    def __init__(self, views=[]):
         self._index = {}
         self._views = []
 
         for view in views:
             self.add(view)
-
-    def expose(self, name, *args, **kwargs):
-        """ Decorator to expose a function as a view.
-        Does not modify the wrapped function.
-        """
-        def decorator(f):
-            self.add(self._default_view(name, f, *args, **kwargs))
-            return f
-        return decorator
 
     def add(self, view_factory):
         """ Add views from view factory to this dispatcher.

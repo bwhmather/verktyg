@@ -88,12 +88,12 @@ class DispatchTestCase(WerkzeugTestCase):
     def test_decorators(self):
         dispatcher = d.Dispatcher()
 
-        @dispatcher.expose('foo')
+        @d.expose(dispatcher, 'foo')
         def foo(env, req):
             pass
 
     def test_class_view(self):
-        dispatcher = d.Dispatcher(default_view=d.View)
+        dispatcher = d.Dispatcher()
 
         class Foo(d.ClassView):
             name = 'foo'
@@ -112,7 +112,7 @@ class DispatchTestCase(WerkzeugTestCase):
 
 
     def test_template_view(self):
-        dispatcher = d.Dispatcher(default_view=d.TemplateView)
+        dispatcher = d.Dispatcher()
 
         class HelloEnv(object):
             def get_renderer(self, name):
