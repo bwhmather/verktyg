@@ -125,6 +125,18 @@ class DispatchTestCase(WerkzeugTestCase):
             b'too slow',
             dispatcher.lookup('returns-response')(env, None).get_data())
 
+    def test_nested(self):
+        child = d.Dispatcher([
+            d.Binding('nested', 'Nested'),
+            ])
+        parent = d.Dispatcher([
+            child,
+            ])
+
+        self.assert_equal(
+            'Nested',
+            parent.lookup('nested'))
+
 
 def suite():
     suite = unittest.TestSuite()
