@@ -38,7 +38,7 @@ class DispatchTestCase(WerkzeugTestCase):
         def get(env, req):
             return 'get'
 
-        self.assertEqual('get', dispatcher.lookup('HEAD', 'get')(None, None))
+        self.assert_equal('get', dispatcher.lookup('HEAD', 'get')(None, None))
 
     def test_class_view(self):
         dispatcher = d.Dispatcher(default_view=d.View)
@@ -73,10 +73,10 @@ class DispatchTestCase(WerkzeugTestCase):
         def returns_response(env, req):
             return Response('too slow')
 
-        self.assertEqual(
+        self.assert_equal(
             b'hello world',
             dispatcher.lookup('GET', 'say-hello')(env, None).get_data())
-        self.assertEqual(
+        self.assert_equal(
             b'too slow',
             dispatcher.lookup('GET', 'returns-response')(env, None).get_data())
 
