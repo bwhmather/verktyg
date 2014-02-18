@@ -80,6 +80,25 @@ class DispatchTestCase(WerkzeugTestCase):
             b'too slow',
             dispatcher.lookup('GET', 'returns-response')(env, None).get_data())
 
+    def test_accept(self):
+        dispatcher = d.Dispatcher()
+
+        class IdentityEnv(object):
+            def get_renderer(self, name):
+                return name
+
+        @d.expose_html(dispatcher, 'test', template=Response)
+        @d.expose_json(dispatcher, 'test')
+        def foo(env, req):
+            return dict(foo='bar')
+
+        json_endpoint = dispatcher.lookup(
+            'GET', 'test',
+            accept='text/json; q=0.9, application/xml; q=0.5')
+
+        self.assert_equal('text/json',
+                          json_endpoint(IdentityEnv(), None).content_type)
+
 
 def suite():
     suite = unittest.TestSuite()
