@@ -29,10 +29,13 @@ class DispatchTestCase(WerkzeugTestCase):
         dispatcher = d.Dispatcher([
             d.Binding('tweedle-dum', 'Tweedle Dum'),
             d.Binding('tweedle-dee', 'Tweedle Dee'),
+            d.Binding('same', 'overridden'),
+            d.Binding('same', 'overriding'),
             ])
 
         self.assert_equal('Tweedle Dum', dispatcher.lookup('tweedle-dum'))
         self.assert_equal('Tweedle Dee', dispatcher.lookup('tweedle-dee'))
+        self.assert_equal('overriding', dispatcher.lookup('same'))
 
     def test_method_dispatch(self):
         dispatcher = d.Dispatcher([
@@ -40,6 +43,10 @@ class DispatchTestCase(WerkzeugTestCase):
             d.Binding('test', 'post', method='POST'),
             d.Binding('head', 'head', method='HEAD'),
             d.Binding('no-head', 'get', method='GET'),
+
+            d.Binding('same', 'overridden'),
+            d.Binding('same', 'unaffected', method='POST'),
+            d.Binding('same', 'overriding'),
             ])
 
         # default to 'GET'
@@ -52,8 +59,13 @@ class DispatchTestCase(WerkzeugTestCase):
         # `PUT` not found
         self.assert_equal(None, dispatcher.lookup('test', method='PUT'))
 
+        # `HEAD` should fall back to `GET`
         self.assert_equal('head', dispatcher.lookup('head', method='HEAD'))
         self.assert_equal('get', dispatcher.lookup('no-head', method='HEAD'))
+
+        # replacing handler for one method should not affect others
+        self.assert_equal('overriding', dispatcher.lookup('same'))
+        self.assert_equal('unaffected', dispatcher.lookup('same', method='POST'))
 
     def test_accept_dispatch(self):
         dispatcher = d.Dispatcher([
