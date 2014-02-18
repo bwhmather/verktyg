@@ -74,11 +74,12 @@ class DispatchTestCase(WerkzeugTestCase):
             return Response('too slow')
 
         self.assertEqual(
-                b'hello world',
-                dispatcher.lookup('GET', 'say-hello')(env, None).get_data())
+            b'hello world',
+            dispatcher.lookup('GET', 'say-hello')(env, None).get_data())
         self.assertEqual(
-                b'too slow',
-                dispatcher.lookup('GET', 'returns-response')(env, None).get_data())
+            b'too slow',
+            dispatcher.lookup('GET', 'returns-response')(env, None).get_data())
+
 
 def suite():
     suite = unittest.TestSuite()

@@ -168,4 +168,3 @@ class Dispatcher(BindingFactory):
         content_type = accept.best_match(with_method.keys())
 
         return with_method.get(content_type)
-
