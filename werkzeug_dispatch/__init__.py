@@ -8,7 +8,7 @@
 """
 import json
 
-from werkzeug import Response, Accept
+from werkzeug import Response, Accept, parse_accept_header
 
 
 class BindingFactory(object):
@@ -73,8 +73,13 @@ class TemplateView(View):
                      the environment or a callable applied to the result to
                      create an http `Response` object
     """
-    def __init__(self, name, action, *, methods={'GET'}, template=None):
-        super(TemplateView, self).__init__(name, action, methods=methods)
+    def __init__(self, name, action, *,
+                 methods={'GET'}, template=None,
+                 content_type=None):
+        super(TemplateView, self).__init__(
+            name, action,
+            methods=methods,
+            content_type=content_type)
         self._template = template
 
     def __call__(self, env, req, *args, **kwargs):
@@ -91,6 +96,12 @@ def expose(dispatcher, name, *args, **kwargs):
     return decorator
 
 
+def expose_html(*args, **kwargs):
+    if 'content_type' not in kwargs:
+        kwargs['content_type'] = 'text/html'
+    return expose(*args, **kwargs)
+
+
 class JsonView(View):
     def __init__(self, name, action, *, methods={'GET'}):
         super(JsonView, self).__init__(name, action, methods=methods,
@@ -103,7 +114,7 @@ class JsonView(View):
         return Response(json.dumps(res), content_type='text/json')
 
 
-def expose_json(dispatcher, name, f, *args, **kwargs):
+def expose_json(dispatcher, name, *args, **kwargs):
     def decorator(f):
         dispatcher.add(JsonView(name, f, *args, **kwargs))
         return f
@@ -143,10 +154,13 @@ class Dispatcher(BindingFactory):
         Dispatchers can be nested
         """
         for view in view_factory.get_bindings():
-            if not view.name in self._views:
-                with_name = self._views[view.name] = {}
-            if not view.method in with_name:
-                with_method = with_name[view.method] = {}
+            if view.name not in self._views:
+                self._views[view.name] = {}
+            with_name = self._views[view.name]
+
+            if view.method not in with_name:
+                with_name[view.method] = {}
+            with_method = with_name[view.method]
 
             with_method[view.content_type] = view.action
 
@@ -165,6 +179,8 @@ class Dispatcher(BindingFactory):
             else:
                 return None
 
+        if isinstance(accept, str):
+            accept = parse_accept_header(accept)
         content_type = accept.best_match(with_method.keys())
 
         return with_method.get(content_type)
