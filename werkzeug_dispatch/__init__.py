@@ -142,16 +142,13 @@ class Dispatcher(BindingFactory):
         """ Add views from view factory to this dispatcher.
         Dispatchers can be nested
         """
-        # TODO save results of lookups
         for view in view_factory.get_bindings():
             if not view.name in self._views:
-                self._views[view.name] = {}
-            if not view.method in self._views[view.name]:
-                self._views[view.name][view.method] = {}
-            if not view.content_type in self._views[view.name]:
-                self._views[view.name][view.method][view.content_type] = {}
+                with_name = self._views[view.name] = {}
+            if not view.method in with_name:
+                with_method = with_name[view.method] = {}
 
-            self._views[view.name][view.method][view.content_type] = view.action
+            with_method[view.content_type] = view.action
 
     def get_bindings(self):
         return iter(self._views.items())
