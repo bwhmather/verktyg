@@ -135,7 +135,8 @@ class Dispatcher(BindingFactory):
                              functions decorated with the `expose` method
         """
         self._default_view = default_view
-        self._views = {}
+        self._index = {}
+        self._views = []
 
         for view in views:
             self.add(view)
@@ -154,9 +155,9 @@ class Dispatcher(BindingFactory):
         Dispatchers can be nested
         """
         for view in view_factory.get_bindings():
-            if view.name not in self._views:
-                self._views[view.name] = {}
-            with_name = self._views[view.name]
+            if view.name not in self._index:
+                self._index[view.name] = {}
+            with_name = self._index[view.name]
 
             if view.method not in with_name:
                 with_name[view.method] = {}
@@ -164,12 +165,14 @@ class Dispatcher(BindingFactory):
 
             with_method[view.content_type] = view.action
 
+            self._views.append(view)
+
     def get_bindings(self):
-        return iter(self._views.items())
+        return iter(self._views)
 
     def lookup(self, method, name, accept=Accept([('*', 1.0)])):
-        with_name = self._views.get(name)
-        if name not in self._views:
+        with_name = self._index.get(name)
+        if name not in self._index:
             return None
 
         with_method = with_name.get(method)
