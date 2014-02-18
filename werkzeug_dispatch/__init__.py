@@ -8,7 +8,7 @@
 """
 import json
 
-from werkzeug import Response
+from werkzeug import Response, Accept
 
 
 class BindingFactory(object):
@@ -30,14 +30,15 @@ class Binding(BindingFactory):
     `action`
         The action to perform if the binding is matched
 
-    `accept`
-        TODO. A string in the same format as the http accept header
+    `content_type`
+        A type/subtype formatted string representing the content type that the
+        handler returns
     """
-    def __init__(self, name, method, action, accept='*'):
+    def __init__(self, name, method, action, content_type=None):
         self.name = name
         self.method = method
-        self.accept = accept
         self.action = action
+        self.content_type = content_type
 
     def get_bindings(self):
         yield self
@@ -47,10 +48,10 @@ class View(BindingFactory):
     """ Wraps a function or callable so that it can be bound to a name in a
     dispatcher.
     """
-    def __init__(self, name, action, *, methods={'GET'}, accept='*'):
+    def __init__(self, name, action, *, methods={'GET'}, content_type=None):
         self._name = name
         self._methods = methods
-        self._accept = accept
+        self._content_type = content_type
         self._action = action
 
     def __call__(self, env, req, *args, **kwargs):
@@ -58,7 +59,7 @@ class View(BindingFactory):
 
     def get_bindings(self):
         for method in self._methods:
-            yield Binding(self._name, method, self, self._accept)
+            yield Binding(self._name, method, self, self._content_type)
 
 
 class TemplateView(View):
@@ -93,7 +94,7 @@ def expose(dispatcher, name, *args, **kwargs):
 class JsonView(View):
     def __init__(self, name, action, *, methods={'GET'}):
         super(JsonView, self).__init__(name, action, methods=methods,
-                                       accept='text/json')
+                                       content_type='text/json')
 
     def __call__(self, env, req, *args, **kwargs):
         res = super(JsonView, self).__call__(env, req, *args, **kwargs)
@@ -141,22 +142,33 @@ class Dispatcher(BindingFactory):
         """ Add views from view factory to this dispatcher.
         Dispatchers can be nested
         """
+        # TODO save results of lookups
         for view in view_factory.get_bindings():
             if not view.name in self._views:
                 self._views[view.name] = {}
             if not view.method in self._views[view.name]:
                 self._views[view.name][view.method] = {}
+            if not view.content_type in self._views[view.name]:
+                self._views[view.name][view.method][view.content_type] = {}
 
-            self._views[view.name][view.method] = view.action
+            self._views[view.name][view.method][view.content_type] = view.action
 
     def get_bindings(self):
         return iter(self._views.items())
 
-    def lookup(self, method, name):
-        if not name in self._views:
+    def lookup(self, method, name, accept=Accept([('*', 1.0)])):
+        if name not in self._views:
             return None
 
-        if method in self._views[name]:
-            return self._views[name][method]
-        elif method == 'HEAD' and 'GET' in self._views[name]:
-            return self._views[name]['GET']
+        if method not in self._views[name]:
+            if method != 'HEAD':
+                return None
+            elif 'GET' in self._views[name]:
+                method = 'GET'
+
+        content_type = accept.best_match(self._views[name][method].keys())
+        if content_type in self._views[name][method]:
+            return self._views[name][method][content_type]
+        else:
+            return None
+
