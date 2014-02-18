@@ -154,18 +154,18 @@ class Dispatcher(BindingFactory):
         return iter(self._views.items())
 
     def lookup(self, method, name, accept=Accept([('*', 1.0)])):
+        with_name = self._views.get(name)
         if name not in self._views:
             return None
 
-        if method not in self._views[name]:
-            if method != 'HEAD':
+        with_method = with_name.get(method)
+        if with_method is None:
+            if method == 'HEAD' and 'GET' in with_name:
+                with_method = with_name['GET']
+            else:
                 return None
-            elif 'GET' in self._views[name]:
-                method = 'GET'
 
-        content_type = accept.best_match(self._views[name][method].keys())
-        if content_type in self._views[name][method]:
-            return self._views[name][method][content_type]
-        else:
-            return None
+        content_type = accept.best_match(with_method.keys())
+
+        return with_method.get(content_type)
 
