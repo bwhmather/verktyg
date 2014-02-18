@@ -14,6 +14,7 @@ from werkzeug.testsuite import WerkzeugTestCase
 
 import werkzeug_dispatch as d
 from werkzeug.wrappers import Response
+from werkzeug.datastructures import Accept
 
 
 class DispatchTestCase(WerkzeugTestCase):
@@ -21,8 +22,61 @@ class DispatchTestCase(WerkzeugTestCase):
         dispatcher = d.Dispatcher([
             d.View('say-hello', lambda env, req: Response('hello')),
             d.View('say-goodbye', lambda env, req: Response('goodbye')),
-        ])
+            ])
         dispatcher.lookup('GET', 'say-hello')
+
+    def test_name_dispatch(self):
+        dispatcher = d.Dispatcher([
+            d.Binding('tweedle-dum', 'Tweedle Dum'),
+            d.Binding('tweedle-dee', 'Tweedle Dee'),
+            ])
+
+        self.assert_equal('Tweedle Dum', dispatcher.lookup('tweedle-dum'))
+        self.assert_equal('Tweedle Dee', dispatcher.lookup('tweedle-dee'))
+
+    def test_method_dispatch(self):
+        dispatcher = d.Dispatcher([
+            d.Binding('test', 'get', method='GET'),
+            d.Binding('test', 'post', method='POST'),
+            d.Binding('head', 'head', method='HEAD'),
+            d.Binding('no-head', 'get', method='GET'),
+            ])
+
+        # default to 'GET'
+        self.assert_equal('get', dispatcher.lookup('test'))
+        self.assert_equal('get', dispatcher.lookup('test', method='GET'))
+
+        # `POST` gives something different
+        self.assert_equal('post', dispatcher.lookup('test', method='POST'))
+
+        # `PUT` not found
+        self.assert_equal(None, dispatcher.lookup('test', method='PUT'))
+
+        self.assert_equal('head', dispatcher.lookup('head', method='HEAD'))
+        self.assert_equal('get', dispatcher.lookup('no-head', method='HEAD'))
+
+    def test_accept_dispatch(self):
+        dispatcher = d.Dispatcher([
+            d.Binding('test', 'text/json', content_type='text/json'),
+            d.Binding('test', 'text/html', content_type='text/html'),
+#            d.Binding('test', 'catch-all', content_type='*'), TODO
+            ])
+
+        # werkzeug accept objects
+        self.assert_equal('text/json',
+            dispatcher.lookup('test', accept=Accept([('text/json', 1.0)])))
+        self.assert_equal('text/html',
+            dispatcher.lookup('test', accept=Accept([('text/html', 1.0)])))
+# TODO
+#        self.assert_equal('text/json',
+#            dispatcher.lookup('test', accept=Accept([('application/html', 1.0)])))
+
+        # accept header strings
+        self.assert_equal('text/json',
+            dispatcher.lookup('test', accept='text/json'))
+
+        self.assert_equal('text/json',
+            dispatcher.lookup('test', accept='text/json; q=0.9, text/html; q=0.8'))
 
     def test_decorators(self):
         dispatcher = d.Dispatcher()
@@ -30,15 +84,6 @@ class DispatchTestCase(WerkzeugTestCase):
         @dispatcher.expose('foo')
         def foo(env, req):
             pass
-
-    def test_head_fallback(self):
-        dispatcher = d.Dispatcher(default_view=d.View)
-
-        @dispatcher.expose('get', methods={'GET'})
-        def get(env, req):
-            return 'get'
-
-        self.assert_equal('get', dispatcher.lookup('HEAD', 'get')(None, None))
 
     def test_class_view(self):
         dispatcher = d.Dispatcher(default_view=d.View)
@@ -75,29 +120,10 @@ class DispatchTestCase(WerkzeugTestCase):
 
         self.assert_equal(
             b'hello world',
-            dispatcher.lookup('GET', 'say-hello')(env, None).get_data())
+            dispatcher.lookup('say-hello')(env, None).get_data())
         self.assert_equal(
             b'too slow',
-            dispatcher.lookup('GET', 'returns-response')(env, None).get_data())
-
-    def test_accept(self):
-        dispatcher = d.Dispatcher()
-
-        class IdentityEnv(object):
-            def get_renderer(self, name):
-                return name
-
-        @d.expose_html(dispatcher, 'test', template=Response)
-        @d.expose_json(dispatcher, 'test')
-        def foo(env, req):
-            return dict(foo='bar')
-
-        json_endpoint = dispatcher.lookup(
-            'GET', 'test',
-            accept='text/json; q=0.9, application/xml; q=0.5')
-
-        self.assert_equal('text/json',
-                          json_endpoint(IdentityEnv(), None).content_type)
+            dispatcher.lookup('returns-response')(env, None).get_data())
 
 
 def suite():

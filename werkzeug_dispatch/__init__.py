@@ -34,7 +34,7 @@ class Binding(BindingFactory):
         A type/subtype formatted string representing the content type that the
         handler returns
     """
-    def __init__(self, name, method, action, content_type=None):
+    def __init__(self, name, action, method='GET', content_type=None):
         self.name = name
         self.method = method
         self.action = action
@@ -59,7 +59,9 @@ class View(BindingFactory):
 
     def get_bindings(self):
         for method in self._methods:
-            yield Binding(self._name, method, self, self._content_type)
+            yield Binding(self._name, self,
+                          method=method,
+                          content_type=self._content_type)
 
 
 class TemplateView(View):
@@ -125,7 +127,8 @@ class ClassView(BindingFactory):
     def get_bindings(self):
         for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
-                yield Binding(self.name, method, getattr(self, method))
+                yield Binding(self.name, getattr(self, method),
+                              method=method)
 
 
 class Dispatcher(BindingFactory):
@@ -170,7 +173,7 @@ class Dispatcher(BindingFactory):
     def get_bindings(self):
         return iter(self._views)
 
-    def lookup(self, method, name, accept=Accept([('*', 1.0)])):
+    def lookup(self, name, method='GET', accept=Accept([('*', 1.0)])):
         with_name = self._index.get(name)
         if name not in self._index:
             return None
