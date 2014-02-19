@@ -47,22 +47,30 @@ class DispatchTestCase(WerkzeugTestCase):
             ])
 
         # default to 'GET'
-        self.assert_equal('get', dispatcher.lookup('test'))
-        self.assert_equal('get', dispatcher.lookup('test', method='GET'))
+        self.assert_equal('get',
+                          dispatcher.lookup('test'))
+        self.assert_equal('get',
+                          dispatcher.lookup('test', method='GET'))
 
         # `POST` gives something different
-        self.assert_equal('post', dispatcher.lookup('test', method='POST'))
+        self.assert_equal('post',
+                          dispatcher.lookup('test', method='POST'))
 
         # `PUT` not found
-        self.assert_raises(MethodNotAllowed, dispatcher.lookup, 'test', method='PUT')
+        self.assert_raises(MethodNotAllowed,
+                           dispatcher.lookup, 'test', method='PUT')
 
         # `HEAD` should fall back to `GET`
-        self.assert_equal('head', dispatcher.lookup('head', method='HEAD'))
-        self.assert_equal('get', dispatcher.lookup('no-head', method='HEAD'))
+        self.assert_equal('head',
+                          dispatcher.lookup('head', method='HEAD'))
+        self.assert_equal('get',
+                          dispatcher.lookup('no-head', method='HEAD'))
 
         # replacing handler for one method should not affect others
-        self.assert_equal('overriding', dispatcher.lookup('same'))
-        self.assert_equal('unaffected', dispatcher.lookup('same', method='POST'))
+        self.assert_equal('overriding',
+                          dispatcher.lookup('same'))
+        self.assert_equal('unaffected',
+                          dispatcher.lookup('same', method='POST'))
 
     def test_accept_dispatch(self):
         dispatcher = d.Dispatcher([
@@ -72,20 +80,26 @@ class DispatchTestCase(WerkzeugTestCase):
             ])
 
         # werkzeug accept objects
-        self.assert_equal('text/json',
+        self.assert_equal(
+            'text/json',
             dispatcher.lookup('test', accept=Accept([('text/json', 1.0)])))
-        self.assert_equal('text/html',
+        self.assert_equal(
+            'text/html',
             dispatcher.lookup('test', accept=Accept([('text/html', 1.0)])))
 # TODO
 #        self.assert_equal('text/json',
-#            dispatcher.lookup('test', accept=Accept([('application/html', 1.0)])))
+#                dispatcher.lookup(
+#                    'test', accept=Accept([('application/html', 1.0)])))
 
         # accept header strings
-        self.assert_equal('text/json',
+        self.assert_equal(
+            'text/json',
             dispatcher.lookup('test', accept='text/json'))
 
-        self.assert_equal('text/json',
-            dispatcher.lookup('test', accept='text/json; q=0.9, text/html; q=0.8'))
+        self.assert_equal(
+            'text/json',
+            dispatcher.lookup('test',
+                              accept='text/json; q=0.9, text/html; q=0.8'))
 
     def test_nested(self):
         child = d.Dispatcher([

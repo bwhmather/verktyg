@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-    werkzeug_dispatch.binding
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    werkzeug_dispatch.bindings
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+
 
 class BindingFactory(object):
     def get_bindings(self):

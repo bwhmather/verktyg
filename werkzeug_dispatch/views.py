@@ -97,5 +97,3 @@ class ClassView(BindingFactory):
             if hasattr(self, method):
                 yield Binding(self.name, getattr(self, method),
                               method=method)
-
-

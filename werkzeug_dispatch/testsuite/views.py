@@ -42,10 +42,12 @@ class ViewsTestCase(WerkzeugTestCase):
 
         dispatcher.add(Foo())
 
-        self.assert_equal('get', dispatcher.lookup('foo', method='GET')(None, None))
-        self.assert_equal('post', dispatcher.lookup('foo', method='POST')(None, None))
-        self.assert_raises(MethodNotAllowed, dispatcher.lookup, 'foo', method='PUT')
-
+        self.assert_equal('get',
+                          dispatcher.lookup('foo', method='GET')(None, None))
+        self.assert_equal('post',
+                          dispatcher.lookup('foo', method='POST')(None, None))
+        self.assert_raises(MethodNotAllowed,
+                           dispatcher.lookup, 'foo', method='PUT')
 
     def test_template_view(self):
         dispatcher = d.Dispatcher()
@@ -70,5 +72,3 @@ class ViewsTestCase(WerkzeugTestCase):
         self.assert_equal(
             b'too slow',
             dispatcher.lookup('returns-response')(env, None).get_data())
-
-
