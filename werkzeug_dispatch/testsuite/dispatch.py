@@ -12,19 +12,21 @@ import unittest
 
 from werkzeug.testsuite import WerkzeugTestCase
 
-import werkzeug_dispatch as d
 from werkzeug.wrappers import Response
 from werkzeug.datastructures import Accept
 from werkzeug.exceptions import NotFound, MethodNotAllowed, NotAcceptable
+
+from werkzeug_dispatch.bindings import Binding
+import werkzeug_dispatch as d
 
 
 class DispatchTestCase(WerkzeugTestCase):
     def test_name_dispatch(self):
         dispatcher = d.Dispatcher([
-            d.Binding('tweedle-dum', 'Tweedle Dum'),
-            d.Binding('tweedle-dee', 'Tweedle Dee'),
-            d.Binding('same', 'overridden'),
-            d.Binding('same', 'overriding'),
+            Binding('tweedle-dum', 'Tweedle Dum'),
+            Binding('tweedle-dee', 'Tweedle Dee'),
+            Binding('same', 'overridden'),
+            Binding('same', 'overriding'),
             ])
 
         self.assert_equal('Tweedle Dum', dispatcher.lookup('tweedle-dum'))
@@ -34,14 +36,14 @@ class DispatchTestCase(WerkzeugTestCase):
 
     def test_method_dispatch(self):
         dispatcher = d.Dispatcher([
-            d.Binding('test', 'get', method='GET'),
-            d.Binding('test', 'post', method='POST'),
-            d.Binding('head', 'head', method='HEAD'),
-            d.Binding('no-head', 'get', method='GET'),
+            Binding('test', 'get', method='GET'),
+            Binding('test', 'post', method='POST'),
+            Binding('head', 'head', method='HEAD'),
+            Binding('no-head', 'get', method='GET'),
 
-            d.Binding('same', 'overridden'),
-            d.Binding('same', 'unaffected', method='POST'),
-            d.Binding('same', 'overriding'),
+            Binding('same', 'overridden'),
+            Binding('same', 'unaffected', method='POST'),
+            Binding('same', 'overriding'),
             ])
 
         # default to 'GET'
@@ -64,9 +66,9 @@ class DispatchTestCase(WerkzeugTestCase):
 
     def test_accept_dispatch(self):
         dispatcher = d.Dispatcher([
-            d.Binding('test', 'text/json', content_type='text/json'),
-            d.Binding('test', 'text/html', content_type='text/html'),
-#            d.Binding('test', 'catch-all', content_type='*'), TODO
+            Binding('test', 'text/json', content_type='text/json'),
+            Binding('test', 'text/html', content_type='text/html'),
+#            Binding('test', 'catch-all', content_type='*'), TODO
             ])
 
         # werkzeug accept objects
@@ -85,59 +87,9 @@ class DispatchTestCase(WerkzeugTestCase):
         self.assert_equal('text/json',
             dispatcher.lookup('test', accept='text/json; q=0.9, text/html; q=0.8'))
 
-    def test_decorators(self):
-        dispatcher = d.Dispatcher()
-
-        @d.expose(dispatcher, 'foo')
-        def foo(env, req):
-            pass
-
-    def test_class_view(self):
-        dispatcher = d.Dispatcher()
-
-        class Foo(d.ClassView):
-            name = 'foo'
-
-            def GET(self, env, req):
-                return 'get'
-
-            def POST(self, env, req):
-                return 'post'
-
-        dispatcher.add(Foo())
-
-        self.assert_equal('get', dispatcher.lookup('foo', method='GET')(None, None))
-        self.assert_equal('post', dispatcher.lookup('foo', method='POST')(None, None))
-        self.assert_raises(MethodNotAllowed, dispatcher.lookup, 'foo', method='PUT')
-
-
-    def test_template_view(self):
-        dispatcher = d.Dispatcher()
-
-        class HelloEnv(object):
-            def get_renderer(self, name):
-                if name == 'hello':
-                    return lambda res: Response('hello %s' % res)
-        env = HelloEnv()
-
-        @d.expose(dispatcher, 'say-hello', template='hello')
-        def say_hello(env, req):
-            return 'world'
-
-        @d.expose(dispatcher, 'returns-response', template='hello')
-        def returns_response(env, req):
-            return Response('too slow')
-
-        self.assert_equal(
-            b'hello world',
-            dispatcher.lookup('say-hello')(env, None).get_data())
-        self.assert_equal(
-            b'too slow',
-            dispatcher.lookup('returns-response')(env, None).get_data())
-
     def test_nested(self):
         child = d.Dispatcher([
-            d.Binding('nested', 'Nested'),
+            Binding('nested', 'Nested'),
             ])
         parent = d.Dispatcher([
             child,
