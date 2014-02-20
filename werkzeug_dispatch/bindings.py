@@ -15,8 +15,8 @@ class BindingFactory(object):
 
 class Binding(BindingFactory):
     """Represents an action associated with a single combination of endpoint
-    name and method.  In most cases you probably want to be using subclasses of
-    `View` which can listen for multiple methods.
+    name, method and content-type.  In most cases you probably want to be using
+    subclasses of `View` which can listen for multiple methods.
 
     `name`
         A hashable identifier.
