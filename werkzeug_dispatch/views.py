@@ -56,7 +56,7 @@ class TemplateView(View):
         res = self._action(env, req, *args, **kwargs)
         if isinstance(res, Response):
             return res
-        return env.get_renderer(self._template)(res)
+        return Response(env.get_renderer(self._template)(res))
 
 
 def expose(dispatcher, name, *args, **kwargs):
