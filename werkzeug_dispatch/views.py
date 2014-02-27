@@ -39,6 +39,7 @@ class ClassView(BindingFactory):
                 yield Binding(self.name, getattr(self, method),
                               method=method)
 
+
 class TemplateView(View):
     """ Like `View` but if the value returned from the action is not an
     instance of `Response` it is rendered using the named template.
