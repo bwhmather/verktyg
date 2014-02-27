@@ -32,6 +32,13 @@ class View(BindingFactory):
                           content_type=self._content_type)
 
 
+class ClassView(BindingFactory):
+    def get_bindings(self):
+        for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
+            if hasattr(self, method):
+                yield Binding(self.name, getattr(self, method),
+                              method=method)
+
 class TemplateView(View):
     """ Like `View` but if the value returned from the action is not an
     instance of `Response` it is rendered using the named template.
@@ -59,6 +66,18 @@ class TemplateView(View):
         return Response(env.get_renderer(self._template)(res))
 
 
+class JsonView(View):
+    def __init__(self, name, action, *, methods={'GET'}):
+        super(JsonView, self).__init__(name, action, methods=methods,
+                                       content_type='text/json')
+
+    def __call__(self, env, req, *args, **kwargs):
+        res = super(JsonView, self).__call__(env, req, *args, **kwargs)
+        if isinstance(res, Response):
+            return res
+        return Response(json.dumps(res), content_type='text/json')
+
+
 def expose(dispatcher, name, *args, **kwargs):
     def decorator(f):
         dispatcher.add(TemplateView(name, f, *args, **kwargs))
@@ -72,28 +91,8 @@ def expose_html(*args, **kwargs):
     return expose(*args, **kwargs)
 
 
-class JsonView(View):
-    def __init__(self, name, action, *, methods={'GET'}):
-        super(JsonView, self).__init__(name, action, methods=methods,
-                                       content_type='text/json')
-
-    def __call__(self, env, req, *args, **kwargs):
-        res = super(JsonView, self).__call__(env, req, *args, **kwargs)
-        if isinstance(res, Response):
-            return res
-        return Response(json.dumps(res), content_type='text/json')
-
-
 def expose_json(dispatcher, name, *args, **kwargs):
     def decorator(f):
         dispatcher.add(JsonView(name, f, *args, **kwargs))
         return f
     return decorator
-
-
-class ClassView(BindingFactory):
-    def get_bindings(self):
-        for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
-            if hasattr(self, method):
-                yield Binding(self.name, getattr(self, method),
-                              method=method)
