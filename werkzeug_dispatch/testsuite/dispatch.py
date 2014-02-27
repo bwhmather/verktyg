@@ -12,9 +12,8 @@ import unittest
 
 from werkzeug.testsuite import WerkzeugTestCase
 
-from werkzeug.wrappers import Response
 from werkzeug.datastructures import Accept
-from werkzeug.exceptions import NotFound, MethodNotAllowed, NotAcceptable
+from werkzeug.exceptions import NotFound, MethodNotAllowed
 
 from werkzeug_dispatch.bindings import Binding
 import werkzeug_dispatch as d

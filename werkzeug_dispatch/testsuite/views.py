@@ -8,15 +8,11 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-import unittest
-
 from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug.wrappers import Response
-from werkzeug.datastructures import Accept
-from werkzeug.exceptions import NotFound, MethodNotAllowed, NotAcceptable
+from werkzeug.exceptions import MethodNotAllowed
 
-from werkzeug_dispatch.bindings import Binding
 import werkzeug_dispatch as d
 
 
