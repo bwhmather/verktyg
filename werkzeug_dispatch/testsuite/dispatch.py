@@ -13,7 +13,7 @@ import unittest
 from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug.datastructures import Accept
-from werkzeug.exceptions import NotFound, MethodNotAllowed
+from werkzeug.exceptions import NotImplemented, MethodNotAllowed
 
 from werkzeug_dispatch.bindings import Binding
 import werkzeug_dispatch as d
@@ -30,7 +30,7 @@ class DispatchTestCase(WerkzeugTestCase):
 
         self.assert_equal('Tweedle Dum', dispatcher.lookup('tweedle-dum'))
         self.assert_equal('Tweedle Dee', dispatcher.lookup('tweedle-dee'))
-        self.assert_raises(NotFound, dispatcher.lookup, 'non-existant')
+        self.assert_raises(NotImplemented, dispatcher.lookup, 'non-existant')
         self.assert_equal('overriding', dispatcher.lookup('same'))
 
     def test_method_dispatch(self):
