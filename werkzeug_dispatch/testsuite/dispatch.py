@@ -75,7 +75,6 @@ class DispatchTestCase(WerkzeugTestCase):
         dispatcher = d.Dispatcher([
             Binding('test', 'text/json', content_type='text/json'),
             Binding('test', 'text/html', content_type='text/html'),
-#            Binding('test', 'catch-all', content_type='*'), TODO
             ])
 
         # werkzeug accept objects
