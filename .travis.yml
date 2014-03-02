@@ -1,7 +1,15 @@
 language: python
 python:
   - "3.3"
+
 # command to install dependencies
-install: "pip install -e ."
+install:
+  - "pip install -e ."
+  - "pip install pyflakes"
+  - "pip install pep8"
+
 # command to run tests
-script: python setup.py test
+script:
+  - python -c 'from werkzeug_dispatch.testsuite import main; main()';
+  - pep8 werkzeug_dispatch
+  - pyflakes werkzeug_dispatch
