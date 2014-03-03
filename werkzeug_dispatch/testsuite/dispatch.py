@@ -75,6 +75,8 @@ class DispatchTestCase(WerkzeugTestCase):
         dispatcher = d.Dispatcher([
             Binding('test', 'text/json', content_type='text/json'),
             Binding('test', 'text/html', content_type='text/html'),
+            Binding('test', 'whatever'),
+            Binding('nope', 'nope', content_type='application/xml'),
             ])
 
         # werkzeug accept objects
@@ -84,10 +86,13 @@ class DispatchTestCase(WerkzeugTestCase):
         self.assert_equal(
             'text/html',
             dispatcher.lookup('test', accept=Accept([('text/html', 1.0)])))
-# TODO
-#        self.assert_equal('text/json',
-#                dispatcher.lookup(
-#                    'test', accept=Accept([('application/html', 1.0)])))
+        self.assert_equal(
+            'whatever',
+            dispatcher.lookup('test', accept=Accept([('application/xml', 1.0)])))
+        self.accept_raises(
+            NotAcceptable,
+            dispatcher.lookup, 'nope', accept=Accept([('text/html', 1.0)]))
+
 
         # accept header strings
         self.assert_equal(
@@ -98,6 +103,9 @@ class DispatchTestCase(WerkzeugTestCase):
             'text/json',
             dispatcher.lookup('test',
                               accept='text/json; q=0.9, text/html; q=0.8'))
+        self.assert_equal(
+            'whatever',
+            dispatcher.lookup('test', accept='application/xml'))
 
     def test_nested(self):
         child = d.Dispatcher([
