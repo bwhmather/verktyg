@@ -55,15 +55,22 @@ class Dispatcher(BindingFactory):
         if isinstance(accept, str):
             accept = parse_accept_header(accept)
 
-        max_quality = 0
+        max_quality = tuple()
         best = None
         for binding in with_method:
             quality = binding.quality(accept=accept)
-            if quality >= max_quality:
+            # TODO might be better as `not isinstance(quality, Number)`
+            if not isinstance(quality, tuple):
+                quality = (quality,)
+
+            # TODO may be better to allow the wrong language or content type to
+            # be sent.  At the very least shorter tuples with no trailing zeros
+            # should take priority over longer tuples with trailing zeros
+            if quality >= max_quality and 0 not in quality:
                 best = binding
                 max_quality = quality
 
-        if best is None or max_quality == 0:
+        if best is None or max_quality == tuple():
             raise NotAcceptable()
 
         return best.action
