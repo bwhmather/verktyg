@@ -58,19 +58,20 @@ class Dispatcher(BindingFactory):
         max_quality = tuple()
         best = None
         for binding in with_method:
-            quality = binding.quality(accept=accept)
-            # TODO might be better as `not isinstance(quality, Number)`
+            try:
+                quality = binding.quality(accept=accept)
+            except NotAcceptable:
+                continue
+
             if not isinstance(quality, tuple):
                 quality = (quality,)
 
-            # TODO may be better to allow the wrong language or content type to
-            # be sent.  At the very least shorter tuples with no trailing zeros
-            # should take priority over longer tuples with trailing zeros
-            if quality >= max_quality and 0 not in quality:
+            # Later bindings take precedence
+            if quality >= max_quality:
                 best = binding
                 max_quality = quality
 
-        if best is None or max_quality == tuple():
+        if best is None:
             raise NotAcceptable()
 
         return best.action

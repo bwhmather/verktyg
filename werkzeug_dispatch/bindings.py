@@ -6,6 +6,7 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+from werkzeug.exceptions import NotAcceptable
 
 _DEFAULT = object()
 
@@ -54,10 +55,17 @@ class Binding(BindingFactory):
         yield self
 
     def quality(self, accept=None, accept_encoding=None, accept_language=None):
+        """ Returns a number or tuple of numbers representing the quality of
+        the match if one is found.  Otherwise returns None
+        """
         if self._content_type is None:
             return self._qs
 
-        return self._qs * accept.quality(self._content_type)
+        quality = self._qs * accept.quality(self._content_type)
+        if not quality:
+            raise NotAcceptable()
+
+        return quality
 
     def __repr__(self):
         return '<%s %s %s %s>' % (
