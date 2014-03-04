@@ -6,7 +6,6 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug import Accept, parse_accept_header
 from werkzeug.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
 
 from werkzeug_dispatch.bindings import BindingFactory
@@ -40,7 +39,7 @@ class Dispatcher(BindingFactory):
     def get_bindings(self):
         return iter(self._views)
 
-    def lookup(self, name, method='GET', accept=Accept([('*', 1.0)])):
+    def lookup(self, name, method='GET', accept='*/*'):
         with_name = self._index.get(name)
         if name not in self._index:
             raise NotImplemented()
@@ -51,9 +50,6 @@ class Dispatcher(BindingFactory):
                 with_method = with_name['GET']
             else:
                 raise MethodNotAllowed()
-
-        if isinstance(accept, str):
-            accept = parse_accept_header(accept)
 
         max_quality = tuple()
         best = None

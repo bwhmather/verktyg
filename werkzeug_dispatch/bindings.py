@@ -6,6 +6,7 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+from werkzeug import parse_accept_header
 from werkzeug.exceptions import NotAcceptable
 
 _DEFAULT = object()
@@ -58,6 +59,8 @@ class Binding(BindingFactory):
         """ Returns a number or tuple of numbers representing the quality of
         the match if one is found.  Otherwise returns None
         """
+        accept = parse_accept_header(accept)
+
         if self._content_type is None:
             return self._qs
 
