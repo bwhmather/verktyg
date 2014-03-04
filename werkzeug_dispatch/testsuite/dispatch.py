@@ -95,7 +95,6 @@ class DispatchTestCase(WerkzeugTestCase):
             NotAcceptable,
             dispatcher.lookup, 'nope', accept='text/html')
 
-
     def test_nested(self):
         child = d.Dispatcher([
             Binding('nested', 'Nested'),
