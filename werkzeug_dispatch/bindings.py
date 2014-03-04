@@ -67,8 +67,10 @@ class Binding(BindingFactory):
             `Accept-Charset` header
 
         :return: a number or tuple of numbers representing the quality of
-            the match if one is found.  Otherwise returns `None`. By convention
-            tuples should be in content type, language, charset order
+            the match. By convention tuples should be in content type,
+            language, charset order.  Raises `NotAcceptable If the binding does
+            not match the request.
+
         """
         accept = parse_accept_header(accept)
 
