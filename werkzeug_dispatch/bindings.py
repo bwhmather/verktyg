@@ -55,9 +55,20 @@ class Binding(BindingFactory):
     def get_bindings(self):
         yield self
 
-    def quality(self, accept=None, accept_encoding=None, accept_language=None):
-        """ Returns a number or tuple of numbers representing the quality of
-        the match if one is found.  Otherwise returns None
+    def quality(self, *, accept=None, accept_charset=None,
+                accept_language=None):
+        """
+        :param accept: string in the same format as an http `Accept` header
+
+        :param accept_language: string in the same format as an http
+            `Accept-Language` header
+
+        :param accept_charset: string in the same format as an http
+            `Accept-Charset` header
+
+        :return: a number or tuple of numbers representing the quality of
+            the match if one is found.  Otherwise returns `None`. By convention
+            tuples should be in content type, language, charset order
         """
         accept = parse_accept_header(accept)
 
