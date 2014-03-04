@@ -39,7 +39,8 @@ class Dispatcher(BindingFactory):
     def get_bindings(self):
         return iter(self._views)
 
-    def lookup(self, name, method='GET', accept='*/*'):
+    def lookup(self, name, method='GET',
+               accept='*/*', accept_language=None, accept_charset=None):
         with_name = self._index.get(name)
         if name not in self._index:
             raise NotImplemented()
@@ -55,7 +56,9 @@ class Dispatcher(BindingFactory):
         best = None
         for binding in with_method:
             try:
-                quality = binding.quality(accept=accept)
+                quality = binding.quality(accept=accept,
+                                          accept_language=accept_language,
+                                          accept_charset=accept_charset)
             except NotAcceptable:
                 continue
 
