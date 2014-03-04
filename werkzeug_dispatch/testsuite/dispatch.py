@@ -12,8 +12,8 @@ import unittest
 
 from werkzeug.testsuite import WerkzeugTestCase
 
-from werkzeug.datastructures import Accept
-from werkzeug.exceptions import NotImplemented, MethodNotAllowed
+from werkzeug.datastructures import MIMEAccept
+from werkzeug.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
 
 from werkzeug_dispatch.bindings import Binding
 import werkzeug_dispatch as d
@@ -82,17 +82,17 @@ class DispatchTestCase(WerkzeugTestCase):
         # werkzeug accept objects
         self.assert_equal(
             'text/json',
-            dispatcher.lookup('test', accept=Accept([('text/json', 1.0)])))
+            dispatcher.lookup('test', accept=MIMEAccept([('text/json', 1.0)])))
         self.assert_equal(
             'text/html',
-            dispatcher.lookup('test', accept=Accept([('text/html', 1.0)])))
+            dispatcher.lookup('test', accept=MIMEAccept([('text/html', 1.0)])))
         self.assert_equal(
             'whatever',
-            dispatcher.lookup('test', accept=Accept([('application/xml', 1.0)])))
-        self.accept_raises(
+            dispatcher.lookup(
+                'test', accept=MIMEAccept([('application/xml', 1.0)])))
+        self.assert_raises(
             NotAcceptable,
-            dispatcher.lookup, 'nope', accept=Accept([('text/html', 1.0)]))
-
+            dispatcher.lookup, 'nope', accept=MIMEAccept([('text/html', 1.0)]))
 
         # accept header strings
         self.assert_equal(
