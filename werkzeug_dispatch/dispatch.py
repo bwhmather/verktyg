@@ -30,10 +30,10 @@ class Dispatcher(BindingFactory):
             with_name = self._index[view.name]
 
             if view.method not in with_name:
-                with_name[view.method] = {}
+                with_name[view.method] = []
             with_method = with_name[view.method]
 
-            with_method[view.content_type] = view.action
+            with_method.append(view)
 
             self._views.append(view)
 
@@ -54,9 +54,16 @@ class Dispatcher(BindingFactory):
 
         if isinstance(accept, str):
             accept = parse_accept_header(accept)
-        content_type = accept.best_match(with_method.keys())
 
-        action = with_method.get(content_type)
-        if action is None:
+        max_quality = 0
+        best = None
+        for binding in with_method:
+            quality = binding.quality(accept=accept)
+            if quality >= max_quality:
+                best = binding
+                max_quality = quality
+
+        if best is None or max_quality == 0:
             raise NotAcceptable()
-        return action
+
+        return best.action
