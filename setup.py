@@ -20,7 +20,14 @@ setup(
     description='A package for registering and looking up request handlers',
     long_description=__doc__,
     classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Software Development :: Libraries :: Python Modules',
         ],
     install_requires=[
         'werkzeug',
