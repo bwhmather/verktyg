@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/bwhmather/werkzeug_dispatch.png?branch=master)](https://travis-ci.org/bwhmather/werkzeug_dispatch)
+.. image:: https://travis-ci.org/bwhmather/werkzeug_dispatch.png?branch=master
+    :target: http://travis-ci.org/bwhmather/werkzeug_dispatch
+    :alt: Build Status
 
 Werkzeug Dispatch
 =================
