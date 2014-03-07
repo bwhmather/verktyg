@@ -6,7 +6,9 @@ Werkzeug Dispatch
 Examples
 --------
 
-Hello World::
+Hello World
+
+.. code:: python
 
     from werkzeug import Response
     from werkzeug.routing import Map, Rule
@@ -30,7 +32,9 @@ Hello World::
     run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
 
 
-Slightly more idiomatic hello world::
+Slightly more idiomatic hello world
+
+.. code:: python
 
     from werkzeug import Response
     from werkzeug.routing import Map, Rule
