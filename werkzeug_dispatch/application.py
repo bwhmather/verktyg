@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+    werkzeug_dispatch.application
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    :copyright: (c) 2014 by Ben Mather.
+    :license: BSD, see LICENSE for more details.
+"""
 from werkzeug import Request
 from werkzeug.local import Local, LocalManager
 
