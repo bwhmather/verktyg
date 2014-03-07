@@ -1,4 +1,3 @@
-import werkzeug as wz
 from werkzeug import Request
 from werkzeug.local import Local, LocalManager
 
