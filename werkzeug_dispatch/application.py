@@ -11,8 +11,7 @@ from werkzeug.local import Local, LocalManager
 
 
 class Application(object):
-    def __init__(self, config, url_map, dispatcher, request_class=Request):
-        self.config = config
+    def __init__(self, url_map, dispatcher, request_class=Request):
         self.url_map = url_map
         self.dispatcher = dispatcher
         self._request_class = request_class
