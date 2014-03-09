@@ -30,7 +30,7 @@ Hello World
         return Response('Hello world')
 
 
-    app = Application({}, url_map, dispatcher)
+    app = Application(url_map, dispatcher)
     run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
 
 
@@ -59,7 +59,8 @@ Slightly more idiomatic hello world
         app_config = dict(global_config or {})
         app_config.update(local_config)
 
-        application = Application(app_config, url_map, dispatcher)
+        application = Application(url_map, dispatcher)
+        application.config = app_config
 
         return application
 
