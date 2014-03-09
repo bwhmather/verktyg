@@ -11,7 +11,26 @@ from werkzeug.local import Local, LocalManager
 
 
 class Application(object):
+    """
+    `url_map`
+        werkzeug `Map` object that maps from urls to names
+
+    `dispatcher`
+        object to map from endpoint names to handler functions
+
+    """
     def __init__(self, url_map, dispatcher, request_class=Request):
+        """
+        :param url_map:
+            a werkzeug `Map` object`
+
+        :param dispatcher:
+            a `Dispatcher` object
+
+        :param request_class:
+            constructor applied to each wsgi environment to create the request
+            object to be passed to the handler
+        """
         self.url_map = url_map
         self.dispatcher = dispatcher
         self._request_class = request_class
@@ -49,4 +68,10 @@ class Application(object):
         return self._dispatch(wsgi_env, start_response)
 
     def url_for(self, *args, **kwargs):
+        """ construct the url corresponding to an endpoint name and parameters
+
+        Unfortunately will only work if the application has been bound to a
+        wsgi request.  If it is not then there is not generally enough
+        information to construct full urls.  TODO.
+        """
         self._map_adapter(*args, **kwargs)
