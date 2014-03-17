@@ -35,12 +35,17 @@ class Application(object):
         self.dispatcher = dispatcher
         self._request_class = request_class
 
+        self._stack = self._dispatch_request
+
         self._local = Local()
         self._wsgi_env = self._local('wsgi_env')
         self._map_adapter = self._local('map_adapter')
 
         local_manager = LocalManager([self._local])
-        self._dispatch = local_manager.make_middleware(self._dispatch_request)
+        self.add_middleware(local_manager.make_middleware)
+
+    def add_middleware(self, middleware, *args, **kwargs):
+        self._stack = middleware(self._stack, *args, **kwargs)
 
     def _bind(self, wsgi_env):
         self._local.wsgi_env = wsgi_env
@@ -65,7 +70,7 @@ class Application(object):
         return response(wsgi_env, start_response)
 
     def __call__(self, wsgi_env, start_response):
-        return self._dispatch(wsgi_env, start_response)
+        return self._stack(wsgi_env, start_response)
 
     def url_for(self, *args, **kwargs):
         """ construct the url corresponding to an endpoint name and parameters
