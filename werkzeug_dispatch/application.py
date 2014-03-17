@@ -45,6 +45,12 @@ class Application(object):
         self.add_middleware(local_manager.make_middleware)
 
     def add_middleware(self, middleware, *args, **kwargs):
+        """
+        :param middleware:
+            a function which takes a wsgi application as it's first argument
+            and returns a new wsgi application.  Any other args or kwargs are
+            passed after.
+        """
         self._stack = middleware(self._stack, *args, **kwargs)
 
     def _bind(self, wsgi_env):
