@@ -61,13 +61,14 @@ class Application(object):
         self._bind(wsgi_env)
 
         def call_view(name, kwargs):
-            request = self._request_class(wsgi_env)
-
             endpoint = self.dispatcher.lookup(
-                name, method=request.method,
+                name,
+                method=wsgi_env.get('REQUEST_METHOD'),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE'))
+
+            request = self._request_class(wsgi_env)
 
             return endpoint(self, request, **kwargs)
 
