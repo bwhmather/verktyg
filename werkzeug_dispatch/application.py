@@ -7,7 +7,10 @@
     :license: BSD, see LICENSE for more details.
 """
 from werkzeug import Request
+from werkzeug.routing import Map
 from werkzeug.local import Local, LocalManager
+
+from werkzeug_dispatch import Dispatcher
 
 
 class Application(object):
@@ -19,7 +22,7 @@ class Application(object):
         object to map from endpoint names to handler functions
 
     """
-    def __init__(self, url_map, dispatcher, request_class=Request):
+    def __init__(self, url_map=None, dispatcher=None, request_class=Request):
         """
         :param url_map:
             a werkzeug `Map` object`
@@ -31,8 +34,14 @@ class Application(object):
             constructor applied to each wsgi environment to create the request
             object to be passed to the handler
         """
+        if url_map is None:
+            url_map = Map()
         self.url_map = url_map
+
+        if dispatcher is None:
+            dispatcher = Dispatcher()
         self.dispatcher = dispatcher
+
         self._request_class = request_class
 
         self._stack = self._dispatch_request
@@ -43,6 +52,14 @@ class Application(object):
 
         local_manager = LocalManager([self._local])
         self.add_middleware(local_manager.make_middleware)
+
+    def add_routes(self, *routes):
+        for route in routes:
+            self.url_map.add(route)
+
+    def add_views(self, *views):
+        for view in views:
+            self.dispatcher.add(view)
 
     def add_middleware(self, middleware, *args, **kwargs):
         """
