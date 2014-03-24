@@ -14,7 +14,9 @@ from werkzeug_dispatch import Dispatcher
 
 
 class Application(object):
-    """
+    """ helper class for creating a wsgi application from a url map and list of
+    bindings.
+
     `url_map`
         werkzeug `Map` object that maps from urls to names
 
@@ -44,8 +46,12 @@ class Application(object):
 
         self._request_class = request_class
 
+        # stack of middleware wrapping :method:`_dispatch_request`. invoked by
+        # :method:`__call__`
         self._stack = self._dispatch_request
 
+        # TODO provide a way of adding request specifiv variables.  Need to be
+        # able to register name, `(Application, wsgi_env) -> value` pairs
         self._local = Local()
         self._wsgi_env = self._local('wsgi_env')
         self._map_adapter = self._local('map_adapter')
@@ -62,7 +68,8 @@ class Application(object):
             self.dispatcher.add(view)
 
     def add_middleware(self, middleware, *args, **kwargs):
-        """
+        """ Wrap the application in a layer of wsgi middleware.
+
         :param middleware:
             a function which takes a wsgi application as it's first argument
             and returns a new wsgi application.  Any other args or kwargs are
