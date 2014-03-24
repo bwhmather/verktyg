@@ -20,7 +20,7 @@ class View(BindingFactory):
         self._name = name
 
         if methods is None:
-            self.methods = {'GET'}
+            self._methods = {'GET'}
         elif isinstance(methods, str):
             self._methods = {methods}
         else:
