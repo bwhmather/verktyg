@@ -24,7 +24,12 @@ class Application(object):
         object to map from endpoint names to handler functions
 
     """
-    def __init__(self, url_map=None, dispatcher=None, request_class=Request):
+
+    #: Constructor applied to each wsgi environment to create the request
+    #: object to be passed to the handler
+    request_class = Request
+
+    def __init__(self, url_map=None, dispatcher=None):
         """
         :param url_map:
             a werkzeug `Map` object`
@@ -32,9 +37,6 @@ class Application(object):
         :param dispatcher:
             a `Dispatcher` object
 
-        :param request_class:
-            constructor applied to each wsgi environment to create the request
-            object to be passed to the handler
         """
         if url_map is None:
             url_map = Map()
@@ -44,13 +46,11 @@ class Application(object):
             dispatcher = Dispatcher()
         self.dispatcher = dispatcher
 
-        self._request_class = request_class
-
         # stack of middleware wrapping :method:`_dispatch_request`. invoked by
         # :method:`__call__`
         self._stack = self._dispatch_request
 
-        # TODO provide a way of adding request specifiv variables.  Need to be
+        # TODO provide a way of adding request specific variables.  Need to be
         # able to register name, `(Application, wsgi_env) -> value` pairs
         self._local = Local()
         self._wsgi_env = self._local('wsgi_env')
@@ -92,7 +92,7 @@ class Application(object):
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE'))
 
-            request = self._request_class(wsgi_env)
+            request = self.request_class(wsgi_env)
 
             return endpoint(self, request, **kwargs)
 
