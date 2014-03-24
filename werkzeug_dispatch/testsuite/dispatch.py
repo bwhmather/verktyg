@@ -38,10 +38,6 @@ class DispatchTestCase(WerkzeugTestCase):
             Binding('test', 'post', method='POST'),
             Binding('head', 'head', method='HEAD'),
             Binding('no-head', 'get', method='GET'),
-
-            Binding('same', 'overridden'),
-            Binding('same', 'unaffected', method='POST'),
-            Binding('same', 'overriding'),
             ])
 
         # default to 'GET'
@@ -58,11 +54,24 @@ class DispatchTestCase(WerkzeugTestCase):
         self.assert_raises(MethodNotAllowed,
                            dispatcher.lookup, 'test', method='PUT')
 
+    def test_head_fallback(self):
+        dispatcher = d.Dispatcher([
+            Binding('head', 'head', method='HEAD'),
+            Binding('no-head', 'get', method='GET'),
+            ])
+
         # `HEAD` should fall back to `GET`
         self.assert_equal('head',
                           dispatcher.lookup('head', method='HEAD'))
         self.assert_equal('get',
                           dispatcher.lookup('no-head', method='HEAD'))
+
+    def test_method_override(self):
+        dispatcher = d.Dispatcher([
+            Binding('same', 'overridden'),
+            Binding('same', 'unaffected', method='POST'),
+            Binding('same', 'overriding'),
+            ])
 
         # replacing handler for one method should not affect others
         self.assert_equal('overriding',
