@@ -6,7 +6,10 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from functools import singledispatch
+try:
+    from functools import singledispatch
+except:
+    from singledispatch import singledispatch
 
 from werkzeug import Request
 from werkzeug.routing import Map
