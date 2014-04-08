@@ -11,62 +11,42 @@ Examples
 Hello World
 
 .. code:: python
-
+    # hello.py
     from werkzeug import Response
-    from werkzeug.routing import Map, Rule
-    from werkzeug.serving import run_simple
     from werkzeug_dispatch import Dispatcher, Application, expose
 
-    url_map = Map([
-        Rule('/',
-             endpoint='index'),
-        ])
-
-    dispatcher = Dispatcher()
+    views = Dispatcher()
 
 
-    @expose(dispatcher, 'index')
+    @expose(views, 'index')
     def get_index(app, req):
         return Response('Hello world')
 
 
-    app = Application(url_map, dispatcher)
-    run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
+    def bind(app):
+        app.add_views(views)
 
-
-Slightly more idiomatic hello world
 
 .. code:: python
-
-    from werkzeug import Response
-    from werkzeug.routing import Map, Rule
-    from werkzeug_dispatch import Dispatcher, Application, expose
-
-    url_map = Map([
-        Rule('/',
-             endpoint='index'),
-        ])
-
-    dispatcher = Dispatcher()
+    # root.py
+    from werkzeug.routing import Rule
+    from werkzeug.serving import run_simple
+    from werkzeug_dispatch import Application
 
 
-    @expose(dispatcher, 'index')
-    def get_index(app, req):
-        return Response('Hello world')
+    app = Application()
 
+    app.add_routes(
+        Rule('/', endpoint='index'),
+    )
 
-    def create_app(global_config, **local_config):
-        app_config = dict(global_config or {})
-        app_config.update(local_config)
+    import hello
+    hello.bind(app)
 
-        application = Application(url_map, dispatcher)
-        application.config = app_config
-
-        return application
-
-
-    if __name__ == '__main__':
+    def run_dev_server():
         from werkzeug.serving import run_simple
 
-        app = create_app({})
         run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
+
+    if __name__ == '__main__':
+        run_dev_server()
