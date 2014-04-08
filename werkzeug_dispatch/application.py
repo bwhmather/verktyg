@@ -6,6 +6,8 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+from functools import singledispatch
+
 from werkzeug import Request
 from werkzeug.routing import Map
 from werkzeug.local import Local, LocalManager
@@ -61,6 +63,13 @@ class Application(object):
         local_manager = LocalManager([self._local])
         self.add_middleware(local_manager.make_middleware)
 
+        # singledispatch is only used to provide a mapping between exception
+        # types and handlers.  Handlers do not actually take the exception as
+        # the first argument but are instead called with the application, the
+        # request, and then the exception.
+        # TODO provide a sane default for normal and werzeug HTTPExceptions
+        self._exception_handler = singledispatch(None)
+
     def add_routes(self, *routes):
         for route in routes:
             self.url_map.add(route)
@@ -79,12 +88,25 @@ class Application(object):
         """
         self._stack = middleware(self._stack, *args, **kwargs)
 
+    def add_exception_handler(self, exception_class, handler):
+        """ Bind a function to render exceptions of the given class and all
+        sub classes.
+
+        Exception handlers take three arguments:
+          * a reference to the application
+          * a request object
+          * the exception to be rendered
+        """
+        self._exception_handler.register(exception_class, handler)
+
     def _bind(self, wsgi_env):
         self._local.wsgi_env = wsgi_env
         self._local.map_adapter = self.url_map.bind_to_environ(wsgi_env)
 
     def _dispatch_request(self, wsgi_env, start_response):
         self._bind(wsgi_env)
+
+        request = self._request_class(wsgi_env)
 
         def call_view(name, kwargs):
             endpoint = self.dispatcher.lookup(
@@ -94,11 +116,15 @@ class Application(object):
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE'))
 
-            request = self.request_class(wsgi_env)
-
             return endpoint(self, request, **kwargs)
 
-        response = self._map_adapter.dispatch(call_view)
+        try:
+            response = self._map_adapter.dispatch(call_view)
+        except BaseException as e:
+            handler = self._exception_handler.dispatch(type(e))
+            if handler is None:
+                raise
+            handler(self, request, e)
 
         return response(wsgi_env, start_response)
 
