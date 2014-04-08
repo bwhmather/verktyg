@@ -14,7 +14,7 @@ install_requires = [
     'werkzeug',
     ]
 
-if sys.version_info < (3.4):
+if sys.version_info < (3, 4):
     install_requires.append('singledispatch')
 
 setup(
