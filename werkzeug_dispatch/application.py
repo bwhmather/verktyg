@@ -46,12 +46,14 @@ class Application(object):
             dispatcher = Dispatcher()
         self.dispatcher = dispatcher
 
-        # stack of middleware wrapping :method:`_dispatch_request`. invoked by
-        # :method:`__call__`
+        # reference to the bottom of a stack of wsgi middleware wrapping
+        # :method:`_dispatch_request`. Invoked by :method:`__call__`.
+        # Essentially the real wsgi application.
         self._stack = self._dispatch_request
 
         # TODO provide a way of adding request specific variables.  Need to be
         # able to register name, `(Application, wsgi_env) -> value` pairs
+        # Alternatively get rid of this entirely as it's a massive hack
         self._local = Local()
         self._wsgi_env = self._local('wsgi_env')
         self._map_adapter = self._local('map_adapter')
