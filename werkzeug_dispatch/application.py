@@ -43,7 +43,9 @@ class Application(object):
     def dispatcher(self):
         return Dispatcher()
 
-    def __init__(self):
+    def __init__(self, debug=False):
+        self.debug = debug
+
         # reference to the bottom of a stack of wsgi middleware wrapping
         # :method:`_dispatch_request`. Invoked by :method:`__call__`.
         # Essentially the real wsgi application.
@@ -117,6 +119,10 @@ class Application(object):
         try:
             response = self._map_adapter.dispatch(call_view)
         except BaseException as e:
+            # exceptions should be propogated if debug mode is enabled
+            if self.debug:
+                raise
+
             handler = self._exception_handler.dispatch(type(e))
             if handler is None:
                 raise
