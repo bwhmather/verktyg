@@ -14,6 +14,7 @@ except:
 from werkzeug import Request
 from werkzeug.routing import Map
 from werkzeug.local import Local, LocalManager
+from werkzeug.utils import cached_property
 
 from werkzeug_dispatch import Dispatcher
 
@@ -34,23 +35,15 @@ class Application(object):
     #: object to be passed to the handler
     request_class = Request
 
-    def __init__(self, url_map=None, dispatcher=None):
-        """
-        :param url_map:
-            a werkzeug `Map` object`
+    @cached_property
+    def url_map(self):
+        return Map()
 
-        :param dispatcher:
-            a `Dispatcher` object
+    @cached_property
+    def dispatcher(self):
+        return Dispatcher()
 
-        """
-        if url_map is None:
-            url_map = Map()
-        self.url_map = url_map
-
-        if dispatcher is None:
-            dispatcher = Dispatcher()
-        self.dispatcher = dispatcher
-
+    def __init__(self):
         # reference to the bottom of a stack of wsgi middleware wrapping
         # :method:`_dispatch_request`. Invoked by :method:`__call__`.
         # Essentially the real wsgi application.
