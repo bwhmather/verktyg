@@ -146,7 +146,7 @@ class Application(object):
             handler = self._exception_handler.dispatch(type(e))
             if handler is None:
                 raise
-            handler(self, request, e)
+            response = handler(self, request, e)
 
         return response(wsgi_env, start_response)
 
