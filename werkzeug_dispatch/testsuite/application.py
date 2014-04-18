@@ -15,7 +15,7 @@ from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug import Response, BaseResponse
 from werkzeug.routing import Rule
-from werkzeug.exceptions import HTTPException, NotFound
+from werkzeug.exceptions import HTTPException, ImATeapot
 
 from werkzeug_dispatch.views import expose
 from werkzeug_dispatch.application import Application
@@ -56,9 +56,9 @@ class ApplicationTestCase(WerkzeugTestCase):
         def raise_key_error(app, req):
             raise KeyError()
 
-        @app.expose(route='/raise_404')
-        def raise_404(app, req):
-            raise NotFound()
+        @app.expose(route='/raise_teapot')
+        def raise_teapot(app, req):
+            raise ImATeapot()
 
         client = Client(app, BaseResponse)
 
@@ -70,8 +70,8 @@ class ApplicationTestCase(WerkzeugTestCase):
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.get_data(), b'default handler')
 
-        resp = client.get('/raise_404')
-        self.assertEqual(resp.status_code, 404)
+        resp = client.get('/raise_teapot')
+        self.assertEqual(resp.status_code, 418)
         self.assertEqual(resp.get_data(), b'werkzeug handler')
 
 
