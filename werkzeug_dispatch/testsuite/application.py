@@ -37,7 +37,6 @@ class ApplicationTestCase(WerkzeugTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.get_data(), b'Hello World')
 
-
     def test_exception_handlers(self):
         app = Application()
 
@@ -48,7 +47,6 @@ class ApplicationTestCase(WerkzeugTestCase):
         @app.exception_handler(HTTPException)
         def werkzeug_handler(app, req, exception):
             return Response('werkzeug handler', exception.code)
-
 
         @app.expose(route='/raise_execption')
         def raise_exception(app, req):

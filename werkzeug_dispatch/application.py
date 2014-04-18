@@ -116,7 +116,6 @@ class Application(object):
             return handler
         return wrapper
 
-
     def _bind(self, wsgi_env):
         self._local.wsgi_env = wsgi_env
         self._local.map_adapter = self.url_map.bind_to_environ(wsgi_env)
