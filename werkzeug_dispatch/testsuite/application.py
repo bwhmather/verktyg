@@ -74,6 +74,38 @@ class ApplicationTestCase(WerkzeugTestCase):
         self.assertEqual(resp.status_code, 418)
         self.assertEqual(resp.get_data(), b'werkzeug handler')
 
+    def test_middleware(self):
+        app = Application()
+
+        @app.expose(route='/')
+        def index(app, req):
+            return Response()
+
+        got_request = False
+        got_response = False
+
+        def middleware(app):
+            def handler(env, start_response):
+                nonlocal got_request
+                got_request = True
+
+                def handle_start_response(*args, **kwargs):
+                    nonlocal got_response
+                    got_response = True
+                    return start_response(*args, **kwargs)
+
+                app(env, handle_start_response)
+            return handler
+
+        app.add_middleware(middleware)
+
+        client = Client(app, BaseResponse)
+
+        client.get('/')
+
+        self.assertTrue(got_request)
+        self.assertTrue(got_response)
+
 
 def suite():
     suite = unittest.TestSuite()
