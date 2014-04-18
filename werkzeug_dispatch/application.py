@@ -104,7 +104,7 @@ class Application(object):
     def _dispatch_request(self, wsgi_env, start_response):
         self._bind(wsgi_env)
 
-        request = self._request_class(wsgi_env)
+        request = self.request_class(wsgi_env)
 
         def call_view(name, kwargs):
             endpoint = self.dispatcher.lookup(
