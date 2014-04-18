@@ -12,11 +12,11 @@ except:
     from singledispatch import singledispatch
 
 from werkzeug import Request
-from werkzeug.routing import Map
+from werkzeug.routing import Map, Rule
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
-from werkzeug_dispatch import Dispatcher
+from werkzeug_dispatch import Dispatcher, expose
 
 
 class Application(object):
@@ -76,6 +76,19 @@ class Application(object):
         for view in views:
             self.dispatcher.add(view)
 
+    def expose(self, endpoint=None, *args, **kwargs):
+        def wrapper(f):
+            nonlocal endpoint
+            if endpoint is None:
+                endpoint = f.__name__
+
+            route = kwargs.pop('route', None)
+            if route is not None:
+                self.add_routes(Rule(route, endpoint=endpoint))
+
+            return expose(self.dispatcher, endpoint, *args, **kwargs)(f)
+        return wrapper
+
     def add_middleware(self, middleware, *args, **kwargs):
         """ Wrap the application in a layer of wsgi middleware.
 
@@ -96,6 +109,13 @@ class Application(object):
           * the exception to be rendered
         """
         self._exception_handler.register(exception_class, handler)
+
+    def exception_handler(self, exception_class):
+        def wrapper(handler):
+            self.add_exception_handler(exception_class, handler)
+            return handler
+        return wrapper
+
 
     def _bind(self, wsgi_env):
         self._local.wsgi_env = wsgi_env
