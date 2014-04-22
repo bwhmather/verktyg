@@ -4,7 +4,7 @@ from werkzeug_dispatch.bindings import BindingFactory
 from werkzeug_dispatch.accept import select_representation
 
 
-class ExceptionHandler(BindingFactory):
+class ExceptionDispatcher(BindingFactory):
     def __init__(self):
         self._bindings = {}
 

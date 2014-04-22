@@ -11,7 +11,7 @@ from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
 from werkzeug_dispatch.bindings import ExceptionBinding
-from werkzeug_dispatch.error_handling import ExceptionHandler
+from werkzeug_dispatch.error_handling import ExceptionDispatcher
 from werkzeug_dispatch.dispatch import Dispatcher
 from werkzeug_dispatch.views import expose
 
@@ -58,7 +58,7 @@ class Application(object):
         local_manager = LocalManager([self._local])
         self.add_middleware(local_manager.make_middleware)
 
-        self._exception_handler = ExceptionHandler()
+        self._exception_dispatcher = ExceptionDispatcher()
 
     def add_routes(self, *routes):
         for route in routes:
@@ -100,7 +100,9 @@ class Application(object):
           * a request object
           * the exception to be rendered
         """
-        self._exception_handler.add(ExceptionBinding(exception_class, handler))
+        self._exception_dispatcher.add(
+            ExceptionBinding(exception_class, handler)
+        )
 
     def exception_handler(self, exception_class):
         def wrapper(handler):
@@ -135,7 +137,7 @@ class Application(object):
             if self.debug:
                 raise
 
-            handler = self._exception_handler.lookup(
+            handler = self._exception_dispatcher.lookup(
                 type(e),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
