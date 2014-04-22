@@ -58,4 +58,4 @@ class Dispatcher(BindingFactory):
             accept=accept,
             accept_language=accept_language,
             accept_charset=accept_charset
-        )
+        ).action

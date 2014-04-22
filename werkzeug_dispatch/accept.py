@@ -34,7 +34,7 @@ def select_representation(
     if best is None:
         raise NotAcceptable()
 
-    return best.action
+    return best
 
 
 class Representation(object):
