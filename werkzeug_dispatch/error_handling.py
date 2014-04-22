@@ -5,8 +5,11 @@ from werkzeug_dispatch.accept import select_representation
 
 
 class ExceptionDispatcher(BindingFactory):
-    def __init__(self):
+    def __init__(self, bindings=[]):
         self._bindings = {}
+
+        for binding in bindings:
+            self.add(bindings)
 
     def add(self, handler_factory):
         """Bind a handlers from a handler factory to render exceptions of a
