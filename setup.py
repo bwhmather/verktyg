@@ -4,17 +4,9 @@ Werkzeug Dispatch
 
 A simple dispatcher for werkzeug.
 """
-
-
 import sys
 from setuptools import setup
 
-install_requires = [
-    'werkzeug',
-    ]
-
-if sys.version_info < (3, 4):
-    install_requires.append('singledispatch')
 
 setup(
     name='werkzeug_dispatch',
@@ -36,7 +28,9 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         ],
     platforms='any',
-    install_requires=install_requires,
+    install_requires=[
+        'werkzeug',
+        ],
     packages=['werkzeug_dispatch', 'werkzeug_dispatch.testsuite'],
     include_package_data=True,
     test_suite='werkzeug_dispatch.testsuite.suite',
