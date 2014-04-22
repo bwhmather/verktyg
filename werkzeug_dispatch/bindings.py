@@ -31,6 +31,13 @@ class Binding(BindingFactory, Representation):
     `content_type`
         A type/subtype formatted string representing the content type that the
         handler returns
+        See `Representation`
+
+    `language`
+        See `Representation`
+
+    `charser`
+        See `Representation`
 
     `qs`
         Quality of source.  Multiplied by the accept q value to give quality of
