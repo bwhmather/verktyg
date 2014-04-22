@@ -40,6 +40,10 @@ class Application(object):
     def dispatcher(self):
         return Dispatcher()
 
+    @cached_property
+    def exception_dispatcher(self):
+        return ExceptionDispatcher()
+
     def __init__(self, debug=False):
         self.debug = debug
 
@@ -57,8 +61,6 @@ class Application(object):
 
         local_manager = LocalManager([self._local])
         self.add_middleware(local_manager.make_middleware)
-
-        self._exception_dispatcher = ExceptionDispatcher()
 
     def add_routes(self, *routes):
         for route in routes:
@@ -100,7 +102,7 @@ class Application(object):
           * a request object
           * the exception to be rendered
         """
-        self._exception_dispatcher.add(
+        self.exception_dispatcher.add(
             ExceptionBinding(exception_class, handler)
         )
 
@@ -137,7 +139,7 @@ class Application(object):
             if self.debug:
                 raise
 
-            handler = self._exception_dispatcher.lookup(
+            handler = self.exception_dispatcher.lookup(
                 type(e),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
