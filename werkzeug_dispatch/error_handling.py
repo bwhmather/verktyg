@@ -1,3 +1,12 @@
+"""
+    werkzeug_dispatch.error_handling
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Exception rendering utilities.
+
+    :copyright: (c) 2014 by Ben Mather.
+    :license: BSD, see LICENSE for more details.
+"""
 from werkzeug.exceptions import NotAcceptable
 
 from werkzeug_dispatch.bindings import BindingFactory
