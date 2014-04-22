@@ -53,9 +53,11 @@ class Dispatcher(BindingFactory):
             else:
                 raise MethodNotAllowed()
 
-        return select_representation(
+        representation = select_representation(
             with_method,
             accept=accept,
             accept_language=accept_language,
             accept_charset=accept_charset
-        ).action
+        )
+
+        return representation.action
