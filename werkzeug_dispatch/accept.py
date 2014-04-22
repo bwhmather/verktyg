@@ -1,6 +1,7 @@
 """
     werkzeug_dispatch.accept
     ~~~~~~~~~~~~~~~~~~~~~~~~
+
     Code for selecting handlers based on accept headers
 
     :copyright: (c) 2014 by Ben Mather.
