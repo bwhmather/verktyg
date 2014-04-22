@@ -6,8 +6,9 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
+from werkzeug.exceptions import NotImplemented, MethodNotAllowed
 
+from werkzeug_dispatch.accept import select_representation
 from werkzeug_dispatch.bindings import BindingFactory
 
 
@@ -52,25 +53,9 @@ class Dispatcher(BindingFactory):
             else:
                 raise MethodNotAllowed()
 
-        max_quality = tuple()
-        best = None
-        for binding in with_method:
-            try:
-                quality = binding.quality(accept=accept,
-                                          accept_language=accept_language,
-                                          accept_charset=accept_charset)
-            except NotAcceptable:
-                continue
-
-            if not isinstance(quality, tuple):
-                quality = (quality,)
-
-            # Later bindings take precedence
-            if quality >= max_quality:
-                best = binding
-                max_quality = quality
-
-        if best is None:
-            raise NotAcceptable()
-
-        return best.action
+        return select_representation(
+            with_method,
+            accept=accept,
+            accept_language=accept_language,
+            accept_charset=accept_charset
+        )
