@@ -6,10 +6,7 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug import parse_accept_header
-from werkzeug.exceptions import NotAcceptable
-
-_DEFAULT = object()
+from werkzeug_dispatch.accept import Representation
 
 
 class BindingFactory(object):
@@ -17,7 +14,7 @@ class BindingFactory(object):
         raise NotImplementedError()
 
 
-class Binding(BindingFactory):
+class Binding(BindingFactory, Representation):
     """Represents an action associated with a single combination of endpoint
     name, method and content-type.  In most cases you probably want to be using
     subclasses of `View` which can listen for multiple methods.
@@ -40,48 +37,20 @@ class Binding(BindingFactory):
         biding if mimetypes match.  Name by convention from other servers
     """
     def __init__(self, name, action, method='GET',
-                 content_type=None, qs=_DEFAULT):
+                 content_type=None, language=None, charset=None, qs=None):
         self.name = name
         self.method = method
         self.action = action
 
-        self._content_type = content_type
-        if qs is _DEFAULT:
-            if content_type is None:
-                self._qs = 0.001
-            else:
-                self._qs = 1.0
+        Representation.__init__(
+            self, qs=qs,
+            content_type=content_type,
+            language=language,
+            charset=charset
+        )
 
     def get_bindings(self):
         yield self
-
-    def quality(self, *, accept=None, accept_charset=None,
-                accept_language=None):
-        """
-        :param accept: string in the same format as an http `Accept` header
-
-        :param accept_language: string in the same format as an http
-            `Accept-Language` header
-
-        :param accept_charset: string in the same format as an http
-            `Accept-Charset` header
-
-        :return: a number or tuple of numbers representing the quality of
-            the match. By convention tuples should be in content type,
-            language, charset order.  Raises `NotAcceptable If the binding does
-            not match the request.
-
-        """
-        accept = parse_accept_header(accept)
-
-        if self._content_type is None:
-            return self._qs
-
-        quality = self._qs * accept.quality(self._content_type)
-        if not quality:
-            raise NotAcceptable()
-
-        return quality
 
     def __repr__(self):
         return '<%s %s %s %s>' % (
