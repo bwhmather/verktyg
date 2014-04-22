@@ -6,17 +6,15 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-try:
-    from functools import singledispatch
-except:
-    from singledispatch import singledispatch
-
 from werkzeug import Request
 from werkzeug.routing import Map, Rule
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
-from werkzeug_dispatch import Dispatcher, expose
+from werkzeug_dispatch.bindings import ExceptionBinding
+from werkzeug_dispatch.error_handling import ExceptionHandler
+from werkzeug_dispatch.dispatch import Dispatcher
+from werkzeug_dispatch.views import expose
 
 
 class Application(object):
@@ -61,12 +59,7 @@ class Application(object):
         local_manager = LocalManager([self._local])
         self.add_middleware(local_manager.make_middleware)
 
-        # singledispatch is only used to provide a mapping between exception
-        # types and handlers.  Handlers do not actually take the exception as
-        # the first argument but are instead called with the application, the
-        # request, and then the exception.
-        # TODO provide a sane default for normal and werzeug HTTPExceptions
-        self._exception_handler = singledispatch(None)
+        self._exception_handler = ExceptionHandler()
 
     def add_routes(self, *routes):
         for route in routes:
@@ -108,7 +101,7 @@ class Application(object):
           * a request object
           * the exception to be rendered
         """
-        self._exception_handler.register(exception_class, handler)
+        self._exception_handler.add(ExceptionBinding(exception_class, handler))
 
     def exception_handler(self, exception_class):
         def wrapper(handler):
@@ -131,7 +124,8 @@ class Application(object):
                 method=wsgi_env.get('REQUEST_METHOD'),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
-                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE'))
+                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
+            )
 
             return endpoint(self, request, **kwargs)
 
@@ -142,7 +136,12 @@ class Application(object):
             if self.debug:
                 raise
 
-            handler = self._exception_handler.dispatch(type(e))
+            handler = self._exception_handler.lookup(
+                type(e),
+                accept=wsgi_env.get('HTTP_ACCEPT'),
+                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
+                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
+            )
             if handler is None:
                 raise
             response = handler(self, request, e)

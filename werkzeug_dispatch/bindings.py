@@ -66,3 +66,33 @@ class Binding(BindingFactory, Representation):
             repr(self.method),
             repr(self._content_type)
         )
+
+
+class ExceptionBinding(BindingFactory, Representation):
+    """An action associated with an exception class and providing a particular
+    representation.
+
+    `exception_class`
+        Binding can be used to render instances of this class and all
+        subclasses
+
+    `action`
+        The action to perform if the binding is matched.
+        Function accepting `(application, request, exception)` and returning
+        a werkzeug response object.
+    """
+    def __init__(self, exception_class, action,
+                 content_type=None, language=None, charset=None, qs=None):
+
+        self.exception_class = exception_class
+        self.action = action
+
+        Representation.__init__(
+            self, qs=qs,
+            content_type=content_type,
+            language=language,
+            charset=charset
+        )
+
+    def get_bindings(self):
+        yield self
