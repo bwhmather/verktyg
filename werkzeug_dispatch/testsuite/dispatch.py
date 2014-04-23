@@ -13,13 +13,12 @@ from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
 
-from werkzeug_dispatch.bindings import Binding
-import werkzeug_dispatch as d
+from werkzeug_dispatch.dispatch import Binding, Dispatcher
 
 
 class DispatchTestCase(WerkzeugTestCase):
     def test_name_dispatch(self):
-        dispatcher = d.Dispatcher([
+        dispatcher = Dispatcher([
             Binding('tweedle-dum', 'Tweedle Dum'),
             Binding('tweedle-dee', 'Tweedle Dee'),
             Binding('same', 'overridden'),
@@ -32,7 +31,7 @@ class DispatchTestCase(WerkzeugTestCase):
         self.assert_equal('overriding', dispatcher.lookup('same'))
 
     def test_method_dispatch(self):
-        dispatcher = d.Dispatcher([
+        dispatcher = Dispatcher([
             Binding('test', 'get', method='GET'),
             Binding('test', 'post', method='POST'),
             Binding('head', 'head', method='HEAD'),
@@ -54,7 +53,7 @@ class DispatchTestCase(WerkzeugTestCase):
                            dispatcher.lookup, 'test', method='PUT')
 
     def test_head_fallback(self):
-        dispatcher = d.Dispatcher([
+        dispatcher = Dispatcher([
             Binding('head', 'head', method='HEAD'),
             Binding('no-head', 'get', method='GET'),
             ])
@@ -66,7 +65,7 @@ class DispatchTestCase(WerkzeugTestCase):
                           dispatcher.lookup('no-head', method='HEAD'))
 
     def test_method_override(self):
-        dispatcher = d.Dispatcher([
+        dispatcher = Dispatcher([
             Binding('same', 'overridden'),
             Binding('same', 'unaffected', method='POST'),
             Binding('same', 'overriding'),
@@ -79,7 +78,7 @@ class DispatchTestCase(WerkzeugTestCase):
                           dispatcher.lookup('same', method='POST'))
 
     def test_accept_dispatch(self):
-        dispatcher = d.Dispatcher([
+        dispatcher = Dispatcher([
             Binding('test', 'text/json', content_type='text/json'),
             Binding('test', 'text/html', content_type='text/html'),
             Binding('test', 'whatever'),
@@ -104,10 +103,10 @@ class DispatchTestCase(WerkzeugTestCase):
             dispatcher.lookup, 'nope', accept='text/html')
 
     def test_nested(self):
-        child = d.Dispatcher([
+        child = Dispatcher([
             Binding('nested', 'Nested'),
             ])
-        parent = d.Dispatcher([
+        parent = Dispatcher([
             child,
             ])
 

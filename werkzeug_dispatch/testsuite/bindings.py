@@ -11,7 +11,7 @@ import unittest
 
 from werkzeug.testsuite import WerkzeugTestCase
 
-from werkzeug_dispatch.bindings import Binding
+from werkzeug_dispatch.dispatch import Binding
 
 
 class BindingsTestCase(WerkzeugTestCase):

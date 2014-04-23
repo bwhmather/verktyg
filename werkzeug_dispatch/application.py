@@ -10,8 +10,9 @@ from werkzeug.routing import Map, Rule
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
-from werkzeug_dispatch.bindings import ExceptionBinding
-from werkzeug_dispatch.exception_dispatch import ExceptionDispatcher
+from werkzeug_dispatch.exception_dispatch import (
+    ExceptionDispatcher, ExceptionBinding
+)
 from werkzeug_dispatch.dispatch import Dispatcher
 from werkzeug_dispatch.views import expose
 

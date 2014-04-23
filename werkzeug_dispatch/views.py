@@ -8,7 +8,7 @@
 import json
 
 from werkzeug import Response
-from werkzeug_dispatch.bindings import Binding, BindingFactory
+from werkzeug_dispatch.dispatch import BindingFactory, Binding
 
 
 class View(BindingFactory):

@@ -9,11 +9,52 @@
 """
 from werkzeug.exceptions import NotAcceptable
 
-from werkzeug_dispatch.bindings import BindingFactory
-from werkzeug_dispatch.accept import select_representation
+from werkzeug_dispatch.accept import Representation, select_representation
 
 
-class ExceptionDispatcher(BindingFactory):
+class ExceptionBindingFactory(object):
+    def get_bindings(self):
+        raise NotImplementedError()
+
+
+class ExceptionBinding(ExceptionBindingFactory, Representation):
+    """An action associated with an exception class and providing a particular
+    representation.
+
+    `exception_class`
+        Binding can be used to render instances of this class and all
+        subclasses
+
+    `action`
+        The action to perform if the binding is matched.
+        Function accepting `(application, request, exception)` and returning
+        a werkzeug response object.
+    """
+    def __init__(self, exception_class, action, *,
+                 content_type=None, language=None, charset=None, qs=None):
+
+        self.exception_class = exception_class
+        self.action = action
+
+        Representation.__init__(
+            self, qs=qs,
+            content_type=content_type,
+            language=language,
+            charset=charset
+        )
+
+    def get_bindings(self):
+        yield self
+
+    def __repr__(self):
+        return '<%s %s %s>' % (
+            self.__class__.__name__,
+            repr(self.exception_class),
+            repr(self.content_type),
+        )
+
+
+class ExceptionDispatcher(ExceptionBindingFactory):
     def __init__(self, bindings=[]):
         self._bindings = {}
 
