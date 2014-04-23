@@ -1,8 +1,6 @@
 """
-    werkzeug_dispatch.error_handling
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Exception rendering utilities.
+    werkzeug_dispatch.exception_dispatch
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
