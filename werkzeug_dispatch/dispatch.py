@@ -42,7 +42,7 @@ class Binding(BindingFactory, Representation):
 
     `qs`
         Quality of source.  Multiplied by the accept q value to give quality of
-        biding if mimetypes match.  Name by convention from other servers
+        binding if mimetypes match.  Name by convention from other servers
     """
     def __init__(self, name, action, method='GET', **kwargs):
         self.name = name
