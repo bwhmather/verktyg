@@ -18,7 +18,7 @@ class ExceptionDispatcher(BindingFactory):
         self._bindings = {}
 
         for binding in bindings:
-            self.add(bindings)
+            self.add(binding)
 
     def add(self, handler_factory):
         """Bind a handlers from a handler factory to render exceptions of a
