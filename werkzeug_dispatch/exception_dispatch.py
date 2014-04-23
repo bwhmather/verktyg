@@ -77,7 +77,7 @@ class ExceptionDispatcher(ExceptionBindingFactory):
     def lookup(self, exception_class,
                accept='*/*', accept_language=None, accept_charset=None):
         # Use the method resolution order of the exception to rank handlers
-        for cls in exception_class.__mro__:
+        for cls in exception_class.mro():
             if cls not in self._bindings:
                 continue
 
