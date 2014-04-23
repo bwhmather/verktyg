@@ -30,18 +30,12 @@ class ExceptionBinding(ExceptionBindingFactory, Representation):
         Function accepting `(application, request, exception)` and returning
         a werkzeug response object.
     """
-    def __init__(self, exception_class, action, *,
-                 content_type=None, language=None, charset=None, qs=None):
+    def __init__(self, exception_class, action, **kwargs):
 
         self.exception_class = exception_class
         self.action = action
 
-        Representation.__init__(
-            self, qs=qs,
-            content_type=content_type,
-            language=language,
-            charset=charset
-        )
+        super(ExceptionBinding, self).__init__(**kwargs)
 
     def get_bindings(self):
         yield self

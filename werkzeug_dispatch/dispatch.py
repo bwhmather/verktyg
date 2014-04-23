@@ -44,18 +44,12 @@ class Binding(BindingFactory, Representation):
         Quality of source.  Multiplied by the accept q value to give quality of
         biding if mimetypes match.  Name by convention from other servers
     """
-    def __init__(self, name, action, method='GET', *,
-                 content_type=None, language=None, charset=None, qs=None):
+    def __init__(self, name, action, method='GET', **kwargs):
         self.name = name
         self.method = method
         self.action = action
 
-        Representation.__init__(
-            self, qs=qs,
-            content_type=content_type,
-            language=language,
-            charset=charset
-        )
+        super(Binding, self).__init__(**kwargs)
 
     def get_bindings(self):
         yield self
