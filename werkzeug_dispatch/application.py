@@ -93,7 +93,7 @@ class Application(object):
         """
         self._stack = middleware(self._stack, *args, **kwargs)
 
-    def add_exception_handler(self, exception_class, handler):
+    def add_exception_handler(self, exception_class, handler, **kwargs):
         """ Bind a function to render exceptions of the given class and all
         sub classes.
 
@@ -103,12 +103,12 @@ class Application(object):
           * the exception to be rendered
         """
         self.exception_dispatcher.add(
-            ExceptionBinding(exception_class, handler)
+            ExceptionBinding(exception_class, handler, **kwargs)
         )
 
-    def exception_handler(self, exception_class):
+    def exception_handler(self, exception_class, **kwargs):
         def wrapper(handler):
-            self.add_exception_handler(exception_class, handler)
+            self.add_exception_handler(exception_class, handler, **kwargs)
             return handler
         return wrapper
 
