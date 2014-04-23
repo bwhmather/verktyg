@@ -42,7 +42,7 @@ class Binding(BindingFactory, Representation):
         Quality of source.  Multiplied by the accept q value to give quality of
         biding if mimetypes match.  Name by convention from other servers
     """
-    def __init__(self, name, action, method='GET',
+    def __init__(self, name, action, method='GET', *,
                  content_type=None, language=None, charset=None, qs=None):
         self.name = name
         self.method = method
@@ -80,7 +80,7 @@ class ExceptionBinding(BindingFactory, Representation):
         Function accepting `(application, request, exception)` and returning
         a werkzeug response object.
     """
-    def __init__(self, exception_class, action,
+    def __init__(self, exception_class, action, *,
                  content_type=None, language=None, charset=None, qs=None):
 
         self.exception_class = exception_class
