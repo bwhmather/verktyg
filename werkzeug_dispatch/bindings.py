@@ -63,7 +63,7 @@ class Binding(BindingFactory, Representation):
             self.__class__.__name__,
             repr(self.name),
             repr(self.method),
-            repr(self._content_type)
+            repr(self.content_type),
         )
 
 
@@ -95,3 +95,10 @@ class ExceptionBinding(BindingFactory, Representation):
 
     def get_bindings(self):
         yield self
+
+    def __repr__(self):
+        return '<%s %s %s>' % (
+            self.__class__.__name__,
+            repr(self.exception_class),
+            repr(self.content_type),
+        )
