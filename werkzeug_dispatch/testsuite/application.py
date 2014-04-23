@@ -14,7 +14,7 @@ from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug import Response, BaseResponse
 from werkzeug.routing import Rule
-from werkzeug.exceptions import HTTPException, ImATeapot
+from werkzeug.exceptions import HTTPException, NotFound, ImATeapot
 
 from werkzeug_dispatch.views import expose
 from werkzeug_dispatch.application import Application
@@ -104,6 +104,55 @@ class ApplicationTestCase(WerkzeugTestCase):
 
         self.assertTrue(got_request)
         self.assertTrue(got_response)
+
+    def test_exception_content_type(self):
+        app = Application()
+
+        @app.exception_handler(HTTPException)
+        def default_handler(app, req, exception):
+            return Response('default handler', status=exception.code)
+
+        @app.exception_handler(HTTPException, content_type='text/json')
+        def default_json_handler(app, req, exception):
+            return Response(
+                '{"type": "json"}',
+                status=exception.code,
+                content_type='text/json'
+            )
+
+        @app.exception_handler(NotFound, content_type='text/html')
+        def html_not_found_handler(app, req, exception):
+            return Response('pretty NotFound', status=exception.code)
+
+        @app.expose(route='/raise_418')
+        def raise_418(app, req):
+            raise ImATeapot()
+
+        @app.expose(route='/raise_404')
+        def raise_404(app, req):
+            raise NotFound()
+
+        client = Client(app, BaseResponse)
+
+        resp = client.get('/raise_418')
+        self.assertEqual(resp.status_code, 418)
+        self.assertEqual(resp.get_data(), b'default handler')
+
+        resp = client.get('raise_418', headers=[('Accept', 'text/json')])
+        self.assertEqual(resp.status_code, 418)
+        self.assertEqual(resp.get_data(), b'{"type": "json"}')
+        self.assertEqual(resp.headers['Content-Type'], 'text/json')
+
+        # 404 error has a pretty html representation but uses default renderer
+        # for json
+        resp = client.get('/raise_404', headers=[('Accept', 'text/html;')])
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.get_data(), b'pretty NotFound')
+
+        resp = client.get('raise_404', headers=[('Accept', 'text/json')])
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.get_data(), b'{"type": "json"}')
+        self.assertEqual(resp.headers['Content-Type'], 'text/json')
 
 
 def suite():
