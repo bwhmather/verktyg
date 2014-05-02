@@ -108,6 +108,9 @@ class Application(object):
         )
 
     def exception_handler(self, exception_class, **kwargs):
+        """ Decorator that can be used to bind an exception handler to the
+        application.  Takes the same arguments as `ExceptionBinding`
+        """
         def wrapper(handler):
             self.add_exception_handler(exception_class, handler, **kwargs)
             return handler

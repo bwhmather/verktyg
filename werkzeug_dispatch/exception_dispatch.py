@@ -57,6 +57,13 @@ class ExceptionDispatcher(ExceptionBindingFactory):
         """Bind a handlers from a handler factory to render exceptions of a
         particular class or representation.
         Dispatchers can be nested
+
+        :param exception_factory:
+            an instance of `ExceptionBindingFactory` or other object provifing
+            a `get_bindings` method which returns an iterator that of exception
+            bindings.  Both `ExceptionBinding` and `ExceptionDispatcher`
+            implement this interface so both can be nested using a call to
+            `add`
         """
         for binding in handler_factory.get_bindings():
             if binding.exception_class not in self._bindings:
@@ -68,6 +75,25 @@ class ExceptionDispatcher(ExceptionBindingFactory):
 
     def lookup(self, exception_class,
                accept='*/*', accept_language=None, accept_charset=None):
+        """ Given an exception class and the contents of a requests accept
+        headers, returns the corresponding exception handler.
+
+        :param exception_class:
+            Matched to exception handlers using `isinstance`.
+
+        :param accept:
+            See `werkzeug_dispatch.accept.select_representation` for details
+
+        :param accept_language:
+            See `werkzeug_dispatch.accept.select_representation` for details
+
+        :param accept_charset:
+            See `werkzeug_dispatch.accept.select_representation` for details
+
+        :return:
+            A callable object accepting am application object, a request, and
+            an exception and returning a werkzeug response
+        """
         # Use the method resolution order of the exception to rank handlers
         for cls in exception_class.mro():
             if cls not in self._bindings:
