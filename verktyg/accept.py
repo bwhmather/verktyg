@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 """
     verktyg.accept
-    ~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~
 
     Code for selecting handlers based on accept headers
 
