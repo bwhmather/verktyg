@@ -80,8 +80,15 @@ class JsonView(View):
 
     def __call__(self, env, req, *args, **kwargs):
         res = super(JsonView, self).__call__(env, req, *args, **kwargs)
+
         if isinstance(res, Response):
+            # rendering already done
             return res
+
+        if res is None:
+            # no content
+            return Response(status=204)
+
         return Response(json.dumps(res), content_type='text/json')
 
 
