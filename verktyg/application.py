@@ -67,9 +67,9 @@ class Application(object):
         for route in routes:
             self.url_map.add_routes(route)
 
-    def add_views(self, *views):
+    def add_bindings(self, *views):
         for view in views:
-            self.dispatcher.add(view)
+            self.dispatcher.add_bindings(view)
 
     def expose(self, endpoint=None, *args, **kwargs):
         def wrapper(f):

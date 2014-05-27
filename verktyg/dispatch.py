@@ -69,10 +69,10 @@ class Dispatcher(BindingFactory):
         self._views = []
 
         for view in views:
-            self.add(view)
+            self.add_bindings(view)
 
-    def add(self, view_factory):
-        """ Add views from view factory to this dispatcher.
+    def add_bindings(self, view_factory):
+        """ Add bindings from bindings factory to this dispatcher.
         Dispatchers can be nested
         """
         for view in view_factory.get_bindings():

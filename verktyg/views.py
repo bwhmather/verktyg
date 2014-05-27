@@ -94,7 +94,7 @@ class JsonView(View):
 
 def expose(dispatcher, name, *args, **kwargs):
     def decorator(f):
-        dispatcher.add(TemplateView(name, f, *args, **kwargs))
+        dispatcher.add_bindings(TemplateView(name, f, *args, **kwargs))
         return f
     return decorator
 
@@ -107,6 +107,6 @@ def expose_html(*args, **kwargs):
 
 def expose_json(dispatcher, name, *args, **kwargs):
     def decorator(f):
-        dispatcher.add(JsonView(name, f, *args, **kwargs))
+        dispatcher.add_bindings(JsonView(name, f, *args, **kwargs))
         return f
     return decorator
