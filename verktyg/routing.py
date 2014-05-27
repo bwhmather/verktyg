@@ -30,8 +30,8 @@
     ... ], default_subdomain='www')
 
     If the application doesn't use subdomains it's perfectly fine to not set
-    the default subdomain and not use the `Subdomain` rule factory.  The
-    endpoint in the rules can be anything, for example import paths or unique
+    the default subdomain and not use the `Subdomain` route factory.  The
+    endpoint in the routes can be anything, for example import paths or unique
     identifiers.  The WSGI application can use those endpoints to get the
     handler for that URL.  It doesn't have to be a string at all but it's
     recommended.
@@ -79,7 +79,7 @@
     >>> c.match("/browse/42/23")
     ('kb/browse', {'id': 42, 'page': 23})
 
-    If matching fails you get a `NotFound` exception, if the rule thinks
+    If matching fails you get a `NotFound` exception, if the route thinks
     it's a good idea to redirect (for example because the URL was defined
     to have a slash at the end but the request was missing that slash) it
     will raise a `RequestRedirect` exception.  Both are subclasses of the
@@ -108,8 +108,8 @@ from werkzeug._compat import itervalues, iteritems, to_unicode, to_bytes, \
 from werkzeug.datastructures import ImmutableDict, MultiDict
 
 
-_rule_re = re.compile(r'''
-    (?P<static>[^<]*)                           # static rule data
+_route_re = re.compile(r'''
+    (?P<static>[^<]*)                           # static route data
     <
     (?:
         (?P<converter>[a-zA-Z_][a-zA-Z0-9_]*)   # converter name
@@ -119,7 +119,7 @@ _rule_re = re.compile(r'''
     (?P<variable>[a-zA-Z_][a-zA-Z0-9_]*)        # variable name
     >
 ''', re.VERBOSE)
-_simple_rule_re = re.compile(r'<([^>]+)>')
+_simple_route_re = re.compile(r'<([^>]+)>')
 _converter_args_re = re.compile(r'''
     ((?P<name>\w+)\s*=\s*)?
     (?P<value>
@@ -172,19 +172,19 @@ def parse_converter_args(argstr):
     return tuple(args), kwargs
 
 
-def parse_rule(rule):
-    """Parse a rule and return it as generator. Each iteration yields tuples
+def parse_route(route):
+    """Parse a route and return it as generator. Each iteration yields tuples
     in the form ``(converter, arguments, variable)``. If the converter is
     `None` it's a static url part, otherwise it's a dynamic one.
 
     :internal:
     """
     pos = 0
-    end = len(rule)
-    do_match = _rule_re.match
+    end = len(route)
+    do_match = _route_re.match
     used_names = set()
     while pos < end:
-        m = do_match(rule, pos)
+        m = do_match(route, pos)
         if m is None:
             break
         data = m.groupdict()
@@ -198,9 +198,9 @@ def parse_rule(rule):
         yield converter, data['args'] or None, variable
         pos = m.end()
     if pos < end:
-        remaining = rule[pos:]
+        remaining = route[pos:]
         if '>' in remaining or '<' in remaining:
-            raise ValueError('malformed url rule: %r' % rule)
+            raise ValueError('malformed url rule: %r' % route)
         yield None, None, remaining
 
 
@@ -233,7 +233,7 @@ class RequestSlash(RoutingException):
 
 
 class RequestAliasRedirect(RoutingException):
-    """This rule is an alias and wants to redirect to the canonical URL."""
+    """This route is an alias and wants to redirect to the canonical URL."""
 
     def __init__(self, matched_values):
         self.matched_values = matched_values
@@ -251,20 +251,20 @@ class BuildError(RoutingException, LookupError):
 
 
 class ValidationError(ValueError):
-    """Validation error.  If a rule converter raises this exception the rule
+    """Validation error.  If a route converter raises this exception the route
     does not match the current URL and the next URL is tried.
     """
 
 
 class RouteFactory(object):
-    """As soon as you have more complex URL setups it's a good idea to use rule
+    """As soon as you have more complex URL setups it's a good idea to use route
     factories to avoid repetitive tasks.  Some of them are builtin, others can
-    be added by subclassing `RouteFactory` and overriding `get_rules`.
+    be added by subclassing `RouteFactory` and overriding `get_routes`.
     """
 
-    def get_rules(self, router):
+    def get_routes(self, router):
         """Subclasses of `RouteFactory` have to override this method and return
-        an iterable of rules."""
+        an iterable of routes."""
         raise NotImplementedError()
 
 
@@ -287,16 +287,16 @@ class Subdomain(RouteFactory):
     for the current request.
     """
 
-    def __init__(self, subdomain, rules):
+    def __init__(self, subdomain, routes):
         self.subdomain = subdomain
-        self.rules = rules
+        self.routes = routes
 
-    def get_rules(self, router):
-        for rulefactory in self.rules:
-            for rule in rulefactory.get_rules(router):
-                rule = rule.empty()
-                rule.subdomain = self.subdomain
-                yield rule
+    def get_routes(self, router):
+        for routefactory in self.routes:
+            for route in routefactory.get_routes(router):
+                route = route.empty()
+                route.subdomain = self.subdomain
+                yield route
 
 
 class Submount(RouteFactory):
@@ -310,19 +310,19 @@ class Submount(RouteFactory):
             ])
         ])
 
-    Now the rule ``'blog/show'`` matches ``/blog/entry/<entry_slug>``.
+    Now the route ``'blog/show'`` matches ``/blog/entry/<entry_slug>``.
     """
 
-    def __init__(self, path, rules):
+    def __init__(self, path, routes):
         self.path = path.rstrip('/')
-        self.rules = rules
+        self.routes = routes
 
-    def get_rules(self, router):
-        for rulefactory in self.rules:
-            for rule in rulefactory.get_rules(router):
-                rule = rule.empty()
-                rule.rule = self.path + rule.rule
-                yield rule
+    def get_routes(self, router):
+        for routefactory in self.routes:
+            for route in routefactory.get_routes(router):
+                route = route.empty()
+                route.route = self.path + route.route
+                yield route
 
 
 class EndpointPrefix(RouteFactory):
@@ -338,23 +338,23 @@ class EndpointPrefix(RouteFactory):
         ])
     """
 
-    def __init__(self, prefix, rules):
+    def __init__(self, prefix, routes):
         self.prefix = prefix
-        self.rules = rules
+        self.routes = routes
 
-    def get_rules(self, router):
-        for rulefactory in self.rules:
-            for rule in rulefactory.get_rules(router):
-                rule = rule.empty()
-                rule.endpoint = self.prefix + rule.endpoint
-                yield rule
+    def get_routes(self, router):
+        for routefactory in self.routes:
+            for route in routefactory.get_routes(router):
+                route = route.empty()
+                route.endpoint = self.prefix + route.endpoint
+                yield route
 
 
 class RouteTemplate(object):
-    """Returns copies of the rules wrapped and expands string templates in
-    the endpoint, rule, defaults or subdomain sections.
+    """Returns copies of the routes wrapped and expands string templates in
+    the endpoint, route, defaults or subdomain sections.
 
-    Here a small example for such a rule template::
+    Here a small example for such a route template::
 
         from verktyg.routing import Router, Route, RouteTemplate
 
@@ -365,50 +365,50 @@ class RouteTemplate(object):
 
         router = Router([resource(name='user'), resource(name='page')])
 
-    When a rule template is called the keyword arguments are used to
+    When a route template is called the keyword arguments are used to
     replace the placeholders in all the string parameters.
     """
 
-    def __init__(self, rules):
-        self.rules = list(rules)
+    def __init__(self, routes):
+        self.routes = list(routes)
 
     def __call__(self, *args, **kwargs):
-        return RouteTemplateFactory(self.rules, dict(*args, **kwargs))
+        return RouteTemplateFactory(self.routes, dict(*args, **kwargs))
 
 
 class RouteTemplateFactory(RouteFactory):
-    """A factory that fills in template variables into rules.  Used by
+    """A factory that fills in template variables into routes.  Used by
     `RouteTemplate` internally.
 
     :internal:
     """
 
-    def __init__(self, rules, context):
-        self.rules = rules
+    def __init__(self, routes, context):
+        self.routes = routes
         self.context = context
 
-    def get_rules(self, router):
-        for rulefactory in self.rules:
-            for rule in rulefactory.get_rules(router):
+    def get_routes(self, router):
+        for routefactory in self.routes:
+            for route in routefactory.get_routes(router):
                 new_defaults = subdomain = None
-                if rule.defaults:
+                if route.defaults:
                     new_defaults = {}
-                    for key, value in iteritems(rule.defaults):
+                    for key, value in iteritems(route.defaults):
                         if isinstance(value, string_types):
                             value = format_string(value, self.context)
                         new_defaults[key] = value
-                if rule.subdomain is not None:
-                    subdomain = format_string(rule.subdomain, self.context)
-                new_endpoint = rule.endpoint
+                if route.subdomain is not None:
+                    subdomain = format_string(route.subdomain, self.context)
+                new_endpoint = route.endpoint
                 if isinstance(new_endpoint, string_types):
                     new_endpoint = format_string(new_endpoint, self.context)
                 yield Route(
-                    format_string(rule.rule, self.context),
+                    format_string(route.route, self.context),
                     new_defaults,
                     subdomain,
-                    rule.build_only,
+                    route.build_only,
                     new_endpoint,
-                    rule.strict_slashes
+                    route.strict_slashes
                 )
 
 
@@ -416,8 +416,8 @@ class RouteTemplateFactory(RouteFactory):
 class Route(RouteFactory):
     """A Route represents one URL pattern.  There are some options for `Route`
     that change the way it behaves and are passed to the `Route` constructor.
-    Note that besides the rule-string all arguments *must* be keyword arguments
-    in order to not break the application on Verktyg upgrades.
+    Note that besides the route-string all arguments *must* be keyword
+    arguments in order to not break the application on Verktyg upgrades.
 
     `string`
         Route strings basically are just normal URL paths with placeholders in
@@ -425,7 +425,7 @@ class Route(RouteFactory):
         arguments are optional.  If no converter is defined the `default`
         converter is used which means `string` in the normal configuration.
 
-        URL rules that end with a slash are branch URLs, others are leaves.
+        URL routes that end with a slash are branch URLs, others are leaves.
         If you have `strict_slashes` enabled (which is the default), all
         branch URLs that are matched without a trailing slash will trigger a
         redirect to the same URL with the missing slash appended.
@@ -433,12 +433,12 @@ class Route(RouteFactory):
         The converters are defined on the `Router`.
 
     `endpoint`
-        The endpoint for this rule. This can be anything. A reference to a
+        The endpoint for this route. This can be anything. A reference to a
         function, a string, a number etc.  The preferred way is using a string
         because the endpoint is used for URL generation.
 
     `defaults`
-        An optional dict with defaults for other rules with the same endpoint.
+        An optional dict with defaults for other routes with the same endpoint.
         This is a bit tricky but useful if you want to have unique URLs::
 
             router = Router([
@@ -452,7 +452,7 @@ class Route(RouteFactory):
         generation.
 
     `subdomain`
-        The subdomain rule string for this rule. If not specified the rule
+        The subdomain route string for this route. If not specified the route
         only matches for the `default_subdomain` of the router.  If the router
         is not bound to a subdomain this feature is disabled.
 
@@ -465,11 +465,11 @@ class Route(RouteFactory):
             ])
 
     `strict_slashes`
-        Override the `Router` setting for `strict_slashes` only for this rule.
+        Override the `Router` setting for `strict_slashes` only for this route.
         If not specified the `Router` setting is used.
 
     `build_only`
-        Set this to True and the rule will never match but will create a URL
+        Set this to True and the route will never match but will create a URL
         that can be build. This is useful if you have resources on a subdomain
         or folder that are not handled by the WSGI application (like static
         data)
@@ -479,7 +479,7 @@ class Route(RouteFactory):
         callable it's called with the url adapter that triggered the match and
         the values of the URL as keyword arguments and has to return the target
         for the redirect, otherwise it has to be a string with placeholders in
-        rule syntax::
+        route syntax::
 
             def foo_with_slug(adapter, id):
                 # ask the database for the slug for the old id.  this of
@@ -492,7 +492,7 @@ class Route(RouteFactory):
                 Route('/other/old/url/<int:id>', redirect_to=foo_with_slug)
             ])
 
-        When the rule is matched the routing system will raise a
+        When the route is matched the routing system will raise a
         `RequestRedirect` exception with the target for the redirect.
 
         Keep in mind that the URL will be joined against the URL root of the
@@ -500,12 +500,12 @@ class Route(RouteFactory):
         really mean root of that domain.
 
     `alias`
-        If enabled this rule serves as an alias for another rule with the same
-        endpoint and arguments.
+        If enabled this route serves as an alias for another route with the
+        same endpoint and arguments.
 
     `host`
         If provided and the router has host matching enabled this can be
-        used to provide a match rule for the whole host.  This also means
+        used to provide a match route for the whole host.  This also means
         that the subdomain feature is disabled.
     """
 
@@ -514,7 +514,7 @@ class Route(RouteFactory):
                  redirect_to=None, alias=False, host=None):
         if not string.startswith('/'):
             raise ValueError('urls must start with a leading slash')
-        self.rule = string
+        self.route = string
         self.is_leaf = not string.endswith('/')
 
         self.router = None
@@ -534,21 +534,21 @@ class Route(RouteFactory):
         self._trace = self._converters = self._regex = self._weights = None
 
     def empty(self):
-        """Return an unbound copy of this rule.  This can be useful if you
+        """Return an unbound copy of this route.  This can be useful if you
         want to reuse an already bound URL for another router."""
         defaults = None
         if self.defaults:
             defaults = dict(self.defaults)
-        return Route(self.rule, defaults, self.subdomain,
+        return Route(self.route, defaults, self.subdomain,
                      self.build_only, self.endpoint, self.strict_slashes,
                      self.redirect_to, self.alias, self.host)
 
-    def get_rules(self, router):
+    def get_routes(self, router):
         yield self
 
     def refresh(self):
         """Rebinds and refreshes the URL.  Call this if you modified the
-        rule in place.
+        route in place.
 
         :internal:
         """
@@ -556,12 +556,12 @@ class Route(RouteFactory):
 
     def bind(self, router, rebind=False):
         """Bind the url to a router and create a regular expression based on
-        the information from the rule itself and the defaults from the router.
+        the information from the route itself and the defaults from the router.
 
         :internal:
         """
         if self.router is not None and not rebind:
-            raise RuntimeError('url rule %r already bound to router %r' %
+            raise RuntimeError('url route %r already bound to router %r' %
                                (self, self.router))
         self.router = router
         if self.strict_slashes is None:
@@ -582,20 +582,20 @@ class Route(RouteFactory):
 
     def compile(self):
         """Compiles the regular expression and stores it."""
-        assert self.router is not None, 'rule not bound'
+        assert self.router is not None, 'route not bound'
 
         if self.router.host_matching:
-            domain_rule = self.host or ''
+            domain_route = self.host or ''
         else:
-            domain_rule = self.subdomain or ''
+            domain_route = self.subdomain or ''
 
         self._trace = []
         self._converters = {}
         self._weights = []
         regex_parts = []
 
-        def _build_regex(rule):
-            for converter, arguments, variable in parse_rule(rule):
+        def _build_regex(route):
+            for converter, arguments, variable in parse_route(route):
                 if converter is None:
                     regex_parts.append(re.escape(variable))
                     self._trace.append((False, variable))
@@ -618,10 +618,10 @@ class Route(RouteFactory):
                     self._weights.append((1, convobj.weight))
                     self.arguments.add(str(variable))
 
-        _build_regex(domain_rule)
+        _build_regex(domain_route)
         regex_parts.append('\\|')
         self._trace.append((False, '|'))
-        _build_regex(self.is_leaf and self.rule or self.rule.rstrip('/'))
+        _build_regex(self.is_leaf and self.route or self.route.rstrip('/'))
         if not self.is_leaf:
             self._trace.append((False, '/'))
 
@@ -636,12 +636,12 @@ class Route(RouteFactory):
         self._regex = re.compile(regex, re.UNICODE)
 
     def match(self, path):
-        """Check if the rule matches a given path. Path is a string in the
+        """Check if the route matches a given path. Path is a string in the
         form ``"subdomain|/path"`` and is assembled by the router.  If
         the router is doing host matching the subdomain part will be the host
         instead.
 
-        If the rule matches a dict with the converted values is returned,
+        If the route matches a dict with the converted values is returned,
         otherwise the return value is `None`.
 
         :internal:
@@ -678,7 +678,7 @@ class Route(RouteFactory):
                 return result
 
     def build(self, values, append_unknown=True):
-        """Assembles the relative url for that rule and the subdomain.
+        """Assembles the relative url for that route and the subdomain.
         If building doesn't work for some reasons `None` is returned.
 
         :internal:
@@ -713,14 +713,14 @@ class Route(RouteFactory):
 
         return domain_part, url
 
-    def provides_defaults_for(self, rule):
-        """Check if this rule has defaults for a given rule.
+    def provides_defaults_for(self, route):
+        """Check if this route has defaults for a given route.
 
         :internal:
         """
         return not self.build_only and self.defaults and \
-            self.endpoint == rule.endpoint and self != rule and \
-            self.arguments == rule.arguments
+            self.endpoint == route.endpoint and self != route and \
+            self.arguments == route.arguments
 
     def suitable_for(self, values):
         """Check if the dict of values has enough data for url generation.
@@ -749,10 +749,10 @@ class Route(RouteFactory):
 
         Current implementation:
 
-        1.  rules without any arguments come first for performance
+        1.  routes without any arguments come first for performance
             reasons only as we expect them to match faster and some
             common ones usually don't have any arguments (index pages etc.)
-        2.  The more complex rules come first so the second argument is the
+        2.  The more complex routes come first so the second argument is the
             negative length of the number of weights.
         3.  lastly we order by the actual weights.
 
@@ -778,7 +778,7 @@ class Route(RouteFactory):
         return not self.__eq__(other)
 
     def __str__(self):
-        return self.rule
+        return self.route
 
     @native_string_result
     def __repr__(self):
@@ -973,16 +973,16 @@ DEFAULT_CONVERTERS = {
 class Router(object):
     """The router class stores all the URL rules and some configuration
     parameters.  Some of the configuration values are only stored on the
-    `Router` instance since those affect all rules, others are just defaults
-    and can be overridden for each rule.  Note that you have to specify all
-    arguments besides the `rules` as keyword arguments!
+    `Router` instance since those affect all routes, others are just defaults
+    and can be overridden for each route.  Note that you have to specify all
+    arguments besides the `routes` as keyword arguments!
 
-    :param rules: sequence of url rules for this router.
-    :param default_subdomain: The default subdomain for rules without a
+    :param routes: sequence of url routes for this router.
+    :param default_subdomain: The default subdomain for routes without a
                               subdomain defined.
     :param charset: charset of the url. defaults to ``"utf-8"``
     :param strict_slashes: Take care of trailing slashes.
-    :param redirect_defaults: This will redirect to the default rule if it
+    :param redirect_defaults: This will redirect to the default route if it
                               wasn't visited that way. This helps creating
                               unique URLs.
     :param converters: A dict of converters that adds additional converters
@@ -994,19 +994,19 @@ class Router(object):
     :param encoding_errors: the error method to use for decoding
     :param host_matching: if set to `True` it enables the host matching
                           feature and disables the subdomain one.  If
-                          enabled the `host` parameter to rules is used
+                          enabled the `host` parameter to routes is used
                           instead of the `subdomain` one.
     """
 
     #:    a dict of default converters to be used.
     default_converters = ImmutableDict(DEFAULT_CONVERTERS)
 
-    def __init__(self, rules=None, default_subdomain='', charset='utf-8',
+    def __init__(self, routes=None, default_subdomain='', charset='utf-8',
                  strict_slashes=True, redirect_defaults=True,
                  converters=None, sort_parameters=False, sort_key=None,
                  encoding_errors='replace', host_matching=False):
-        self._rules = []
-        self._rules_by_endpoint = {}
+        self._routes = []
+        self._routes_by_endpoint = {}
         self._remap = True
 
         self.default_subdomain = default_subdomain
@@ -1023,10 +1023,10 @@ class Router(object):
         self.sort_parameters = sort_parameters
         self.sort_key = sort_key
 
-        self.add_routes(*rules or ())
+        self.add_routes(*routes or ())
 
     def is_endpoint_expecting(self, endpoint, *arguments):
-        """Iterate over all rules and check if the endpoint expects
+        """Iterate over all routes and check if the endpoint expects
         the arguments provided.  This is for example useful if you have
         some URLs that expect a language code and others that do not and
         you want to wrap the builder a bit so that the current language
@@ -1040,41 +1040,41 @@ class Router(object):
         """
         self.update()
         arguments = set(arguments)
-        for rule in self._rules_by_endpoint[endpoint]:
-            if arguments.issubset(rule.arguments):
+        for route in self._routes_by_endpoint[endpoint]:
+            if arguments.issubset(route.arguments):
                 return True
         return False
 
-    def iter_rules(self, endpoint=None):
-        """Iterate over all rules or the rules of an endpoint.
+    def iter_routes(self, endpoint=None):
+        """Iterate over all routes or the routes of an endpoint.
 
-        :param endpoint: if provided only the rules for that endpoint
+        :param endpoint: if provided only the routes for that endpoint
                          are returned.
         :return: an iterator
         """
         self.update()
         if endpoint is not None:
-            return iter(self._rules_by_endpoint[endpoint])
-        return iter(self._rules)
+            return iter(self._routes_by_endpoint[endpoint])
+        return iter(self._routes)
 
     def add_routes(self, *factories):
-        """Add a new rule or factory to the router and bind it.  Requires that the
-        rule is not bound to another router.
+        """Add a new route or factory to the router and bind it.  Requires that the
+        route is not bound to another router.
 
-        :param rulefactory: a :class:`Route` or :class:`RouteFactory`
+        :param routefactory: a :class:`Route` or :class:`RouteFactory`
         """
         for factory in factories:
-            for rule in factory.get_rules(self):
-                rule.bind(self)
-                self._rules.append(rule)
-                self._rules_by_endpoint.setdefault(
-                    rule.endpoint, []
-                ).append(rule)
+            for route in factory.get_routes(self):
+                route.bind(self)
+                self._routes.append(route)
+                self._routes_by_endpoint.setdefault(
+                    route.endpoint, []
+                ).append(route)
         self._remap = True
 
     def match(self, server_name, script_name, subdomain=None,
               url_scheme='http', path_info=None, query_args=None,
-              return_rule=False):
+              return_route=False):
         """The usage is simple: you just pass the match method the current
         path info.  The following things can then happen:
 
@@ -1092,8 +1092,8 @@ class Router(object):
           `HTTPException`.
 
         - you get a tuple in the form ``(endpoint, arguments)`` if there is
-          a match (unless `return_rule` is True, in which case you get a tuple
-          in the form ``(rule, arguments)``)
+          a match (unless `return_route` is True, in which case you get a tuple
+          in the form ``(route, arguments)``)
 
         If the path info is not passed to the match method the default path
         info of the router is used (defaults to the root URL if not defined
@@ -1129,7 +1129,7 @@ class Router(object):
 
         :param path_info: the path info to use for matching.  Overrides the
                           path info specified on binding.
-        :param return_rule: return the rule that matched instead of just the
+        :param return_route: return the route that matched instead of just the
                             endpoint (defaults to `False`).
         :param query_args: optional query arguments that are used for
                            automatic redirects as string or dictionary.  It's
@@ -1147,33 +1147,33 @@ class Router(object):
         path = u'%s|/%s' % (self.router.host_matching and self.server_name or
                             self.subdomain, path_info.lstrip('/'))
 
-        for rule in self.router._rules:
+        for route in self.router._routes:
             try:
-                rv = rule.match(path)
+                rv = route.match(path)
             except RequestSlash:
                 raise RequestRedirect(self.make_redirect_url(
                     url_quote(path_info, self.router.charset,
                               safe='/:|+') + '/', query_args))
             except RequestAliasRedirect as e:
                 raise RequestRedirect(self.make_alias_redirect_url(
-                    path, rule.endpoint, e.matched_values, query_args))
+                    path, route.endpoint, e.matched_values, query_args))
             if rv is None:
                 continue
 
             if self.router.redirect_defaults:
-                redirect_url = self.get_default_redirect(rule, rv, query_args)
+                redirect_url = self.get_default_redirect(route, rv, query_args)
                 if redirect_url is not None:
                     raise RequestRedirect(redirect_url)
 
-            if rule.redirect_to is not None:
-                if isinstance(rule.redirect_to, string_types):
+            if route.redirect_to is not None:
+                if isinstance(route.redirect_to, string_types):
                     def _handle_match(match):
                         value = rv[match.group(1)]
-                        return rule._converters[match.group(1)].to_url(value)
-                    redirect_url = _simple_rule_re.sub(_handle_match,
-                                                       rule.redirect_to)
+                        return route._converters[match.group(1)].to_url(value)
+                    redirect_url = _simple_route_re.sub(_handle_match,
+                                                        route.redirect_to)
                 else:
-                    redirect_url = rule.redirect_to(self, **rv)
+                    redirect_url = route.redirect_to(self, **rv)
                 raise RequestRedirect(str(url_join('%s://%s%s%s' % (
                     self.url_scheme,
                     self.subdomain and self.subdomain + '.' or '',
@@ -1181,10 +1181,10 @@ class Router(object):
                     self.script_name
                 ), redirect_url)))
 
-            if return_rule:
-                return rule, rv
+            if return_route:
+                return route, rv
             else:
-                return rule.endpoint, rv
+                return route.endpoint, rv
 
         raise NotFound()
 
@@ -1289,18 +1289,18 @@ class Router(object):
                            path_info, query_args=query_args)
 
     def update(self):
-        """Called before matching and building to keep the compiled rules
+        """Called before matching and building to keep the compiled routes
         in the correct order after things changed.
         """
         if self._remap:
-            self._rules.sort(key=lambda x: x.match_compare_key())
-            for rules in itervalues(self._rules_by_endpoint):
-                rules.sort(key=lambda x: x.build_compare_key())
+            self._routes.sort(key=lambda x: x.match_compare_key())
+            for routes in itervalues(self._routes_by_endpoint):
+                routes.sort(key=lambda x: x.build_compare_key())
             self._remap = False
 
     def __repr__(self):
-        rules = self.iter_rules()
-        return '%s(%s)' % (self.__class__.__name__, pformat(list(rules)))
+        routes = self.iter_routes()
+        return '%s(%s)' % (self.__class__.__name__, pformat(list(routes)))
 
 
 class Dispatcher(object):
@@ -1374,7 +1374,7 @@ class Dispatcher(object):
                 return e
             raise
 
-    def match(self, path_info=None, return_rule=False, query_args=None):
+    def match(self, path_info=None, return_route=False, query_args=None):
         """The usage is simple: you just pass the match method the current
         path info.  The following things can then happen:
 
@@ -1392,8 +1392,8 @@ class Dispatcher(object):
           similar to all other subclasses of `HTTPException`.
 
         - you get a tuple in the form ``(endpoint, arguments)`` if there is
-          a match (unless `return_rule` is True, in which case you get a tuple
-          in the form ``(rule, arguments)``)
+          a match (unless `return_route` is True, in which case you get a tuple
+          in the form ``(route, arguments)``)
 
         If the path info is not passed to the match method the default path
         info of the map is used (defaults to the root URL if not defined
@@ -1429,7 +1429,7 @@ class Dispatcher(object):
 
         :param path_info: the path info to use for matching.  Overrides the
                           path info specified on binding.
-        :param return_rule: return the rule that matched instead of just the
+        :param return_route: return the route that matched instead of just the
                             endpoint (defaults to `False`).
         :param query_args: optional query arguments that are used for
                            automatic redirects as string or dictionary.  It's
@@ -1437,7 +1437,7 @@ class Dispatcher(object):
                            for URL matching.
 
         .. versionadded:: 0.6
-           `return_rule` was added.
+           `return_route` was added.
 
         .. versionadded:: 0.7
            `query_args` was added.
@@ -1456,33 +1456,33 @@ class Dispatcher(object):
         path = u'%s|/%s' % (self.router.host_matching and self.server_name or
                             self.subdomain, path_info.lstrip('/'))
 
-        for rule in self.router._rules:
+        for route in self.router._routes:
             try:
-                rv = rule.match(path)
+                rv = route.match(path)
             except RequestSlash:
                 raise RequestRedirect(self.make_redirect_url(
                     url_quote(path_info, self.router.charset,
                               safe='/:|+') + '/', query_args))
             except RequestAliasRedirect as e:
                 raise RequestRedirect(self.make_alias_redirect_url(
-                    path, rule.endpoint, e.matched_values, query_args))
+                    path, route.endpoint, e.matched_values, query_args))
             if rv is None:
                 continue
 
             if self.router.redirect_defaults:
-                redirect_url = self.get_default_redirect(rule, rv, query_args)
+                redirect_url = self.get_default_redirect(route, rv, query_args)
                 if redirect_url is not None:
                     raise RequestRedirect(redirect_url)
 
-            if rule.redirect_to is not None:
-                if isinstance(rule.redirect_to, string_types):
+            if route.redirect_to is not None:
+                if isinstance(route.redirect_to, string_types):
                     def _handle_match(match):
                         value = rv[match.group(1)]
-                        return rule._converters[match.group(1)].to_url(value)
-                    redirect_url = _simple_rule_re.sub(_handle_match,
-                                                       rule.redirect_to)
+                        return route._converters[match.group(1)].to_url(value)
+                    redirect_url = _simple_route_re.sub(_handle_match,
+                                                        route.redirect_to)
                 else:
-                    redirect_url = rule.redirect_to(self, **rv)
+                    redirect_url = route.redirect_to(self, **rv)
                 raise RequestRedirect(str(url_join('%s://%s%s%s' % (
                     self.url_scheme,
                     self.subdomain and self.subdomain + '.' or '',
@@ -1490,15 +1490,15 @@ class Dispatcher(object):
                     self.script_name
                 ), redirect_url)))
 
-            if return_rule:
-                return rule, rv
+            if return_route:
+                return route, rv
             else:
-                return rule.endpoint, rv
+                return route.endpoint, rv
 
         raise NotFound()
 
     def test(self, path_info=None):
-        """Test if a rule would match.  Works like `match` but returns `True`
+        """Test if a route would match.  Works like `match` but returns `True`
         if the URL matches, or `False` if it does not exist.
 
         :param path_info: the path info to use for matching.  Overrides the
@@ -1528,20 +1528,20 @@ class Dispatcher(object):
             subdomain = to_unicode(subdomain, 'ascii')
         return (subdomain and subdomain + u'.' or u'') + self.server_name
 
-    def get_default_redirect(self, rule, values, query_args):
+    def get_default_redirect(self, route, values, query_args):
         """A helper that returns the URL to redirect to if it finds one.
         This is used for default redirecting only.
 
         :internal:
         """
         assert self.router.redirect_defaults
-        for r in self.router._rules_by_endpoint[rule.endpoint]:
-            # every rule that comes after this one, including ourself
+        for r in self.router._routes_by_endpoint[route.endpoint]:
+            # every route that comes after this one, including ourself
             # has a lower priority for the defaults.  We order the ones
             # with the highest priority up for building.
-            if r is rule:
+            if r is route:
                 break
-            if r.provides_defaults_for(rule) and \
+            if r.provides_defaults_for(route) and \
                r.suitable_for(values):
                 values.update(r.defaults)
                 domain_part, path = r.build(values)
@@ -1613,7 +1613,7 @@ class Dispatcher(object):
         >>> urls.build("index", {'q': 'My Searchstring'})
         '/?q=My+Searchstring'
 
-        If a rule does not exist when building a `BuildError` exception is
+        If a route does not exist when building a `BuildError` exception is
         raised.
 
         :param endpoint: the endpoint of the URL to build.
@@ -1635,9 +1635,9 @@ class Dispatcher(object):
             values = {}
 
         rv = None
-        for rule in self.router._rules_by_endpoint.get(endpoint, ()):
-            if rule.suitable_for(values):
-                rv = rule.build(values, append_unknown)
+        for route in self.router._routes_by_endpoint.get(endpoint, ()):
+            if route.suitable_for(values):
+                rv = route.build(values, append_unknown)
                 if rv is not None:
                     break
         if rv is None:

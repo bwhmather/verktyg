@@ -409,13 +409,13 @@ class RoutingTestCase(WerkzeugTestCase):
         else:
             self.fail('expected request redirect exception')
 
-    def test_adapter_match_return_rule(self):
-        rule = r.Route('/foo/', endpoint='foo')
-        map = r.Router([rule])
+    def test_adapter_match_return_route(self):
+        route = r.Route('/foo/', endpoint='foo')
+        map = r.Router([route])
         adapter = map.bind('localhost', '/')
         self.assert_equal(
-            adapter.match('/foo/', return_rule=True),
-            (rule, {})
+            adapter.match('/foo/', return_route=True),
+            (route, {})
         )
 
     def test_server_name_interpolation(self):
@@ -443,7 +443,7 @@ class RoutingTestCase(WerkzeugTestCase):
         adapter = map.bind_to_environ(env, server_name='foo')
         self.assert_equal(adapter.subdomain, '<invalid>')
 
-    def test_rule_templates(self):
+    def test_route_templates(self):
         testcase = r.RouteTemplate([
             r.Submount('/test/$app', [
                 r.Route('/foo/', endpoint='handle_foo'),
@@ -467,8 +467,8 @@ class RoutingTestCase(WerkzeugTestCase):
             testcase(app='test4'),
         ])
 
-        out = sorted([(x.rule, x.subdomain, x.endpoint)
-                      for x in url_map.iter_rules()])
+        out = sorted([(x.route, x.subdomain, x.endpoint)
+                      for x in url_map.iter_routes()])
 
         self.assert_equal(out, [
             ('/blah', 'test1', 'x_bar'),
@@ -508,7 +508,7 @@ class RoutingTestCase(WerkzeugTestCase):
         a = m.bind('example.com')
         self.assert_equal(a.build('foo', {'foo': 42}), '/42')
 
-    def test_complex_routing_rules(self):
+    def test_complex_routing_routes(self):
         m = r.Router([
             r.Route('/', endpoint='index'),
             r.Route('/<int:blub>', endpoint='an_int'),
@@ -909,7 +909,7 @@ class RoutingTestCase(WerkzeugTestCase):
         else:
             self.fail('Expected redirect')
 
-    def test_unicode_rules(self):
+    def test_unicode_routes(self):
         m = r.Router([
             r.Route(u'/войти/', endpoint='enter'),
             r.Route(u'/foo+bar/', endpoint='foobar')
