@@ -1,21 +1,20 @@
 """
-Werkzeug Dispatch
-=================
+Verktyg
+=======
 
-A simple dispatcher for werkzeug.
+A web framework based on Werkzeug.
 """
-import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
-    name='werkzeug_dispatch',
-    version='0.0.1-dev',
-    url='https://github.com/bwhmather/werkzeug_dispatch',
+    name='verktyg',
+    version='0.0.1',
+    url='https://github.com/bwhmather/verktyg',
     license='BSD',
     author='Ben Mather',
     author_email='bwhmather@bwhmather.com',
-    description='A package for registering and looking up request handlers',
+    description='A web framework based on Werkzeug',
     long_description=__doc__,
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -31,7 +30,6 @@ setup(
     install_requires=[
         'werkzeug',
         ],
-    packages=['werkzeug_dispatch', 'werkzeug_dispatch.testsuite'],
+    packages=find_packages(),
     include_package_data=True,
-    test_suite='werkzeug_dispatch.testsuite.suite',
-    )
+)

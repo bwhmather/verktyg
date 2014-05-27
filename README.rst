@@ -1,9 +1,9 @@
-.. image:: https://travis-ci.org/bwhmather/werkzeug_dispatch.png?branch=master
-    :target: http://travis-ci.org/bwhmather/werkzeug_dispatch
+.. image:: https://travis-ci.org/bwhmather/verktyg.png?branch=master
+    :target: http://travis-ci.org/bwhmather/verktyg
     :alt: Build Status
 
-Werkzeug Dispatch
-=================
+Verktyg
+=======
 
 Examples
 --------
@@ -13,7 +13,7 @@ Hello World
 .. code:: python
     # hello.py
     from werkzeug import Response
-    from werkzeug_dispatch import Dispatcher, Application, expose
+    from verktyg import Dispatcher, Application, expose
 
     views = Dispatcher()
 
@@ -31,7 +31,7 @@ Hello World
     # root.py
     from werkzeug.routing import Rule
     from werkzeug.serving import run_simple
-    from werkzeug_dispatch import Application
+    from verktyg import Application
 
 
     app = Application()

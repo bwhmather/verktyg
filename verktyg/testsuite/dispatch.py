@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.testsuite.dispatch
+    verktyg.testsuite.dispatch
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests for the core dispatcher.
@@ -13,7 +13,7 @@ from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
 
-from werkzeug_dispatch.dispatch import Binding, Dispatcher
+from verktyg.dispatch import Binding, Dispatcher
 
 
 class DispatchTestCase(WerkzeugTestCase):

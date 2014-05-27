@@ -4,15 +4,15 @@
 set -e
 
 echo '==== test suite ======================================================';
-python -c 'from werkzeug_dispatch.testsuite import main; main()';
+python -c 'from verktyg.testsuite import main; main()';
 
 echo '';
 echo '==== pyflakes ========================================================';
-pyflakes werkzeug_dispatch;
+pyflakes verktyg;
 
 echo '';
 echo '==== pep8 ============================================================';
-pep8 werkzeug_dispatch;
+pep8 verktyg;
 
 echo '';
 echo 'NO ERRORS DETETCTED';

@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.views
+    verktyg.views
     ~~~~~~~~~~~~~~~~~~~~~~~
 
     :copyright: (c) 2014 by Ben Mather.
@@ -8,7 +8,7 @@
 import json
 
 from werkzeug import Response
-from werkzeug_dispatch.dispatch import BindingFactory, Binding
+from verktyg.dispatch import BindingFactory, Binding
 
 
 class View(BindingFactory):

@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.accept
+    verktyg.accept
     ~~~~~~~~~~~~~~~~~~~~~~~~
 
     Code for selecting handlers based on accept headers

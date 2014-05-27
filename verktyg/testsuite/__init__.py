@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.testsuite
+    verktyg.testsuite
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Contains all Dispatcher tests.

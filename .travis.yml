@@ -13,6 +13,6 @@ install:
 
 # command to run tests
 script:
-  - python -c 'from werkzeug_dispatch.testsuite import main; main()';
-  - pep8 werkzeug_dispatch
-  - pyflakes werkzeug_dispatch
+  - python -c 'from verktyg.testsuite import main; main()';
+  - pep8 verktyg
+  - pyflakes verktyg

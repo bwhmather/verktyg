@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.exception_dispatch
+    verktyg.exception_dispatch
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     :copyright: (c) 2014 by Ben Mather.
@@ -7,7 +7,7 @@
 """
 from werkzeug.exceptions import NotAcceptable
 
-from werkzeug_dispatch.accept import Representation, select_representation
+from verktyg.accept import Representation, select_representation
 
 
 class ExceptionBindingFactory(object):
@@ -82,13 +82,13 @@ class ExceptionDispatcher(ExceptionBindingFactory):
             Matched to exception handlers using `isinstance`.
 
         :param accept:
-            See `werkzeug_dispatch.accept.select_representation` for details
+            See `verktyg.accept.select_representation` for details
 
         :param accept_language:
-            See `werkzeug_dispatch.accept.select_representation` for details
+            See `verktyg.accept.select_representation` for details
 
         :param accept_charset:
-            See `werkzeug_dispatch.accept.select_representation` for details
+            See `verktyg.accept.select_representation` for details
 
         :return:
             A callable object accepting am application object, a request, and

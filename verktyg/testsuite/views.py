@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.testsuite.views
+    verktyg.testsuite.views
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests for view wrappers.
@@ -12,7 +12,7 @@ from werkzeug.testsuite import WerkzeugTestCase
 from werkzeug.wrappers import Response
 from werkzeug.exceptions import MethodNotAllowed
 
-import werkzeug_dispatch as d
+import verktyg as d
 
 
 class ViewsTestCase(WerkzeugTestCase):

@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.testsuite.application
+    verktyg.testsuite.application
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests `Application` utility class.
@@ -16,8 +16,8 @@ from werkzeug import Response, BaseResponse
 from werkzeug.routing import Rule
 from werkzeug.exceptions import HTTPException, NotFound, ImATeapot
 
-from werkzeug_dispatch.views import expose
-from werkzeug_dispatch.application import Application
+from verktyg.views import expose
+from verktyg.application import Application
 
 
 class ApplicationTestCase(WerkzeugTestCase):

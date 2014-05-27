@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.dispatch
+    verktyg.dispatch
     ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     :copyright: (c) 2014 by Ben Mather.
@@ -7,7 +7,7 @@
 """
 from werkzeug.exceptions import NotImplemented, MethodNotAllowed
 
-from werkzeug_dispatch.accept import Representation, select_representation
+from verktyg.accept import Representation, select_representation
 
 
 class BindingFactory(object):

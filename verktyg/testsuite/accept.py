@@ -1,5 +1,5 @@
 """
-    werkzeug_dispatch.testsuite.accept
+    verktyg.testsuite.accept
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests for choosing representations based on content type, etc.
@@ -11,7 +11,7 @@ import unittest
 
 from werkzeug.testsuite import WerkzeugTestCase
 
-from werkzeug_dispatch.accept import Representation
+from verktyg.accept import Representation
 
 
 class RepresentationTestCase(WerkzeugTestCase):
