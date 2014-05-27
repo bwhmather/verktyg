@@ -73,15 +73,16 @@ class Application(object):
 
     def expose(self, endpoint=None, *args, **kwargs):
         def wrapper(f):
-            nonlocal endpoint
-            if endpoint is None:
-                endpoint = f.__name__
+            # nonlocal workaround
+            endpoint_ = endpoint
+            if endpoint_ is None:
+                endpoint_ = f.__name__
 
             route = kwargs.pop('route', None)
             if route is not None:
-                self.add_routes(Rule(route, endpoint=endpoint))
+                self.add_routes(Rule(route, endpoint=endpoint_))
 
-            return expose(self.dispatcher, endpoint, *args, **kwargs)(f)
+            return expose(self.dispatcher, endpoint_, *args, **kwargs)(f)
         return wrapper
 
     def add_middleware(self, middleware, *args, **kwargs):

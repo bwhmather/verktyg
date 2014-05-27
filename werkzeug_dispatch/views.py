@@ -15,13 +15,13 @@ class View(BindingFactory):
     """ Wraps a function or callable so that it can be bound to a name in a
     dispatcher.
     """
-    def __init__(self, name, action, *, methods=None, content_type=None):
+    def __init__(self, name, action, methods=None, content_type=None):
         self._name = name
 
         if methods is None:
-            self._methods = {'GET'}
+            self._methods = set(['GET'])
         elif isinstance(methods, str):
-            self._methods = {methods}
+            self._methods = set([methods])
         else:
             self._methods = methods
 
@@ -40,7 +40,7 @@ class View(BindingFactory):
 
 class ClassView(BindingFactory):
     def get_bindings(self):
-        for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
+        for method in set(['GET', 'HEAD', 'POST', 'PUT', 'DELETE']):  # TODO
             if hasattr(self, method):
                 yield Binding(self.name, getattr(self, method),
                               method=method)
@@ -57,7 +57,7 @@ class TemplateView(View):
                      the environment or a callable applied to the result to
                      create an http `Response` object
     """
-    def __init__(self, name, action, *,
+    def __init__(self, name, action,
                  methods=None, template=None,
                  content_type=None):
         super(TemplateView, self).__init__(
@@ -74,7 +74,7 @@ class TemplateView(View):
 
 
 class JsonView(View):
-    def __init__(self, name, action, *, methods=None):
+    def __init__(self, name, action, methods=None):
         super(JsonView, self).__init__(name, action, methods=methods,
                                        content_type='text/json')
 

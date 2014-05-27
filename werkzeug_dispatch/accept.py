@@ -51,7 +51,7 @@ class Representation(object):
             else:
                 self.qs = 1.0
 
-    def quality(self, *, accept=None, accept_charset=None,
+    def quality(self, accept=None, accept_charset=None,
                 accept_language=None):
         """
         :param accept: string in the same format as an http `Accept` header
