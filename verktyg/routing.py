@@ -1023,8 +1023,7 @@ class Router(object):
         self.sort_parameters = sort_parameters
         self.sort_key = sort_key
 
-        for rulefactory in rules or ():
-            self.add_routes(rulefactory)
+        self.add_routes(*rules or ())
 
     def is_endpoint_expecting(self, endpoint, *arguments):
         """Iterate over all rules and check if the endpoint expects
@@ -1058,16 +1057,19 @@ class Router(object):
             return iter(self._rules_by_endpoint[endpoint])
         return iter(self._rules)
 
-    def add_routes(self, rulefactory):
+    def add_routes(self, *factories):
         """Add a new rule or factory to the router and bind it.  Requires that the
         rule is not bound to another router.
 
         :param rulefactory: a :class:`Route` or :class:`RouteFactory`
         """
-        for rule in rulefactory.get_rules(self):
-            rule.bind(self)
-            self._rules.append(rule)
-            self._rules_by_endpoint.setdefault(rule.endpoint, []).append(rule)
+        for factory in factories:
+            for rule in factory.get_rules(self):
+                rule.bind(self)
+                self._rules.append(rule)
+                self._rules_by_endpoint.setdefault(
+                    rule.endpoint, []
+                ).append(rule)
         self._remap = True
 
     def match(self, server_name, script_name, subdomain=None,

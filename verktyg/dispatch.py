@@ -71,22 +71,23 @@ class Dispatcher(BindingFactory):
         for view in views:
             self.add_bindings(view)
 
-    def add_bindings(self, view_factory):
+    def add_bindings(self, *factories):
         """ Add bindings from bindings factory to this dispatcher.
         Dispatchers can be nested
         """
-        for view in view_factory.get_bindings():
-            if view.name not in self._index:
-                self._index[view.name] = {}
-            with_name = self._index[view.name]
+        for factory in factories:
+            for view in factory.get_bindings():
+                if view.name not in self._index:
+                    self._index[view.name] = {}
+                with_name = self._index[view.name]
 
-            if view.method not in with_name:
-                with_name[view.method] = []
-            with_method = with_name[view.method]
+                if view.method not in with_name:
+                    with_name[view.method] = []
+                with_method = with_name[view.method]
 
-            with_method.append(view)
+                with_method.append(view)
 
-            self._views.append(view)
+                self._views.append(view)
 
     def get_bindings(self):
         return iter(self._views)

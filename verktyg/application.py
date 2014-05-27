@@ -64,12 +64,10 @@ class Application(object):
         self.add_middleware(local_manager.make_middleware)
 
     def add_routes(self, *routes):
-        for route in routes:
-            self.url_map.add_routes(route)
+        self.url_map.add_routes(*routes)
 
     def add_bindings(self, *views):
-        for view in views:
-            self.dispatcher.add_bindings(view)
+        self.dispatcher.add_bindings(*views)
 
     def expose(self, endpoint=None, *args, **kwargs):
         def wrapper(f):
