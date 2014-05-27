@@ -1435,15 +1435,6 @@ class Dispatcher(object):
                            automatic redirects as string or dictionary.  It's
                            currently not possible to use the query arguments
                            for URL matching.
-
-        .. versionadded:: 0.6
-           `return_route` was added.
-
-        .. versionadded:: 0.7
-           `query_args` was added.
-
-        .. versionchanged:: 0.8
-           `query_args` can now also be a string.
         """
         self.router.update()
         if path_info is None:
