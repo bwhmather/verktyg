@@ -12,10 +12,10 @@
     expression matching because it can also convert values in the URLs and
     build URLs.
 
-    Here a simple example that creates an Router for an application with
+    Here a simple example that creates an URLMap for an application with
     two subdomains (www and kb) and some URL rules:
 
-    >>> m = Router([
+    >>> m = URLMap([
     ...     # Static URLs
     ...     Route('/', endpoint='static/index'),
     ...     Route('/about', endpoint='static/about'),
@@ -64,7 +64,7 @@
 
     The third argument can be the subdomain, if not given the default
     subdomain is used.  For more details about binding have a look at the
-    documentation of the `Dispatcher`.
+    documentation of the `MapAdapter`.
 
     And here is how you can match URLs:
 
@@ -273,7 +273,7 @@ class Subdomain(RouteFactory):
     specific domain. For example if you want to use the subdomain for
     the current language this can be a good setup::
 
-        router = Router([
+        router = URLMap([
             Route('/', endpoint='#select_language'),
             Subdomain('<string(length=2):lang_code>', [
                 Route('/', endpoint='index'),
@@ -302,7 +302,7 @@ class Subdomain(RouteFactory):
 class Submount(RouteFactory):
     """Like `Subdomain` but prefixes the URL rule with a given string::
 
-        router = Router([
+        router = URLMap([
             Route('/', endpoint='index'),
             Submount('/blog', [
                 Route('/', endpoint='blog/index'),
@@ -329,7 +329,7 @@ class EndpointPrefix(RouteFactory):
     """Prefixes all endpoints (which must be strings for this factory) with
     another string. This can be useful for sub applications::
 
-        router = Router([
+        router = URLMap([
             Route('/', endpoint='index'),
             EndpointPrefix('blog/', [Submount('/blog', [
                 Route('/', endpoint='index'),
@@ -356,14 +356,14 @@ class RouteTemplate(object):
 
     Here a small example for such a route template::
 
-        from verktyg.routing import Router, Route, RouteTemplate
+        from verktyg.routing import URLMap, Route, RouteTemplate
 
         resource = RouteTemplate([
             Route('/$name/', endpoint='$name.list'),
             Route('/$name/<int:id>', endpoint='$name.show')
         ])
 
-        router = Router([resource(name='user'), resource(name='page')])
+        router = URLMap([resource(name='user'), resource(name='page')])
 
     When a route template is called the keyword arguments are used to
     replace the placeholders in all the string parameters.
@@ -430,7 +430,7 @@ class Route(RouteFactory):
         branch URLs that are matched without a trailing slash will trigger a
         redirect to the same URL with the missing slash appended.
 
-        The converters are defined on the `Router`.
+        The converters are defined on the `URLMap`.
 
     `endpoint`
         The endpoint for this route. This can be anything. A reference to a
@@ -441,14 +441,14 @@ class Route(RouteFactory):
         An optional dict with defaults for other routes with the same endpoint.
         This is a bit tricky but useful if you want to have unique URLs::
 
-            router = Router([
+            router = URLMap([
                 Route('/all/', defaults={'page': 1}, endpoint='all_entries'),
                 Route('/all/page/<int:page>', endpoint='all_entries')
             ])
 
         If a user now visits ``http://example.com/all/page/1`` he will be
         redirected to ``http://example.com/all/``.  If `redirect_defaults` is
-        disabled on the `Router` instance this will only affect the URL
+        disabled on the `URLMap` instance this will only affect the URL
         generation.
 
     `subdomain`
@@ -459,14 +459,14 @@ class Route(RouteFactory):
         Can be useful if you want to have user profiles on different subdomains
         and all subdomains are forwarded to your application::
 
-            router = Router([
+            router = URLMap([
                 Route('/', subdomain='<username>', endpoint='user/homepage'),
                 Route('/stats', subdomain='<username>', endpoint='user/stats')
             ])
 
     `strict_slashes`
-        Override the `Router` setting for `strict_slashes` only for this route.
-        If not specified the `Router` setting is used.
+        Override the `URLMap` setting for `strict_slashes` only for this route.
+        If not specified the `URLMap` setting is used.
 
     `build_only`
         Set this to True and the route will never match but will create a URL
@@ -486,7 +486,7 @@ class Route(RouteFactory):
                 # course has nothing to do with verktyg.
                 return 'foo/' + Foo.get_slug_for_id(id)
 
-            router = Router([
+            router = URLMap([
                 Route('/foo/<slug>', endpoint='foo'),
                 Route('/some/old/url/<slug>', redirect_to='foo/<slug>'),
                 Route('/other/old/url/<int:id>', redirect_to=foo_with_slug)
@@ -823,7 +823,7 @@ class UnicodeConverter(BaseConverter):
         Route('/pages/<page>'),
         Route('/<string(length=2):lang_code>')
 
-    :param router: the :class:`Router`.
+    :param router: the :class:`URLMap`.
     :param minlength: the minimum length of the string.  Must be greater
                       or equal 1.
     :param maxlength: the maximum length of the string.
@@ -852,7 +852,7 @@ class AnyConverter(BaseConverter):
 
         Route('/<any(about, help, imprint, class, "foo,bar"):page_name>')
 
-    :param router: the :class:`Router`.
+    :param router: the :class:`URLMap`.
     :param items: this function accepts the possible items as positional
                   arguments.
     """
@@ -869,7 +869,7 @@ class PathConverter(BaseConverter):
         Route('/<path:wikipage>')
         Route('/<path:wikipage>/edit')
 
-    :param router: the :class:`Router`.
+    :param router: the :class:`URLMap`.
     """
     regex = '[^/].*?'
     weight = 200
@@ -911,7 +911,7 @@ class IntegerConverter(NumberConverter):
 
     This converter does not support negative values.
 
-    :param router: the :class:`Router`.
+    :param router: the :class:`URLMap`.
     :param fixed_digits: the number of fixed digits in the URL.  If you set
                          this to ``4`` for example, the application will
                          only match if the url looks like ``/0001/``.  The
@@ -930,7 +930,7 @@ class FloatConverter(NumberConverter):
 
     This converter does not support negative values.
 
-    :param router: the :class:`Router`.
+    :param router: the :class:`URLMap`.
     :param min: the minimal value.
     :param max: the maximal value.
     """
@@ -946,7 +946,7 @@ class UUIDConverter(BaseConverter):
 
         Route('/object/<uuid:identifier>')
 
-    :param router: the :class:`Router`.
+    :param router: the :class:`URLMap`.
     """
     regex = r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-' \
             r'[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}'
@@ -970,10 +970,10 @@ DEFAULT_CONVERTERS = {
 }
 
 
-class Router(object):
+class URLMap(object):
     """The router class stores all the URL rules and some configuration
     parameters.  Some of the configuration values are only stored on the
-    `Router` instance since those affect all routes, others are just defaults
+    `URLMap` instance since those affect all routes, others are just defaults
     and can be overridden for each route.  Note that you have to specify all
     arguments besides the `routes` as keyword arguments!
 
@@ -1105,7 +1105,7 @@ class Router(object):
 
         Here is a small example for matching:
 
-        >>> m = Router([
+        >>> m = URLMap([
         ...     Route('/', endpoint='index'),
         ...     Route('/downloads/', endpoint='downloads/index'),
         ...     Route('/downloads/<int:id>', endpoint='downloads/show')
@@ -1190,7 +1190,7 @@ class Router(object):
 
     def bind(self, server_name, script_name=None, subdomain=None,
              url_scheme='http', path_info=None, query_args=None):
-        """Return a new :class:`Dispatcher` with the details specified to the
+        """Return a new :class:`MapAdapter` with the details specified to the
         call.  Note that `script_name` will default to ``'/'`` if not further
         specified or `None`.  The `server_name` at least is a requirement
         because the HTTP RFC requires absolute URLs for redirects and so all
@@ -1216,7 +1216,7 @@ class Router(object):
         if script_name is None:
             script_name = '/'
         server_name = _encode_idna(server_name)
-        return Dispatcher(self, server_name, script_name, subdomain,
+        return MapAdapter(self, server_name, script_name, subdomain,
                           url_scheme, path_info, query_args)
 
     def bind_to_environ(self, environ, server_name=None, subdomain=None):
@@ -1237,7 +1237,7 @@ class Router(object):
         If the object passed as environ has an environ attribute, the value of
         this attribute is used instead.  This allows you to pass request
         objects.  Additionally `PATH_INFO` added as a default of the
-        :class:`Dispatcher` so that you don't have to pass the path info to
+        :class:`MapAdapter` so that you don't have to pass the path info to
         the match method.
 
         :param environ: a WSGI environment.
@@ -1284,7 +1284,7 @@ class Router(object):
         script_name = _get_wsgi_string('SCRIPT_NAME')
         path_info = _get_wsgi_string('PATH_INFO')
         query_args = _get_wsgi_string('QUERY_STRING')
-        return Router.bind(self, server_name, script_name,
+        return URLMap.bind(self, server_name, script_name,
                            subdomain, environ['wsgi.url_scheme'],
                            path_info, query_args=query_args)
 
@@ -1303,8 +1303,8 @@ class Router(object):
         return '%s(%s)' % (self.__class__.__name__, pformat(list(routes)))
 
 
-class Dispatcher(object):
-    """Returned by :meth:`Router.bind` or :meth:`Router.bind_to_environ` and does
+class MapAdapter(object):
+    """Returned by :meth:`URLMap.bind` or :meth:`Router.bind_to_environ` and does
     the URL matching and building based on runtime information.
     """
 
@@ -1336,12 +1336,12 @@ class Dispatcher(object):
 
             from werkzeug.wrappers import Request, Response
             from werkzeug.wsgi import responder
-            from verktyg.routing import Router, Route
+            from verktyg.routing import URLMap, Route
 
             def on_index(request):
                 return Response('Hello from the index')
 
-            url_map = Router([Route('/', endpoint='index')])
+            url_map = URLMap([Route('/', endpoint='index')])
             views = {'index': on_index}
 
             @responder
@@ -1405,7 +1405,7 @@ class Dispatcher(object):
 
         Here is a small example for matching:
 
-        >>> m = Router([
+        >>> m = URLMap([
         ...     Route('/', endpoint='index'),
         ...     Route('/downloads/', endpoint='downloads/index'),
         ...     Route('/downloads/<int:id>', endpoint='downloads/show')
@@ -1581,7 +1581,7 @@ class Dispatcher(object):
         external URLs (include the server name) will only be used if the
         target URL is on a different subdomain.
 
-        >>> m = Router([
+        >>> m = URLMap([
         ...     Route('/', endpoint='index'),
         ...     Route('/downloads/', endpoint='downloads/index'),
         ...     Route('/downloads/<int:id>', endpoint='downloads/show')

@@ -24,7 +24,7 @@ from werkzeug.test import create_environ
 class RoutingTestCase(WerkzeugTestCase):
 
     def test_basic_routing(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='index'),
             r.Route('/foo', endpoint='foo'),
             r.Route('/bar/', endpoint='bar')
@@ -89,7 +89,7 @@ class RoutingTestCase(WerkzeugTestCase):
     def test_environ_defaults(self):
         environ = create_environ("/foo")
         self.assert_strict_equal(environ["PATH_INFO"], '/foo')
-        m = r.Router([
+        m = r.URLMap([
             r.Route("/foo", endpoint="foo"),
             r.Route("/bar", endpoint="bar"),
         ])
@@ -101,7 +101,7 @@ class RoutingTestCase(WerkzeugTestCase):
 
     def test_environ_nonascii_pathinfo(self):
         environ = create_environ(u'/лошадь')
-        m = r.Router([
+        m = r.URLMap([
             r.Route(u'/', endpoint='index'),
             r.Route(u'/лошадь', endpoint='horse')
         ])
@@ -111,7 +111,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_raises(r.NotFound, a.match, u'/барсук')
 
     def test_basic_building(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='index'),
             r.Route('/foo', endpoint='foo'),
             r.Route('/bar/<baz>', endpoint='bar'),
@@ -183,7 +183,7 @@ class RoutingTestCase(WerkzeugTestCase):
         )
 
     def test_defaults(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/foo/', defaults={'page': 1}, endpoint='foo'),
             r.Route('/foo/<int:page>', endpoint='foo')
         ])
@@ -203,7 +203,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(adapter.build('foo', {'page': 2}), '/foo/2')
 
     def test_greedy(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/foo', endpoint='foo'),
             r.Route('/<path:bar>', endpoint='bar'),
             r.Route('/<path:bar>/<path:blub>', endpoint='bar')
@@ -231,7 +231,7 @@ class RoutingTestCase(WerkzeugTestCase):
         )
 
     def test_path(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', defaults={'name': 'FrontPage'}, endpoint='page'),
             r.Route('/Special', endpoint='special'),
             r.Route('/<int:year>', endpoint='year'),
@@ -303,7 +303,7 @@ class RoutingTestCase(WerkzeugTestCase):
 
     def test_dispatch(self):
         env = create_environ('/')
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='root'),
             r.Route('/foo/', endpoint='foo')
         ])
@@ -338,7 +338,7 @@ class RoutingTestCase(WerkzeugTestCase):
             'REQUEST_METHOD':       'GET',
             'wsgi.url_scheme':      'http'
         }
-        map = r.Router([r.Route('/', endpoint='index', subdomain='wiki')])
+        map = r.URLMap([r.Route('/', endpoint='index', subdomain='wiki')])
         adapter = map.bind_to_environ(env, server_name='example.com')
         self.assert_equal(
             adapter.match('/'),
@@ -358,7 +358,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(adapter.build('index'), 'http://wiki.example.com/')
 
     def test_adapter_url_parameter_sorting(self):
-        map = r.Router(
+        map = r.URLMap(
             [r.Route('/', endpoint='index')],
             sort_parameters=True,
             sort_key=lambda x: x[1]
@@ -371,7 +371,7 @@ class RoutingTestCase(WerkzeugTestCase):
         )
 
     def test_request_direct_charset_bug(self):
-        map = r.Router([r.Route(u'/öäü/')])
+        map = r.URLMap([r.Route(u'/öäü/')])
         adapter = map.bind('localhost', '/')
         try:
             adapter.match(u'/öäü')
@@ -384,7 +384,7 @@ class RoutingTestCase(WerkzeugTestCase):
             self.fail('expected request redirect exception')
 
     def test_request_redirect_default(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route(u'/foo', defaults={'bar': 42}),
             r.Route(u'/foo/<int:bar>'),
         ])
@@ -397,7 +397,7 @@ class RoutingTestCase(WerkzeugTestCase):
             self.fail('expected request redirect exception')
 
     def test_request_redirect_default_subdomain(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route(u'/foo', defaults={'bar': 42}, subdomain='test'),
             r.Route(u'/foo/<int:bar>', subdomain='other'),
         ])
@@ -411,7 +411,7 @@ class RoutingTestCase(WerkzeugTestCase):
 
     def test_adapter_match_return_route(self):
         route = r.Route('/foo/', endpoint='foo')
-        map = r.Router([route])
+        map = r.URLMap([route])
         adapter = map.bind('localhost', '/')
         self.assert_equal(
             adapter.match('/foo/', return_route=True),
@@ -420,7 +420,7 @@ class RoutingTestCase(WerkzeugTestCase):
 
     def test_server_name_interpolation(self):
         server_name = 'example.invalid'
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='index'),
             r.Route('/', endpoint='alt', subdomain='alt'),
         ])
@@ -460,7 +460,7 @@ class RoutingTestCase(WerkzeugTestCase):
             ])
         ])
 
-        url_map = r.Router([
+        url_map = r.URLMap([
             testcase(app='test1'),
             testcase(app='test2'),
             testcase(app='test3'),
@@ -502,14 +502,14 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
 
     def test_non_string_parts(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route('/<foo>', endpoint='foo')
         ])
         a = m.bind('example.com')
         self.assert_equal(a.build('foo', {'foo': 42}), '/42')
 
     def test_complex_routing_routes(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route('/', endpoint='index'),
             r.Route('/<int:blub>', endpoint='an_int'),
             r.Route('/<blub>', endpoint='a_string'),
@@ -615,11 +615,11 @@ class RoutingTestCase(WerkzeugTestCase):
         )
 
     def test_default_converters(self):
-        class MyRouter(r.Router):
-            default_converters = r.Router.default_converters.copy()
+        class MyURLMap(r.URLMap):
+            default_converters = r.URLMap.default_converters.copy()
             default_converters['foo'] = r.UnicodeConverter
-        assert isinstance(r.Router.default_converters, ImmutableDict)
-        m = MyRouter([
+        assert isinstance(r.URLMap.default_converters, ImmutableDict)
+        m = MyURLMap([
             r.Route('/a/<foo:a>', endpoint='a'),
             r.Route('/b/<foo:b>', endpoint='b'),
             r.Route('/c/<c>', endpoint='c')
@@ -628,10 +628,10 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(a.match('/a/1'), ('a', {'a': '1'}))
         self.assert_equal(a.match('/b/2'), ('b', {'b': '2'}))
         self.assert_equal(a.match('/c/3'), ('c', {'c': '3'}))
-        assert 'foo' not in r.Router.default_converters
+        assert 'foo' not in r.URLMap.default_converters
 
     def test_uuid_converter(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route('/a/<uuid:a_uuid>', endpoint='a')
         ])
         a = m.bind('example.org', '/')
@@ -639,7 +639,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(type(kwargs['a_uuid']), uuid.UUID)
 
     def test_build_append_unknown(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/bar/<float:bazf>', endpoint='barf')
         ])
         adapter = map.bind('example.org', '/', subdomain='blah')
@@ -654,7 +654,7 @@ class RoutingTestCase(WerkzeugTestCase):
         )
 
     def test_protocol_joining_bug(self):
-        m = r.Router([r.Route('/<foo>', endpoint='x')])
+        m = r.URLMap([r.Route('/<foo>', endpoint='x')])
         a = m.bind('example.org')
         self.assert_equal(a.build('x', {'foo': 'x:y'}), '/x:y')
         self.assert_equal(
@@ -663,7 +663,7 @@ class RoutingTestCase(WerkzeugTestCase):
         )
 
     def test_external_building_with_port(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='index'),
         ])
         adapter = map.bind('example.org:5000', '/')
@@ -671,7 +671,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(built_url, 'http://example.org:5000/', built_url)
 
     def test_external_building_with_port_bind_to_environ(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='index'),
         ])
         adapter = map.bind_to_environ(
@@ -682,7 +682,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(built_url, 'http://example.org:5000/', built_url)
 
     def test_external_building_with_port_bind_to_environ_bad_servername(self):
-        map = r.Router([
+        map = r.URLMap([
             r.Route('/', endpoint='index'),
         ])
         environ = create_environ('/', 'http://example.org:5000/')
@@ -709,7 +709,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_equal(args, ('foo', 'bar'))
 
     def test_alias_redirects(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route('/', endpoint='index'),
             r.Route('/index.html', endpoint='index', alias=True),
             r.Route('/users/', defaults={'page': 1}, endpoint='users'),
@@ -742,7 +742,7 @@ class RoutingTestCase(WerkzeugTestCase):
 
     def test_double_defaults(self):
         for prefix in '', '/aaa':
-            m = r.Router([
+            m = r.URLMap([
                 r.Route(
                     prefix + '/',
                     defaults={'foo': 1, 'bar': False},
@@ -809,7 +809,7 @@ class RoutingTestCase(WerkzeugTestCase):
             )
 
     def test_host_matching(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route(
                 '/',
                 endpoint='index',
@@ -866,7 +866,7 @@ class RoutingTestCase(WerkzeugTestCase):
             assert False, 'expected redirect'
 
     def test_server_name_casing(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route('/', endpoint='index', subdomain='foo')
         ])
 
@@ -894,7 +894,7 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_strict_equal(exc.get_response(env).status_code, exc.code)
 
     def test_redirect_path_quoting(self):
-        url_map = r.Router([
+        url_map = r.URLMap([
             r.Route('/<category>', defaults={'page': 1}, endpoint='category'),
             r.Route('/<category>/page/<int:page>', endpoint='category')
         ])
@@ -910,7 +910,7 @@ class RoutingTestCase(WerkzeugTestCase):
             self.fail('Expected redirect')
 
     def test_unicode_routes(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route(u'/войти/', endpoint='enter'),
             r.Route(u'/foo+bar/', endpoint='foobar')
         ])
@@ -947,14 +947,14 @@ class RoutingTestCase(WerkzeugTestCase):
         self.assert_strict_equal(url, 'http://xn--n3h.example.com/foo+bar/')
 
     def test_map_repr(self):
-        m = r.Router([
+        m = r.URLMap([
             r.Route(u'/wat', endpoint='enter'),
             r.Route(u'/woop', endpoint='foobar')
         ])
         rv = repr(m)
         self.assert_strict_equal(
             rv,
-            "Router([<Route '/woop' -> foobar>, <Route '/wat' -> enter>])"
+            "URLMap([<Route '/woop' -> foobar>, <Route '/wat' -> enter>])"
         )
 
 

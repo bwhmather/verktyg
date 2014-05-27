@@ -12,7 +12,7 @@ from werkzeug.utils import cached_property
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionBinding
 )
-from verktyg.routing import Router, Route
+from verktyg.routing import URLMap, Route
 from verktyg.dispatch import Dispatcher
 from verktyg.views import expose
 
@@ -22,7 +22,7 @@ class Application(object):
     bindings.
 
     `url_map`
-        werkzeug `Router` object that maps from urls to names
+        werkzeug `URLMap` object that maps from urls to names
 
     `dispatcher`
         object to map from endpoint names to handler functions
@@ -35,7 +35,7 @@ class Application(object):
 
     @cached_property
     def url_map(self):
-        return Router()
+        return URLMap()
 
     @cached_property
     def dispatcher(self):
