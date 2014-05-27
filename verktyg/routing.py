@@ -1302,7 +1302,7 @@ class Router(object):
 
 
 class Dispatcher(object):
-    """Returned by :meth:`Map.bind` or :meth:`Map.bind_to_environ` and does
+    """Returned by :meth:`Router.bind` or :meth:`Router.bind_to_environ` and does
     the URL matching and building based on runtime information.
     """
 
@@ -1334,12 +1334,12 @@ class Dispatcher(object):
 
             from werkzeug.wrappers import Request, Response
             from werkzeug.wsgi import responder
-            from verktyg.routing import Map, Rule
+            from verktyg.routing import Router, Route
 
             def on_index(request):
                 return Response('Hello from the index')
 
-            url_map = Map([Rule('/', endpoint='index')])
+            url_map = Router([Route('/', endpoint='index')])
             views = {'index': on_index}
 
             @responder
@@ -1403,10 +1403,10 @@ class Dispatcher(object):
 
         Here is a small example for matching:
 
-        >>> m = Map([
-        ...     Rule('/', endpoint='index'),
-        ...     Rule('/downloads/', endpoint='downloads/index'),
-        ...     Rule('/downloads/<int:id>', endpoint='downloads/show')
+        >>> m = Router([
+        ...     Route('/', endpoint='index'),
+        ...     Route('/downloads/', endpoint='downloads/index'),
+        ...     Route('/downloads/<int:id>', endpoint='downloads/show')
         ... ])
         >>> urls = m.bind("example.com", "/")
         >>> urls.match("/", "GET")
