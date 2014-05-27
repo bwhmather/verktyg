@@ -29,15 +29,15 @@ Hello World
 
 .. code:: python
     # root.py
-    from werkzeug.routing import Rule
     from werkzeug.serving import run_simple
+    from verktyg.routing import Route
     from verktyg import Application
 
 
     app = Application()
 
     app.add_routes(
-        Rule('/', endpoint='index'),
+        Route('/', endpoint='index'),
     )
 
     import hello

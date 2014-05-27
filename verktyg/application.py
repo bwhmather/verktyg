@@ -6,13 +6,13 @@
     :license: BSD, see LICENSE for more details.
 """
 from werkzeug import Request
-from werkzeug.routing import Map, Rule
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionBinding
 )
+from verktyg.routing import Router, Route
 from verktyg.dispatch import Dispatcher
 from verktyg.views import expose
 
@@ -22,7 +22,7 @@ class Application(object):
     bindings.
 
     `url_map`
-        werkzeug `Map` object that maps from urls to names
+        werkzeug `Router` object that maps from urls to names
 
     `dispatcher`
         object to map from endpoint names to handler functions
@@ -35,7 +35,7 @@ class Application(object):
 
     @cached_property
     def url_map(self):
-        return Map()
+        return Router()
 
     @cached_property
     def dispatcher(self):
@@ -65,7 +65,7 @@ class Application(object):
 
     def add_routes(self, *routes):
         for route in routes:
-            self.url_map.add(route)
+            self.url_map.add_routes(route)
 
     def add_views(self, *views):
         for view in views:
@@ -80,7 +80,7 @@ class Application(object):
 
             route = kwargs.pop('route', None)
             if route is not None:
-                self.add_routes(Rule(route, endpoint=endpoint_))
+                self.add_routes(Route(route, endpoint=endpoint_))
 
             return expose(self.dispatcher, endpoint_, *args, **kwargs)(f)
         return wrapper

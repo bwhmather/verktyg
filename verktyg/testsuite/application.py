@@ -13,10 +13,10 @@ from werkzeug.test import Client
 from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug import Response, BaseResponse
-from werkzeug.routing import Rule
 from werkzeug.exceptions import HTTPException, NotFound, ImATeapot
 
 from verktyg.views import expose
+from verktyg.routing import Route
 from verktyg.application import Application
 
 
@@ -24,7 +24,7 @@ class ApplicationTestCase(WerkzeugTestCase):
     def test_basic(self):
         app = Application()
 
-        app.add_routes(Rule('/', endpoint='index'))
+        app.add_routes(Route('/', endpoint='index'))
 
         @expose(app.dispatcher, 'index')
         def index(app, request):
