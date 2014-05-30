@@ -158,11 +158,11 @@ class Application(object):
     def __call__(self, wsgi_env, start_response):
         return self._stack(wsgi_env, start_response)
 
-    def url_for(self, *args, **kwargs):
+    def url_for(self, endpoint, **kwargs):
         """ construct the url corresponding to an endpoint name and parameters
 
         Unfortunately will only work if the application has been bound to a
         wsgi request.  If it is not then there is not generally enough
         information to construct full urls.  TODO.
         """
-        self._map_adapter(*args, **kwargs)
+        self._map_adapter.build(endpoint, values=kwargs)
