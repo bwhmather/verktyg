@@ -1570,7 +1570,7 @@ class MapAdapter(object):
             'URL found'
         return url
 
-    def build(self, endpoint, values=None, method=None, force_external=False,
+    def build(self, endpoint, values=None, force_external=False,
               append_unknown=True):
         """Building URLs works pretty much the other way round.  Instead of
         `match` you call `build` and pass it the endpoint and a dict of
