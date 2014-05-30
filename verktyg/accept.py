@@ -5,10 +5,13 @@
 
     Code for selecting handlers based on accept headers
 
+    http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug import parse_accept_header
+import mimeparse
+
 from werkzeug.exceptions import NotAcceptable
 
 
@@ -63,19 +66,29 @@ class Representation(object):
         :param accept_charset: string in the same format as an http
             `Accept-Charset` header
 
-        :return: a number or tuple of numbers representing the quality of
-            the match. By convention tuples should be in content type,
+        :return: a number or tuple of tuples representing the quality of
+            the match. By convention outer tuples should be in content type,
             language, charset order.  Raises `NotAcceptable If the binding does
             not match the request.
 
         """
-        accept = parse_accept_header(accept)
-
         if self.content_type is None:
-            return self.qs
+            # TODO
+            return 5, self.qs
 
-        quality = self.qs * accept.quality(self.content_type)
-        if not quality:
+        if accept is None:
+            return 0, self.qs
+
+        accept = [
+            mimeparse.parse_media_range(media_range)
+            for media_range in accept.split(',')
+        ]
+
+        fitness, quality = mimeparse.fitness_and_quality_parsed(
+            self.content_type, accept
+        )
+
+        if fitness == -1:
             raise NotAcceptable()
 
-        return quality
+        return fitness, quality * self.qs

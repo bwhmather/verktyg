@@ -145,7 +145,7 @@ class ApplicationTestCase(WerkzeugTestCase):
 
         # 404 error has a pretty html representation but uses default renderer
         # for json
-        resp = client.get('/raise_404', headers=[('Accept', 'text/html;')])
+        resp = client.get('/raise_404', headers=[('Accept', 'text/html')])
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.get_data(), b'pretty NotFound')
 

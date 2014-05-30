@@ -30,6 +30,7 @@ setup(
     platforms='any',
     install_requires=[
         'werkzeug',
+        'python-mimeparse >= 0.1.4',
         ],
     packages=find_packages(),
     include_package_data=True,

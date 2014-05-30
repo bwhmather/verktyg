@@ -77,7 +77,10 @@ class TemplateView(View):
 
 class JsonView(View):
     def __init__(self, name, action, methods=None, qs=None):
-        super(JsonView, self).__init__(name, action, methods=methods, qs=qs)
+        super(JsonView, self).__init__(
+            name, action, methods=methods,
+            content_type='text/json', qs=qs
+        )
 
     def __call__(self, env, req, *args, **kwargs):
         res = super(JsonView, self).__call__(env, req, *args, **kwargs)
@@ -91,14 +94,6 @@ class JsonView(View):
             return Response(status=204)
 
         return Response(json.dumps(res), content_type='text/json')
-
-    def get_bindings(self):
-        for method in self._methods:
-            yield Binding(self._name, self, method=method,
-                          content_type='text/json', qs=self._qs)
-
-            yield Binding(self._name, self, method=method,
-                          content_type='*/*')
 
 
 def expose(dispatcher, name, *args, **kwargs):

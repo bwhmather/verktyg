@@ -20,12 +20,20 @@ class RepresentationTestCase(WerkzeugTestCase):
         html_binding = Representation(content_type='text/html')
 
         self.assert_equal(
-            0.001,
+            (5, 0.001),
             default_binding.quality(accept='text/html'))
 
         self.assert_equal(
-            1.0,
+            (110, 1.0),
             html_binding.quality(accept='text/html'))
+
+        self.assert_equal(
+            (110, 0.9),
+            html_binding.quality(accept='text/html;q=0.9'))
+
+        self.assert_equal(
+            (0, 0.01),
+            html_binding.quality(accept='text/json, */*; q=0.01'))
 
 
 def suite():
