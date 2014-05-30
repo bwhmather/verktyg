@@ -165,4 +165,4 @@ class Application(object):
         wsgi request.  If it is not then there is not generally enough
         information to construct full urls.  TODO.
         """
-        self._map_adapter.build(endpoint, values=kwargs)
+        return self._map_adapter.build(endpoint, values=kwargs)
