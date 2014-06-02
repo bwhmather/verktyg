@@ -79,24 +79,28 @@ class DispatchTestCase(WerkzeugTestCase):
 
     def test_accept_dispatch(self):
         dispatcher = Dispatcher([
-            Binding('test', 'text/json', content_type='text/json'),
-            Binding('test', 'text/html', content_type='text/html'),
+            Binding('test', 'json', content_type='application/json'),
+            Binding('test', 'html', content_type='text/html'),
             Binding('test', 'whatever'),
             Binding('nope', 'nope', content_type='application/xml'),
             ])
 
         # accept header strings
         self.assert_equal(
-            'text/json',
-            dispatcher.lookup('test', accept='text/json'))
+            'json',
+            dispatcher.lookup('test', accept='application/json')
+        )
 
         self.assert_equal(
-            'text/json',
-            dispatcher.lookup('test',
-                              accept='text/json; q=0.9, text/html; q=0.8'))
+            'json',
+            dispatcher.lookup(
+                'test', accept='application/json; q=0.9, text/html; q=0.8'
+            )
+        )
         self.assert_equal(
             'whatever',
-            dispatcher.lookup('test', accept='application/xml'))
+            dispatcher.lookup('test', accept='application/xml')
+        )
 
         self.assert_raises(
             NotAcceptable,

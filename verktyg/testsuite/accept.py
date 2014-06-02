@@ -33,7 +33,7 @@ class RepresentationTestCase(WerkzeugTestCase):
 
         self.assert_equal(
             (0, 0.01),
-            html_binding.quality(accept='text/json, */*; q=0.01'))
+            html_binding.quality(accept='application/json, */*; q=0.01'))
 
 
 def suite():

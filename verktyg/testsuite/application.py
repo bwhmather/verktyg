@@ -112,12 +112,12 @@ class ApplicationTestCase(WerkzeugTestCase):
         def default_handler(app, req, exception):
             return Response('default handler', status=exception.code)
 
-        @app.exception_handler(HTTPException, content_type='text/json')
+        @app.exception_handler(HTTPException, content_type='application/json')
         def default_json_handler(app, req, exception):
             return Response(
                 '{"type": "json"}',
                 status=exception.code,
-                content_type='text/json'
+                content_type='application/json'
             )
 
         @app.exception_handler(NotFound, content_type='text/html')
@@ -138,10 +138,12 @@ class ApplicationTestCase(WerkzeugTestCase):
         self.assertEqual(resp.status_code, 418)
         self.assertEqual(resp.get_data(), b'default handler')
 
-        resp = client.get('raise_418', headers=[('Accept', 'text/json')])
+        resp = client.get(
+            'raise_418', headers=[('Accept', 'application/json')]
+        )
         self.assertEqual(resp.status_code, 418)
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
-        self.assertEqual(resp.headers['Content-Type'], 'text/json')
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
 
         # 404 error has a pretty html representation but uses default renderer
         # for json
@@ -149,10 +151,12 @@ class ApplicationTestCase(WerkzeugTestCase):
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.get_data(), b'pretty NotFound')
 
-        resp = client.get('raise_404', headers=[('Accept', 'text/json')])
+        resp = client.get(
+            'raise_404', headers=[('Accept', 'application/json')]
+        )
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
-        self.assertEqual(resp.headers['Content-Type'], 'text/json')
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
 
 
 def suite():
