@@ -159,6 +159,45 @@ class ApplicationTestCase(WerkzeugTestCase):
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
         self.assertEqual(resp.headers['Content-Type'], 'application/json')
 
+    def test_properties(self):
+        app = Application()
+
+        # test getters
+        app.add_property('foo', lambda self: 'bar')
+
+        self.assertEqual(app.foo, 'bar')
+
+        try:
+            app.foo = 'baz'
+        except AttributeError:
+            pass
+        else:
+            self.fail("Should raise AttributeError")
+
+        # test setters
+        def geter(self):
+            if hasattr(self, '_fizz'):
+                return self._fizz * 2
+            else:
+                return 'default'
+
+        def seter(self, value):
+            self._fizz = value
+
+        app.add_property('fizz', geter, seter)
+
+        self.assertEqual(app.fizz, 'default')
+
+        app.fizz = 2
+
+        self.assertEqual(app.fizz, 4)
+
+    def test_methods(self):
+        app = Application()
+
+        app.add_method('get_self', lambda self: self)
+        self.assertEqual(app.get_self(), app)
+
 
 def suite():
     suite = unittest.TestSuite()

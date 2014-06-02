@@ -49,6 +49,11 @@ class Application(object):
         return ExceptionDispatcher()
 
     def __init__(self, debug=False):
+        # Application.__setattr__ depends on _properties so we need to set it
+        # using the parent implementation.  A bit magic
+        super(Application, self).__setattr__('_properties', {})
+        self._methods = {}
+
         self.debug = debug
 
         # reference to the bottom of a stack of wsgi middleware wrapping
@@ -121,6 +126,36 @@ class Application(object):
             self.add_exception_handler(exception_class, handler, **kwargs)
             return handler
         return wrapper
+
+    def __getattr__(self, name):
+        if name in self._properties:
+            geter, seter = self._properties[name]
+            return geter(self)
+        elif name in self._methods:
+            method = self._methods[name]
+            return lambda *args, **kwargs: method(self, *args, **kwargs)
+        else:
+            raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        if name in self._properties:
+            geter, seter = self._properties[name]
+            if seter is None:
+                raise AttributeError("can't set attribute")
+            seter(self, value)
+        else:
+            super(Application, self).__setattr__(name, value)
+
+    def add_property(self, name, geter, seter=None):
+        self._properties[name] = geter, seter
+
+    def add_method(self, name, method):
+        """ Bind function as a method of the application
+
+        When the method is called, a `self` parameter will be prepended to it's
+        list of arguments.
+        """
+        self._methods[name] = method
 
     def _bind(self, wsgi_env):
         self._local.wsgi_env = wsgi_env
