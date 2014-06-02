@@ -79,7 +79,7 @@ class JsonView(View):
     def __init__(self, name, action, methods=None, qs=None):
         super(JsonView, self).__init__(
             name, action, methods=methods,
-            content_type='text/json', qs=qs
+            content_type='application/json', qs=qs
         )
 
     def __call__(self, env, req, *args, **kwargs):
@@ -93,7 +93,7 @@ class JsonView(View):
             # no content
             return Response(status=204)
 
-        return Response(json.dumps(res), content_type='text/json')
+        return Response(json.dumps(res), content_type='application/json')
 
 
 def expose(dispatcher, name, *args, **kwargs):

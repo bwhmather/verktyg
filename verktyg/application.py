@@ -6,12 +6,14 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+import sys
+
 from werkzeug import Request
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
 from verktyg.exception_dispatch import (
-    ExceptionDispatcher, ExceptionBinding
+    ExceptionDispatcher, ExceptionHandler
 )
 from verktyg.routing import URLMap, Route
 from verktyg.dispatch import Dispatcher
@@ -47,6 +49,11 @@ class Application(object):
         return ExceptionDispatcher()
 
     def __init__(self, debug=False):
+        # Application.__setattr__ depends on _properties so we need to set it
+        # using the parent implementation.  A bit magic
+        super(Application, self).__setattr__('_properties', {})
+        self._methods = {}
+
         self.debug = debug
 
         # reference to the bottom of a stack of wsgi middleware wrapping
@@ -71,6 +78,9 @@ class Application(object):
         self.dispatcher.add_bindings(*views)
 
     def expose(self, endpoint=None, *args, **kwargs):
+        """ Decorator to bind a function to an endpoint and optionally the
+        endpoint to a route.
+        """
         def wrapper(f):
             # nonlocal workaround
             endpoint_ = endpoint
@@ -101,20 +111,54 @@ class Application(object):
         Exception handlers take three arguments:
           * a reference to the application
           * a request object
-          * the exception to be rendered
+          * the class of the exception
+          * the exception instance
+          * a traceback
+        The last three arguments are the same as the return value of
+        `sys.exc_info()`
         """
-        self.exception_dispatcher.add(
-            ExceptionBinding(exception_class, handler, **kwargs)
+        self.exception_dispatcher.add_exception_handlers(
+            ExceptionHandler(exception_class, handler, **kwargs)
         )
 
     def exception_handler(self, exception_class, **kwargs):
         """ Decorator that can be used to bind an exception handler to the
-        application.  Takes the same arguments as `ExceptionBinding`
+        application.  Takes the same arguments as `ExceptionHandler`
         """
         def wrapper(handler):
             self.add_exception_handler(exception_class, handler, **kwargs)
             return handler
         return wrapper
+
+    def __getattr__(self, name):
+        if name in self._properties:
+            geter, seter = self._properties[name]
+            return geter(self)
+        elif name in self._methods:
+            method = self._methods[name]
+            return lambda *args, **kwargs: method(self, *args, **kwargs)
+        else:
+            raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        if name in self._properties:
+            geter, seter = self._properties[name]
+            if seter is None:
+                raise AttributeError("can't set attribute")
+            seter(self, value)
+        else:
+            super(Application, self).__setattr__(name, value)
+
+    def add_property(self, name, geter, seter=None):
+        self._properties[name] = geter, seter
+
+    def add_method(self, name, method):
+        """ Bind function as a method of the application
+
+        When the method is called, a `self` parameter will be prepended to it's
+        list of arguments.
+        """
+        self._methods[name] = method
 
     def _bind(self, wsgi_env):
         self._local.wsgi_env = wsgi_env
@@ -138,20 +182,19 @@ class Application(object):
 
         try:
             response = self._map_adapter.dispatch(call_view)
-        except BaseException as e:
-            # exceptions should be propogated if debug mode is enabled
-            if self.debug:
-                raise
+        except BaseException:
+            type_, value_, traceback_ = sys.exc_info()
 
             handler = self.exception_dispatcher.lookup(
-                type(e),
+                type_,
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
             )
             if handler is None:
                 raise
-            response = handler(self, request, e)
+
+            response = handler(self, request, type_, value_, traceback_)
 
         return response(wsgi_env, start_response)
 

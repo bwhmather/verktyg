@@ -11,12 +11,12 @@ from werkzeug.exceptions import NotAcceptable
 from verktyg.accept import Representation, select_representation
 
 
-class ExceptionBindingFactory(object):
-    def get_bindings(self):
+class ExceptionHandlerFactory(object):
+    def get_exception_handlers(self):
         raise NotImplementedError()
 
 
-class ExceptionBinding(ExceptionBindingFactory, Representation):
+class ExceptionHandler(ExceptionHandlerFactory, Representation):
     """An action associated with an exception class and providing a particular
     representation.
 
@@ -25,7 +25,7 @@ class ExceptionBinding(ExceptionBindingFactory, Representation):
         subclasses
 
     `action`
-        The action to perform if the binding is matched.
+        The action to perform if the handler is matched.
         Function accepting `(application, request, exception)` and returning
         a werkzeug response object.
     """
@@ -34,9 +34,9 @@ class ExceptionBinding(ExceptionBindingFactory, Representation):
         self.exception_class = exception_class
         self.action = action
 
-        super(ExceptionBinding, self).__init__(**kwargs)
+        super(ExceptionHandler, self).__init__(**kwargs)
 
-    def get_bindings(self):
+    def get_exception_handlers(self):
         yield self
 
     def __repr__(self):
@@ -47,32 +47,32 @@ class ExceptionBinding(ExceptionBindingFactory, Representation):
         )
 
 
-class ExceptionDispatcher(ExceptionBindingFactory):
-    def __init__(self, bindings=[]):
-        self._bindings = {}
+class ExceptionDispatcher(ExceptionHandlerFactory):
+    def __init__(self, handlers=[]):
+        self._handlers = {}
 
-        for binding in bindings:
-            self.add(binding)
+        self.add_exception_handlers(*handlers)
 
-    def add(self, handler_factory):
+    def add_exception_handlers(self, *factories):
         """Bind a handlers from a handler factory to render exceptions of a
         particular class or representation.
         Dispatchers can be nested
 
-        :param exception_factory:
-            an instance of `ExceptionBindingFactory` or other object provifing
-            a `get_bindings` method which returns an iterator that of exception
-            bindings.  Both `ExceptionBinding` and `ExceptionDispatcher`
-            implement this interface so both can be nested using a call to
-            `add`
+        :param factories:
+            a number of instances of `ExceptionHandlerFactory` or other objects
+            providing a `get_exception_handlers` method which returns an
+            iterator that yields exception handlers.  Both `ExceptionHandler`
+            and `ExceptionDispatcher` implement this interface so both can be
+            nested using a call to `add_exception_handlers`
         """
-        for binding in handler_factory.get_bindings():
-            if binding.exception_class not in self._bindings:
-                self._bindings[binding.exception_class] = []
-            self._bindings[binding.exception_class].append(binding)
+        for factory in factories:
+            for handler in factory.get_exception_handlers():
+                if handler.exception_class not in self._handlers:
+                    self._handlers[handler.exception_class] = []
+                self._handlers[handler.exception_class].append(handler)
 
-    def get_bindings(self):
-        return iter(self._bindings)
+    def get_exception_handlers(self):
+        return iter(self._handlers)
 
     def lookup(self, exception_class,
                accept='*/*', accept_language=None, accept_charset=None):
@@ -97,18 +97,18 @@ class ExceptionDispatcher(ExceptionBindingFactory):
         """
         # Use the method resolution order of the exception to rank handlers
         for cls in exception_class.mro():
-            if cls not in self._bindings:
+            if cls not in self._handlers:
                 continue
 
             try:
-                binding = select_representation(
-                    self._bindings[cls],
+                handler = select_representation(
+                    self._handlers[cls],
                     accept=accept,
                     accept_language=accept_language,
                     accept_charset=accept_charset
                 )
 
-                return binding.action
+                return handler.action
 
             except NotAcceptable:
                 continue
