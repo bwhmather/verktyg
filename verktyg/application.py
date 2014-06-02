@@ -78,6 +78,9 @@ class Application(object):
         self.dispatcher.add_bindings(*views)
 
     def expose(self, endpoint=None, *args, **kwargs):
+        """ Decorator to bind a function to an endpoint and optionally the
+        endpoint to a route.
+        """
         def wrapper(f):
             # nonlocal workaround
             endpoint_ = endpoint
