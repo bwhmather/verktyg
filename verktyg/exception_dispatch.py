@@ -51,25 +51,25 @@ class ExceptionDispatcher(ExceptionHandlerFactory):
     def __init__(self, handlers=[]):
         self._handlers = {}
 
-        for handler in handlers:
-            self.add_exception_handler(handler)
+        self.add_exception_handlers(*handlers)
 
-    def add_exception_handler(self, handler_factory):
+    def add_exception_handlers(self, *factories):
         """Bind a handlers from a handler factory to render exceptions of a
         particular class or representation.
         Dispatchers can be nested
 
-        :param exception_factory:
-            an instance of `ExceptionHandlerFactory` or other object providing
-            a `get_exception_handlers` method which returns an iterator that
-            yields exception handlers.  Both `ExceptionHandler` and
-            `ExceptionDispatcher` implement this interface so both can be
-            nested using a call to `add_exception_handler`
+        :param factories:
+            a number of instances of `ExceptionHandlerFactory` or other objects
+            providing a `get_exception_handlers` method which returns an
+            iterator that yields exception handlers.  Both `ExceptionHandler`
+            and `ExceptionDispatcher` implement this interface so both can be
+            nested using a call to `add_exception_handlers`
         """
-        for handler in handler_factory.get_exception_handlers():
-            if handler.exception_class not in self._handlers:
-                self._handlers[handler.exception_class] = []
-            self._handlers[handler.exception_class].append(handler)
+        for factory in factories:
+            for handler in factory.get_exception_handlers():
+                if handler.exception_class not in self._handlers:
+                    self._handlers[handler.exception_class] = []
+                self._handlers[handler.exception_class].append(handler)
 
     def get_exception_handlers(self):
         return iter(self._handlers)

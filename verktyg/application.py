@@ -117,7 +117,7 @@ class Application(object):
         The last three arguments are the same as the return value of
         `sys.exc_info()`
         """
-        self.exception_dispatcher.add_exception_handler(
+        self.exception_dispatcher.add_exception_handlers(
             ExceptionHandler(exception_class, handler, **kwargs)
         )
 
