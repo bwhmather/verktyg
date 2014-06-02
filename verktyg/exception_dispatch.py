@@ -25,7 +25,7 @@ class ExceptionHandler(ExceptionHandlerFactory, Representation):
         subclasses
 
     `action`
-        The action to perform if the binding is matched.
+        The action to perform if the handler is matched.
         Function accepting `(application, request, exception)` and returning
         a werkzeug response object.
     """
@@ -48,11 +48,11 @@ class ExceptionHandler(ExceptionHandlerFactory, Representation):
 
 
 class ExceptionDispatcher(ExceptionHandlerFactory):
-    def __init__(self, bindings=[]):
-        self._bindings = {}
+    def __init__(self, handlers=[]):
+        self._handlers = {}
 
-        for binding in bindings:
-            self.add_exception_handler(binding)
+        for handler in handlers:
+            self.add_exception_handler(handler)
 
     def add_exception_handler(self, handler_factory):
         """Bind a handlers from a handler factory to render exceptions of a
@@ -66,13 +66,13 @@ class ExceptionDispatcher(ExceptionHandlerFactory):
             `ExceptionDispatcher` implement this interface so both can be
             nested using a call to `add_exception_handler`
         """
-        for binding in handler_factory.get_exception_handlers():
-            if binding.exception_class not in self._bindings:
-                self._bindings[binding.exception_class] = []
-            self._bindings[binding.exception_class].append(binding)
+        for handler in handler_factory.get_exception_handlers():
+            if handler.exception_class not in self._handlers:
+                self._handlers[handler.exception_class] = []
+            self._handlers[handler.exception_class].append(handler)
 
     def get_exception_handlers(self):
-        return iter(self._bindings)
+        return iter(self._handlers)
 
     def lookup(self, exception_class,
                accept='*/*', accept_language=None, accept_charset=None):
@@ -97,18 +97,18 @@ class ExceptionDispatcher(ExceptionHandlerFactory):
         """
         # Use the method resolution order of the exception to rank handlers
         for cls in exception_class.mro():
-            if cls not in self._bindings:
+            if cls not in self._handlers:
                 continue
 
             try:
-                binding = select_representation(
-                    self._bindings[cls],
+                handler = select_representation(
+                    self._handlers[cls],
                     accept=accept,
                     accept_language=accept_language,
                     accept_charset=accept_charset
                 )
 
-                return binding.action
+                return handler.action
 
             except NotAcceptable:
                 continue
