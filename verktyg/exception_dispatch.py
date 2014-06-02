@@ -11,12 +11,12 @@ from werkzeug.exceptions import NotAcceptable
 from verktyg.accept import Representation, select_representation
 
 
-class ExceptionBindingFactory(object):
-    def get_bindings(self):
+class ExceptionHandlerFactory(object):
+    def get_exception_handlers(self):
         raise NotImplementedError()
 
 
-class ExceptionBinding(ExceptionBindingFactory, Representation):
+class ExceptionHandler(ExceptionHandlerFactory, Representation):
     """An action associated with an exception class and providing a particular
     representation.
 
@@ -34,9 +34,9 @@ class ExceptionBinding(ExceptionBindingFactory, Representation):
         self.exception_class = exception_class
         self.action = action
 
-        super(ExceptionBinding, self).__init__(**kwargs)
+        super(ExceptionHandler, self).__init__(**kwargs)
 
-    def get_bindings(self):
+    def get_exception_handlers(self):
         yield self
 
     def __repr__(self):
@@ -47,31 +47,31 @@ class ExceptionBinding(ExceptionBindingFactory, Representation):
         )
 
 
-class ExceptionDispatcher(ExceptionBindingFactory):
+class ExceptionDispatcher(ExceptionHandlerFactory):
     def __init__(self, bindings=[]):
         self._bindings = {}
 
         for binding in bindings:
-            self.add(binding)
+            self.add_exception_handler(binding)
 
-    def add(self, handler_factory):
+    def add_exception_handler(self, handler_factory):
         """Bind a handlers from a handler factory to render exceptions of a
         particular class or representation.
         Dispatchers can be nested
 
         :param exception_factory:
-            an instance of `ExceptionBindingFactory` or other object provifing
-            a `get_bindings` method which returns an iterator that of exception
-            bindings.  Both `ExceptionBinding` and `ExceptionDispatcher`
-            implement this interface so both can be nested using a call to
-            `add`
+            an instance of `ExceptionHandlerFactory` or other object providing
+            a `get_exception_handlers` method which returns an iterator that
+            yields exception handlers.  Both `ExceptionHandler` and
+            `ExceptionDispatcher` implement this interface so both can be
+            nested using a call to `add_exception_handler`
         """
-        for binding in handler_factory.get_bindings():
+        for binding in handler_factory.get_exception_handlers():
             if binding.exception_class not in self._bindings:
                 self._bindings[binding.exception_class] = []
             self._bindings[binding.exception_class].append(binding)
 
-    def get_bindings(self):
+    def get_exception_handlers(self):
         return iter(self._bindings)
 
     def lookup(self, exception_class,

@@ -13,7 +13,7 @@ from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
 from verktyg.exception_dispatch import (
-    ExceptionDispatcher, ExceptionBinding
+    ExceptionDispatcher, ExceptionHandler
 )
 from verktyg.routing import URLMap, Route
 from verktyg.dispatch import Dispatcher
@@ -117,13 +117,13 @@ class Application(object):
         The last three arguments are the same as the return value of
         `sys.exc_info()`
         """
-        self.exception_dispatcher.add(
-            ExceptionBinding(exception_class, handler, **kwargs)
+        self.exception_dispatcher.add_exception_handler(
+            ExceptionHandler(exception_class, handler, **kwargs)
         )
 
     def exception_handler(self, exception_class, **kwargs):
         """ Decorator that can be used to bind an exception handler to the
-        application.  Takes the same arguments as `ExceptionBinding`
+        application.  Takes the same arguments as `ExceptionHandler`
         """
         def wrapper(handler):
             self.add_exception_handler(exception_class, handler, **kwargs)
