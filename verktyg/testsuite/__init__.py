@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-    werkzeug_dispatch.testsuite
+    verktyg.testsuite
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Contains all Dispatcher tests.
@@ -13,6 +12,14 @@ import unittest
 import werkzeug.testsuite as wzt
 
 
+class BetterLoader(wzt.BetterLoader):
+    """Werkzeug loader saves werkzeug root suite in closure.  This just
+    overrides it.
+    """
+    def getRootSuite(self):
+        return suite()
+
+
 def suite():
     suite = unittest.TestSuite()
     for other_suite in wzt.iter_suites(__name__):
@@ -22,7 +29,7 @@ def suite():
 
 def main():
     try:
-        unittest.main(testLoader=wzt.BetterLoader(), defaultTest='suite')
+        unittest.main(testLoader=BetterLoader(), defaultTest='suite')
     except Exception:
         import sys
         import traceback
