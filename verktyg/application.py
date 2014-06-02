@@ -6,6 +6,8 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+import sys
+
 from werkzeug import Request
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
@@ -101,7 +103,11 @@ class Application(object):
         Exception handlers take three arguments:
           * a reference to the application
           * a request object
-          * the exception to be rendered
+          * the class of the exception
+          * the exception instance
+          * a traceback
+        The last three arguments are the same as the return value of
+        `sys.exc_info()`
         """
         self.exception_dispatcher.add(
             ExceptionBinding(exception_class, handler, **kwargs)
@@ -138,20 +144,19 @@ class Application(object):
 
         try:
             response = self._map_adapter.dispatch(call_view)
-        except BaseException as e:
-            # exceptions should be propogated if debug mode is enabled
-            if self.debug:
-                raise
+        except BaseException:
+            type_, value_, traceback_ = sys.exc_info()
 
             handler = self.exception_dispatcher.lookup(
-                type(e),
+                type_,
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
             )
             if handler is None:
                 raise
-            response = handler(self, request, e)
+
+            response = handler(self, request, type_, value_, traceback_)
 
         return response(wsgi_env, start_response)
 

@@ -40,12 +40,12 @@ class ApplicationTestCase(WerkzeugTestCase):
         app = Application()
 
         @app.exception_handler(BaseException)
-        def default_handler(app, req, exception):
+        def default_handler(app, req, exc_type, exc_value, exc_traceback):
             return Response('default handler', status=500)
 
         @app.exception_handler(HTTPException)
-        def werkzeug_handler(app, req, exception):
-            return Response('werkzeug handler', exception.code)
+        def werkzeug_handler(app, req, exc_type, exc_value, exc_traceback):
+            return Response('werkzeug handler', exc_value.code)
 
         @app.expose(route='/raise_execption')
         def raise_exception(app, req):
@@ -109,20 +109,21 @@ class ApplicationTestCase(WerkzeugTestCase):
         app = Application()
 
         @app.exception_handler(HTTPException)
-        def default_handler(app, req, exception):
-            return Response('default handler', status=exception.code)
+        def default_handler(app, req, exc_type, exc_value, exc_traceback):
+            return Response('default handler', status=exc_value.code)
 
         @app.exception_handler(HTTPException, content_type='application/json')
-        def default_json_handler(app, req, exception):
+        def default_json_handler(app, req, exc_type, exc_value, exc_traceback):
             return Response(
                 '{"type": "json"}',
-                status=exception.code,
+                status=exc_value.code,
                 content_type='application/json'
             )
 
         @app.exception_handler(NotFound, content_type='text/html')
-        def html_not_found_handler(app, req, exception):
-            return Response('pretty NotFound', status=exception.code)
+        def html_not_found_handler(
+                app, req, exc_type, exc_value, exc_traceback):
+            return Response('pretty NotFound', status=exc_value.code)
 
         @app.expose(route='/raise_418')
         def raise_418(app, req):
