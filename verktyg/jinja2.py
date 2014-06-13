@@ -1,11 +1,11 @@
-import jinja2
-
 from werkzeug.utils import cached_property
 
 
 class Jinja2ApplicationMixin(object):
     @cached_property
     def jinja_env(self):
+        # imported here as jinja is not required in setup.py.
+        import jinja2
         return jinja2.Environment(loader=jinja2.ChoiceLoader([]))
 
     def add_templates(self, loader):
