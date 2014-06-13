@@ -61,7 +61,7 @@ class TemplateView(View):
     """
     def __init__(self, name, action,
                  methods=None, template=None,
-                 content_type=None):
+                 content_type='text/html'):
         super(TemplateView, self).__init__(
             name, action,
             methods=methods,
@@ -72,7 +72,10 @@ class TemplateView(View):
         res = self._action(env, req, *args, **kwargs)
         if isinstance(res, Response):
             return res
-        return Response(env.get_renderer(self._template)(res))
+        return Response(
+            env.get_renderer(self._template)(res),
+            content_type=self._content_type
+        )
 
 
 class JsonView(View):
