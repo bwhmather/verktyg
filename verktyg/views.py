@@ -69,9 +69,11 @@ class TemplateView(View):
         self._template = template
 
     def __call__(self, env, req, *args, **kwargs):
-        res = self._action(env, req, *args, **kwargs)
+        res = super(JsonView, self).__call__(env, req, *args, **kwargs)
+
         if isinstance(res, Response):
             return res
+
         return Response(
             env.get_renderer(self._template)(res),
             content_type=self._content_type
