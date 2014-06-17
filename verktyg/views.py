@@ -61,7 +61,7 @@ class TemplateView(View):
     """
     def __init__(self, name, action,
                  methods=None, template=None,
-                 content_type=None):
+                 content_type='text/html'):
         super(TemplateView, self).__init__(
             name, action,
             methods=methods,
@@ -69,10 +69,15 @@ class TemplateView(View):
         self._template = template
 
     def __call__(self, env, req, *args, **kwargs):
-        res = self._action(env, req, *args, **kwargs)
+        res = super(JsonView, self).__call__(env, req, *args, **kwargs)
+
         if isinstance(res, Response):
             return res
-        return Response(env.get_renderer(self._template)(res))
+
+        return Response(
+            env.get_renderer(self._template)(res),
+            content_type=self._content_type
+        )
 
 
 class JsonView(View):
@@ -98,7 +103,7 @@ class JsonView(View):
 
 def expose(dispatcher, name, *args, **kwargs):
     def decorator(f):
-        dispatcher.add_bindings(TemplateView(name, f, *args, **kwargs))
+        dispatcher.add_bindings(View(name, f, *args, **kwargs))
         return f
     return decorator
 
