@@ -29,7 +29,7 @@ setup(
         ],
     platforms='any',
     install_requires=[
-        'werkzeug',
+        'werkzeug >= 0.9, < 0.10',
         'python-mimeparse >= 0.1.4',
         ],
     packages=find_packages(),
