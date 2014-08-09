@@ -39,6 +39,7 @@ Examples
 Hello World
 
 .. code:: python
+
     # hello.py
     from werkzeug import Response
     from verktyg import Dispatcher, Application, expose
@@ -56,6 +57,7 @@ Hello World
 
 
 .. code:: python
+
     # root.py
     from werkzeug.serving import run_simple
     from verktyg.routing import Route
