@@ -59,24 +59,41 @@ Hello World
 .. code:: python
 
     # root.py
+    import os
+    import logging
+
     from werkzeug.serving import run_simple
     from verktyg.routing import Route
     from verktyg import Application
 
 
-    app = Application()
+    def create_app(config=os.environ, debug=None, proxy=None):
+        if debug is None:
+            debug = config.get('DEBUG', False)
 
-    app.add_routes(
-        Route('/', endpoint='index'),
-    )
+        if debug:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig()
 
-    import hello
-    hello.bind(app)
+        app = Application(debug=debug)
+        app.config = config
+
+        app.add_routes(
+            Route('/', endpoint='index'),
+        )
+
+        import hello
+        hello.bind(app)
+
+        return app
+
 
     def run_dev_server():
+        app = create_app(debug=True)
         from werkzeug.serving import run_simple
-
         run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
+
 
     if __name__ == '__main__':
         run_dev_server()
