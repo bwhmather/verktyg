@@ -5,6 +5,34 @@
 Verktyg
 =======
 
+Explicit and seperate request and server state.
+
+Seperate mapping of routes to endpoints and endpoints to handlers.
+
+Proper support for dispatching on request content-type and method.
+
+Components
+----------
+
+Router
+~~~~~~
+Based on werkzeug routing but with method dispatch removed.
+
+Maps from urls to enpoint identifiers
+
+
+Dispatcher
+~~~~~~~~~~
+Chooses handler based on endpoint, request accept headers, and request, method.
+
+
+Application
+~~~~~~~~~~~
+Wraps dispatcher and router
+
+Binds together request parsing, routing, dispatch, and error handling.
+
+
 Examples
 --------
 
@@ -50,3 +78,11 @@ Hello World
 
     if __name__ == '__main__':
         run_dev_server()
+
+
+Bugs
+----
+
+Please post any problems or feature requests using the `issue tracker <issues_>`_
+
+.. _issues: https://github.com/bwhmather/verktyg/issues
