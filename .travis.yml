@@ -14,5 +14,5 @@ install:
 # command to run tests
 script:
   - python -c 'from verktyg.testsuite import main; main()';
-  - pep8 verktyg
-  - pyflakes verktyg
+  - pep8 verktyg setup.py
+  - pyflakes verktyg setup.py
