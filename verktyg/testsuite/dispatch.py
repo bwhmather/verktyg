@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 """
     verktyg.testsuite.dispatch
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests for the core dispatcher.
 

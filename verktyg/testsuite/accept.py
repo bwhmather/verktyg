@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 """
     verktyg.testsuite.accept
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests for choosing representations based on content type, etc.
 

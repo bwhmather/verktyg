@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 """
     verktyg.testsuite.views
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~
 
     Tests for view wrappers.
 
