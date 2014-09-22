@@ -39,7 +39,8 @@ Binds together request parsing, routing, dispatch, and error handling.
 Examples
 --------
 
-Hello World
+A slightly overcomplicated Hello World application.
+Tries to illustrate separate route configuration and implementation.
 
 .. code:: python
 
