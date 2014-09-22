@@ -2,14 +2,17 @@
     :target: http://travis-ci.org/bwhmather/verktyg
     :alt: Build Status
 
-Verktyg
-=======
+`Verktyg <verktyg_>`_
+=====================
 
-Explicit and seperate request and server state.
+Verktyg is a web framework built on `werkzeug`_.
 
-Seperate mapping of routes to endpoints and endpoints to handlers.
+It separates mapping of routes to endpoints and endpoints to handlers and provides a mechanism for dispatching on request content-type and method.
 
-Proper support for dispatching on request content-type and method.
+It also includes an optional application base class.
+This wraps the routing system and provides a binding mechanism to allow extension.
+The request and server context are kept explicit and separate.
+
 
 Components
 ----------
@@ -18,7 +21,7 @@ Router
 ~~~~~~
 Based on werkzeug routing but with method dispatch removed.
 
-Maps from urls to enpoint identifiers
+Maps from urls to endpoint identifiers
 
 
 Dispatcher
@@ -104,4 +107,6 @@ Bugs
 
 Please post any problems or feature requests using the `issue tracker <issues_>`_
 
+.. _verktyg: https://github.com/bwhmather/verktyg
+.. _werkzeug: https://github.com/mitsuhiko/werkzeug
 .. _issues: https://github.com/bwhmather/verktyg/issues
