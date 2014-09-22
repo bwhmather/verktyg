@@ -13,6 +13,9 @@ It also includes an optional application base class.
 This wraps the routing system and provides a binding mechanism to allow extension.
 The request and server context are kept explicit and separate.
 
+Focus is on building api's where support for multiple content types is likely to be important, and where it doesn't make sense to use a form builder and therefore share code between ``GET`` and other methods.
+For building html websites flask is probably a better choice.
+
 
 Components
 ----------
