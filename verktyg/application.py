@@ -170,7 +170,7 @@ class Application(object):
         request = self.request_class(wsgi_env)
 
         def call_view(name, kwargs):
-            endpoint = self.dispatcher.lookup(
+            binding = self.dispatcher.lookup(
                 name,
                 method=wsgi_env.get('REQUEST_METHOD'),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
@@ -178,7 +178,9 @@ class Application(object):
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
             )
 
-            return endpoint(self, request, **kwargs)
+            request.binding = binding
+
+            return binding(self, request, **kwargs)
 
         try:
             response = self._map_adapter.dispatch(call_view)
