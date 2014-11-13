@@ -136,7 +136,10 @@ class Application(object):
             return geter(self)
         elif name in self._methods:
             method = self._methods[name]
-            return lambda *args, **kwargs: method(self, *args, **kwargs)
+            # functions are also descriptors
+            # TODO make this work with callables
+            # TODO merge with properties
+            return method.__get__(self, self.__class__)
         else:
             raise AttributeError(name)
 
