@@ -5,14 +5,20 @@ python:
   - "3.3"
   - "3.4"
 
-# command to install dependencies
 install:
   - "pip install -e ."
   - "pip install pyflakes"
   - "pip install pep8"
 
-# command to run tests
 script:
   - python -c 'from verktyg.testsuite import main; main()';
-  - pep8 verktyg
-  - pyflakes verktyg
+  - pep8 verktyg setup.py
+  - pyflakes verktyg setup.py
+
+deploy:
+  provider: pypi
+  user: "bwhmather-travis"
+  password:
+    secure: "bN+OPRc7rE2GOC+GQ//9ESUo7zik0lp3DZGGNOSP8g41Ti72WbnR0x0og3EvLuFQnRdQFwkRTerWlmP+Wbcp8rl0V2XNjUdXYtpZn1YsrpBz9hgKSerjaGfXHOIQGT/t4LDfsZztyWjA2TQ6Qm9wKRE1QVG7GlcNgVT+SpJn9Ns="
+  on:
+    branch: "master"

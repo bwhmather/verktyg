@@ -38,7 +38,7 @@ class Binding(BindingFactory, Representation):
     `language`
         See `Representation`
 
-    `charser`
+    `charset`
         See `Representation`
 
     `qs`
@@ -51,6 +51,9 @@ class Binding(BindingFactory, Representation):
         self.action = action
 
         super(Binding, self).__init__(**kwargs)
+
+    def __call__(self, app, req, *args, **kwargs):
+        return self.action(app, req, *args, **kwargs)
 
     def get_bindings(self):
         yield self
@@ -113,4 +116,4 @@ class Dispatcher(BindingFactory):
             accept_charset=accept_charset
         )
 
-        return representation.action
+        return representation

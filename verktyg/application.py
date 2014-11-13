@@ -136,7 +136,10 @@ class Application(object):
             return geter(self)
         elif name in self._methods:
             method = self._methods[name]
-            return lambda *args, **kwargs: method(self, *args, **kwargs)
+            # functions are also descriptors
+            # TODO make this work with callables
+            # TODO merge with properties
+            return method.__get__(self, self.__class__)
         else:
             raise AttributeError(name)
 
@@ -170,7 +173,7 @@ class Application(object):
         request = self.request_class(wsgi_env)
 
         def call_view(name, kwargs):
-            endpoint = self.dispatcher.lookup(
+            binding = self.dispatcher.lookup(
                 name,
                 method=wsgi_env.get('REQUEST_METHOD'),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
@@ -178,7 +181,9 @@ class Application(object):
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
             )
 
-            return endpoint(self, request, **kwargs)
+            request.binding = binding
+
+            return binding(self, request, **kwargs)
 
         try:
             response = self._map_adapter.dispatch(call_view)

@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='verktyg',
-    version='0.3.0',
+    version='0.4.0',
     url='https://github.com/bwhmather/verktyg',
     license='BSD',
     author='Ben Mather',
@@ -29,7 +29,7 @@ setup(
         ],
     platforms='any',
     install_requires=[
-        'werkzeug',
+        'werkzeug >= 0.9, < 0.10',
         'python-mimeparse >= 0.1.4',
         ],
     packages=find_packages(),
