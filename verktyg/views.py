@@ -98,7 +98,12 @@ class JsonView(View):
             # no content
             return Response(status=204)
 
-        return Response(json.dumps(res), content_type='application/json')
+        if env.debug:
+            json_response = json.dumps(res, indent=4)
+        else:
+            json_response = json.dumps(res, separators=(',', ':'))
+
+        return Response(json_response, content_type='application/json')
 
 
 def expose(dispatcher, name, *args, **kwargs):
