@@ -12,7 +12,7 @@ install:
   - "pip install pep8"
 
 script:
-  - "python -c 'from verktyg.testsuite import main; main()'"
+  - "python setup.py test"
   - "pep8 verktyg setup.py"
   - "pyflakes verktyg setup.py"
 
