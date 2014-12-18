@@ -8,13 +8,17 @@ python:
 
 install:
   - "pip install -e ."
+  - "pip install coveralls"
   - "pip install pyflakes"
   - "pip install pep8"
 
 script:
-  - "python setup.py test"
+  - "coverage run --source=verktyg setup.py test"
   - "pep8 verktyg setup.py"
   - "pyflakes verktyg setup.py"
+
+after_success:
+  - "coveralls"
 
 deploy:
   provider: pypi
