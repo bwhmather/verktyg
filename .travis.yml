@@ -12,9 +12,9 @@ install:
   - "pip install pep8"
 
 script:
-  - python -c 'from verktyg.testsuite import main; main()';
-  - pep8 verktyg setup.py
-  - pyflakes verktyg setup.py
+  - "python -c 'from verktyg.testsuite import main; main()'"
+  - "pep8 verktyg setup.py"
+  - "pyflakes verktyg setup.py"
 
 deploy:
   provider: pypi
