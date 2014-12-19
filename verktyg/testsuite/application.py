@@ -172,7 +172,7 @@ class ApplicationTestCase(WerkzeugTestCase):
             app.foo = 'baz'
         except AttributeError:
             pass
-        else:
+        else:  # pragma: no cover
             self.fail("Should raise AttributeError")
 
         # test setters

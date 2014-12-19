@@ -50,7 +50,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match('/bar')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://example.org/test/bar/')
-        else:
+        else:  # pragma: no cover
             self.fail('Expected request redirect')
 
         adapter = map.bind('example.org', '/')
@@ -58,7 +58,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match('/bar')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://example.org/bar/')
-        else:
+        else:  # pragma: no cover
             self.fail('Expected request redirect')
 
         adapter = map.bind('example.org', '/')
@@ -66,7 +66,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match('/bar', query_args={'aha': 'muhaha'})
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://example.org/bar/?aha=muhaha')
-        else:
+        else:  # pragma: no cover
             self.fail('Expected request redirect')
 
         adapter = map.bind('example.org', '/')
@@ -74,7 +74,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match('/bar', query_args='aha=muhaha')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://example.org/bar/?aha=muhaha')
-        else:
+        else:  # pragma: no cover
             self.fail('Expected request redirect')
 
         adapter = map.bind_to_environ(create_environ('/bar?foo=bar',
@@ -83,7 +83,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match()
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://example.org/bar/?foo=bar')
-        else:
+        else:  # pragma: no cover
             self.fail('Expected request redirect')
 
     def test_environ_defaults(self):
@@ -380,7 +380,7 @@ class RoutingTestCase(WerkzeugTestCase):
                 e.new_url,
                 'http://localhost/%C3%B6%C3%A4%C3%BC/'
             )
-        else:
+        else:  # pragma: no cover
             self.fail('expected request redirect exception')
 
     def test_request_redirect_default(self):
@@ -393,7 +393,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match(u'/foo/42')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://localhost/foo')
-        else:
+        else:  # pragma: no cover
             self.fail('expected request redirect exception')
 
     def test_request_redirect_default_subdomain(self):
@@ -406,7 +406,7 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match(u'/foo/42')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://test.localhost/foo')
-        else:
+        else:  # pragma: no cover
             self.fail('expected request redirect exception')
 
     def test_adapter_match_return_route(self):
@@ -906,7 +906,7 @@ class RoutingTestCase(WerkzeugTestCase):
             response = e.get_response({})
             self.assert_strict_equal(response.headers['location'],
                                      u'http://example.com/foo%20bar')
-        else:
+        else:  # pragma: no cover
             self.fail('Expected redirect')
 
     def test_unicode_routes(self):
