@@ -8,6 +8,8 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
+import unittest
+
 from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug.wrappers import Response
@@ -68,3 +70,9 @@ class ViewsTestCase(WerkzeugTestCase):
         self.assert_equal(
             b'too slow',
             dispatcher.lookup('returns-response')(env, None).get_data())
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(ViewsTestCase))
+    return suite
