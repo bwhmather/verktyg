@@ -15,21 +15,22 @@ from werkzeug.testsuite import WerkzeugTestCase
 from werkzeug.wrappers import Response
 from werkzeug.exceptions import MethodNotAllowed
 
-import verktyg as d
+import verktyg
+import verktyg.views as vtv
 
 
 class ViewsTestCase(WerkzeugTestCase):
     def test_decorators(self):
-        dispatcher = d.Dispatcher()
+        dispatcher = verktyg.Dispatcher()
 
-        @d.expose(dispatcher, 'foo')
+        @vtv.expose(dispatcher, 'foo')
         def foo(env, req):
             pass
 
     def test_class_view(self):
-        dispatcher = d.Dispatcher()
+        dispatcher = verktyg.Dispatcher()
 
-        class Foo(d.ClassView):
+        class Foo(vtv.ClassView):
             name = 'foo'
 
             def GET(self, env, req):
@@ -38,7 +39,7 @@ class ViewsTestCase(WerkzeugTestCase):
             def POST(self, env, req):
                 return 'post'
 
-        dispatcher.add(Foo())
+        dispatcher.add_bindings(Foo())
 
         self.assert_equal('get',
                           dispatcher.lookup('foo', method='GET')(None, None))
@@ -48,7 +49,7 @@ class ViewsTestCase(WerkzeugTestCase):
                            dispatcher.lookup, 'foo', method='PUT')
 
     def test_template_view(self):
-        dispatcher = d.Dispatcher()
+        dispatcher = verktyg.Dispatcher()
 
         class HelloEnv(object):
             def get_renderer(self, name):
@@ -56,11 +57,11 @@ class ViewsTestCase(WerkzeugTestCase):
                     return lambda res: Response('hello %s' % res)
         env = HelloEnv()
 
-        @d.expose(dispatcher, 'say-hello', template='hello')
+        @vtv.expose_html(dispatcher, 'say-hello', template='hello')
         def say_hello(env, req):
             return 'world'
 
-        @d.expose(dispatcher, 'returns-response', template='hello')
+        @vtv.expose_html(dispatcher, 'returns-response', template='hello')
         def returns_response(env, req):
             return Response('too slow')
 
