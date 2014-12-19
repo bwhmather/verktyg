@@ -113,10 +113,11 @@ def expose(dispatcher, name, *args, **kwargs):
     return decorator
 
 
-def expose_html(*args, **kwargs):
-    if 'content_type' not in kwargs:
-        kwargs['content_type'] = 'text/html'
-    return expose(*args, **kwargs)
+def expose_html(dispatcher, name, *args, **kwargs):
+    def decorator(f):
+        dispatcher.add_bindings(TemplateView(name, f, *args, **kwargs))
+        return f
+    return decorator
 
 
 def expose_json(dispatcher, name, *args, **kwargs):
