@@ -846,7 +846,7 @@ class RoutingTestCase(WerkzeugTestCase):
             a.match('/foo')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://www.example.com/foo/')
-        else:  # pragman: no cover
+        else:  # pragma: no cover
             self.fail('expected redirect')
 
         a = m.bind('files.example.com')
