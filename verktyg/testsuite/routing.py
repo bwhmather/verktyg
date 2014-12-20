@@ -312,7 +312,7 @@ class RoutingTestCase(WerkzeugTestCase):
         raise_this = None
 
         def view_func(endpoint, values):
-            if raise_this is not None:
+            if raise_this is not None:  # pragma: no cover
                 raise raise_this
             return Response(repr((endpoint, values)))
 
@@ -726,8 +726,8 @@ class RoutingTestCase(WerkzeugTestCase):
                 a.match(path, query_args=args)
             except r.RequestRedirect as e:
                 self.assert_equal(e.new_url, 'http://example.com' + new_url)
-            else:
-                assert False, 'expected redirect'
+            else:  # pragma: no cover
+                self.fail('expected redirect')
 
         ensure_redirect('/index.html', '/')
         ensure_redirect('/users/index.html', '/users/')
@@ -846,8 +846,8 @@ class RoutingTestCase(WerkzeugTestCase):
             a.match('/foo')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://www.example.com/foo/')
-        else:
-            assert False, 'expected redirect'
+        else:  # pragman: no cover
+            self.fail('expected redirect')
 
         a = m.bind('files.example.com')
         self.assert_equal(
@@ -862,8 +862,8 @@ class RoutingTestCase(WerkzeugTestCase):
             a.match('/1')
         except r.RequestRedirect as e:
             self.assert_equal(e.new_url, 'http://www.example.com/foo/')
-        else:
-            assert False, 'expected redirect'
+        else:  # pragma: no cover
+            self.fail('expected redirect')
 
     def test_server_name_casing(self):
         m = r.URLMap([
@@ -884,8 +884,8 @@ class RoutingTestCase(WerkzeugTestCase):
             a.match()
         except r.NotFound:
             pass
-        else:
-            assert False, 'Expected not found exception'
+        else:  # pragma: no cover
+            self.fail('Expected not found exception')
 
     def test_redirect_request_exception_code(self):
         exc = r.RequestRedirect('http://www.google.com/')
