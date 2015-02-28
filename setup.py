@@ -7,6 +7,11 @@ A web framework based on Werkzeug.
 """
 from setuptools import setup, find_packages
 
+extras_require = {
+    'Templates': [
+        'jinja2',
+    ],
+}
 
 setup(
     name='verktyg',
@@ -26,12 +31,16 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        ],
+    ],
     platforms='any',
     install_requires=[
         'werkzeug >= 0.9, < 0.10',
         'python-mimeparse >= 0.1.4',
-        ],
+    ],
+#    tests_require=list(set(sum(
+#        (extras_require[extra] for extra in ['XMLRenderer']), []
+#    ))),
+    extras_require=extras_require,
     packages=find_packages(),
     include_package_data=True,
     test_suite='verktyg.testsuite.suite',
