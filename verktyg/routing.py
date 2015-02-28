@@ -528,7 +528,7 @@ class Route(RouteFactory):
         self.redirect_to = redirect_to
 
         if defaults:
-            self.arguments = set(map(str, defaults))
+            self.arguments = {str(default) for default in defaults}
         else:
             self.arguments = set()
         self._trace = self._converters = self._regex = self._weights = None

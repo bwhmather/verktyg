@@ -82,16 +82,15 @@ class Application(object):
         endpoint to a route.
         """
         def wrapper(f):
-            # nonlocal workaround
-            endpoint_ = endpoint
-            if endpoint_ is None:
-                endpoint_ = f.__name__
+            nonlocal endpoint
+            if endpoint is None:
+                endpoint = f.__name__
 
             route = kwargs.pop('route', None)
             if route is not None:
-                self.add_routes(Route(route, endpoint=endpoint_))
+                self.add_routes(Route(route, endpoint=endpoint))
 
-            return expose(self.dispatcher, endpoint_, *args, **kwargs)(f)
+            return expose(self.dispatcher, endpoint, *args, **kwargs)(f)
         return wrapper
 
     def add_middleware(self, middleware, *args, **kwargs):

@@ -16,13 +16,14 @@ class View(BindingFactory):
     """ Wraps a function or callable so that it can be bound to a name in a
     dispatcher.
     """
-    def __init__(self, name, action, methods=None, content_type=None, qs=None):
+    def __init__(self, name, action, *,
+                 methods=None, content_type=None, qs=None):
         self._name = name
 
         if methods is None:
-            self._methods = set(['GET'])
+            self._methods = {'GET'}
         elif isinstance(methods, str):
-            self._methods = set([methods])
+            self._methods = {methods}
         else:
             self._methods = methods
 
@@ -42,7 +43,7 @@ class View(BindingFactory):
 
 class ClassView(BindingFactory):
     def get_bindings(self):
-        for method in set(['GET', 'HEAD', 'POST', 'PUT', 'DELETE']):  # TODO
+        for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
                 yield Binding(self.name, getattr(self, method),
                               method=method)
@@ -59,9 +60,8 @@ class TemplateView(View):
                      the environment or a callable applied to the result to
                      create an http `Response` object
     """
-    def __init__(self, name, action,
-                 methods=None, template=None,
-                 content_type='text/html'):
+    def __init__(self, name, action, *,
+                 methods=None, template=None, content_type='text/html'):
         super(TemplateView, self).__init__(
             name, action,
             methods=methods,
