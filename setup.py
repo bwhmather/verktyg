@@ -37,9 +37,9 @@ setup(
         'werkzeug >= 0.9, < 0.10',
         'python-mimeparse >= 0.1.4',
     ],
-#    tests_require=list(set(sum(
-#        (extras_require[extra] for extra in ['XMLRenderer']), []
-#    ))),
+    tests_require=list(set(sum(
+        (extras_require[extra] for extra in ['Templates']), []
+    ))),
     extras_require=extras_require,
     packages=find_packages(),
     include_package_data=True,
