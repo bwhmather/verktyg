@@ -186,7 +186,7 @@ class Application(object):
 
         try:
             response = self._map_adapter.dispatch(call_view)
-        except BaseException:
+        except Exception:
             type_, value_, traceback_ = sys.exc_info()
 
             handler = self.exception_dispatcher.lookup(
