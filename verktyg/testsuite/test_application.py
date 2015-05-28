@@ -11,7 +11,6 @@
 import unittest
 
 from werkzeug.test import Client
-from werkzeug.testsuite import WerkzeugTestCase
 
 from werkzeug import Response, BaseResponse
 from werkzeug.exceptions import HTTPException, NotFound, ImATeapot
@@ -21,7 +20,7 @@ from verktyg.routing import Route
 from verktyg.application import Application
 
 
-class ApplicationTestCase(WerkzeugTestCase):
+class ApplicationTestCase(unittest.TestCase):
     def test_basic(self):
         app = Application()
 
@@ -94,7 +93,7 @@ class ApplicationTestCase(WerkzeugTestCase):
                     got_response = True
                     return start_response(*args, **kwargs)
 
-                app(env, handle_start_response)
+                return app(env, handle_start_response)
             return handler
 
         app.add_middleware(middleware)

@@ -7,9 +7,16 @@
 """
 import unittest
 
-import werkzeug.testsuite as wzt
+from verktyg.testsuite import (
+    test_accept, test_application, test_dispatch, test_routing, test_views,
+)
 
 
-suite = unittest.TestSuite()
-for other_suite in wzt.iter_suites(__name__):
-    suite.addTest(other_suite)
+loader = unittest.TestLoader()
+suite = unittest.TestSuite((
+    loader.loadTestsFromModule(test_accept),
+    loader.loadTestsFromModule(test_application),
+    loader.loadTestsFromModule(test_dispatch),
+    loader.loadTestsFromModule(test_routing),
+    loader.loadTestsFromModule(test_views),
+))

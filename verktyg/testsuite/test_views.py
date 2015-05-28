@@ -10,8 +10,6 @@
 """
 import unittest
 
-from werkzeug.testsuite import WerkzeugTestCase
-
 from werkzeug.wrappers import Response
 from werkzeug.exceptions import MethodNotAllowed
 
@@ -19,7 +17,7 @@ import verktyg
 import verktyg.views as vtv
 
 
-class ViewsTestCase(WerkzeugTestCase):
+class ViewsTestCase(unittest.TestCase):
     def test_decorators(self):
         dispatcher = verktyg.Dispatcher()
 
@@ -41,12 +39,18 @@ class ViewsTestCase(WerkzeugTestCase):
 
         dispatcher.add_bindings(Foo())
 
-        self.assert_equal('get',
-                          dispatcher.lookup('foo', method='GET')(None, None))
-        self.assert_equal('post',
-                          dispatcher.lookup('foo', method='POST')(None, None))
-        self.assert_raises(MethodNotAllowed,
-                           dispatcher.lookup, 'foo', method='PUT')
+        self.assertEqual(
+            'get',
+            dispatcher.lookup('foo', method='GET')(None, None)
+        )
+        self.assertEqual(
+            'post',
+            dispatcher.lookup('foo', method='POST')(None, None)
+        )
+        self.assertRaises(
+            MethodNotAllowed,
+            dispatcher.lookup, 'foo', method='PUT'
+        )
 
     def test_template_view(self):
         dispatcher = verktyg.Dispatcher()
@@ -65,10 +69,10 @@ class ViewsTestCase(WerkzeugTestCase):
         def returns_response(env, req):
             return Response('too slow')
 
-        self.assert_equal(
+        self.assertEqual(
             b'hello world',
             dispatcher.lookup('say-hello')(env, None).get_data())
-        self.assert_equal(
+        self.assertEqual(
             b'too slow',
             dispatcher.lookup('returns-response')(env, None).get_data())
 

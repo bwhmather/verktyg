@@ -13,15 +13,13 @@
 import unittest
 import uuid
 
-from werkzeug.testsuite import WerkzeugTestCase
-
 from verktyg import routing as r
 from werkzeug.wrappers import Response
 from werkzeug.datastructures import ImmutableDict
 from werkzeug.test import create_environ
 
 
-class RoutingTestCase(WerkzeugTestCase):
+class RoutingTestCase(unittest.TestCase):
 
     def test_basic_routing(self):
         map = r.URLMap([
@@ -30,26 +28,26 @@ class RoutingTestCase(WerkzeugTestCase):
             r.Route('/bar/', endpoint='bar')
         ])
         adapter = map.bind('example.org', '/')
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/'),
             ('index', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/foo'),
             ('foo', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/bar/'),
             ('bar', {})
         )
-        self.assert_raises(r.RequestRedirect, lambda: adapter.match('/bar'))
-        self.assert_raises(r.NotFound, lambda: adapter.match('/blub'))
+        self.assertRaises(r.RequestRedirect, lambda: adapter.match('/bar'))
+        self.assertRaises(r.NotFound, lambda: adapter.match('/blub'))
 
         adapter = map.bind('example.org', '/test')
         try:
             adapter.match('/bar')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://example.org/test/bar/')
+            self.assertEqual(e.new_url, 'http://example.org/test/bar/')
         else:  # pragma: no cover
             self.fail('Expected request redirect')
 
@@ -57,7 +55,7 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match('/bar')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://example.org/bar/')
+            self.assertEqual(e.new_url, 'http://example.org/bar/')
         else:  # pragma: no cover
             self.fail('Expected request redirect')
 
@@ -65,7 +63,7 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match('/bar', query_args={'aha': 'muhaha'})
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://example.org/bar/?aha=muhaha')
+            self.assertEqual(e.new_url, 'http://example.org/bar/?aha=muhaha')
         else:  # pragma: no cover
             self.fail('Expected request redirect')
 
@@ -73,7 +71,7 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match('/bar', query_args='aha=muhaha')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://example.org/bar/?aha=muhaha')
+            self.assertEqual(e.new_url, 'http://example.org/bar/?aha=muhaha')
         else:  # pragma: no cover
             self.fail('Expected request redirect')
 
@@ -82,22 +80,22 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match()
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://example.org/bar/?foo=bar')
+            self.assertEqual(e.new_url, 'http://example.org/bar/?foo=bar')
         else:  # pragma: no cover
             self.fail('Expected request redirect')
 
     def test_environ_defaults(self):
         environ = create_environ("/foo")
-        self.assert_strict_equal(environ["PATH_INFO"], '/foo')
+        self.assertEqual(environ["PATH_INFO"], '/foo')
         m = r.URLMap([
             r.Route("/foo", endpoint="foo"),
             r.Route("/bar", endpoint="bar"),
         ])
         a = m.bind_to_environ(environ)
-        self.assert_strict_equal(a.match("/foo"), ('foo', {}))
-        self.assert_strict_equal(a.match(), ('foo', {}))
-        self.assert_strict_equal(a.match("/bar"), ('bar', {}))
-        self.assert_raises(r.NotFound, a.match, "/bars")
+        self.assertEqual(a.match("/foo"), ('foo', {}))
+        self.assertEqual(a.match(), ('foo', {}))
+        self.assertEqual(a.match("/bar"), ('bar', {}))
+        self.assertRaises(r.NotFound, a.match, "/bars")
 
     def test_environ_nonascii_pathinfo(self):
         environ = create_environ(u'/лошадь')
@@ -106,9 +104,9 @@ class RoutingTestCase(WerkzeugTestCase):
             r.Route(u'/лошадь', endpoint='horse')
         ])
         a = m.bind_to_environ(environ)
-        self.assert_strict_equal(a.match(u'/'), ('index', {}))
-        self.assert_strict_equal(a.match(u'/лошадь'), ('horse', {}))
-        self.assert_raises(r.NotFound, a.match, u'/барсук')
+        self.assertEqual(a.match(u'/'), ('index', {}))
+        self.assertEqual(a.match(u'/лошадь'), ('horse', {}))
+        self.assertRaises(r.NotFound, a.match, u'/барсук')
 
     def test_basic_building(self):
         map = r.URLMap([
@@ -122,62 +120,62 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         adapter = map.bind('example.org', '/', subdomain='blah')
 
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('index', {}),
             'http://example.org/'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('foo', {}),
             'http://example.org/foo'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('bar', {'baz': 'blub'}),
             'http://example.org/bar/blub'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('bari', {'bazi': 50}),
             'http://example.org/bar/50'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('barf', {'bazf': 0.815}),
             'http://example.org/bar/0.815'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('barp', {'bazp': 'la/di'}),
             'http://example.org/bar/la/di'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('blah', {}),
             '/hehe'
         )
-        self.assert_raises(r.BuildError, lambda: adapter.build('urks'))
+        self.assertRaises(r.BuildError, lambda: adapter.build('urks'))
 
         adapter = map.bind('example.org', '/test', subdomain='blah')
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('index', {}),
             'http://example.org/test/'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('foo', {}),
             'http://example.org/test/foo'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('bar', {'baz': 'blub'}),
             'http://example.org/test/bar/blub'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('bari', {'bazi': 50}),
             'http://example.org/test/bar/50'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('barf', {'bazf': 0.815}),
             'http://example.org/test/bar/0.815'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('barp', {'bazp': 'la/di'}),
             'http://example.org/test/bar/la/di'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('blah', {}),
             '/test/hehe'
         )
@@ -189,18 +187,18 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         adapter = map.bind('example.org', '/')
 
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/foo/'),
             ('foo', {'page': 1})
         )
-        self.assert_raises(r.RequestRedirect, lambda: adapter.match('/foo/1'))
-        self.assert_equal(
+        self.assertRaises(r.RequestRedirect, lambda: adapter.match('/foo/1'))
+        self.assertEqual(
             adapter.match('/foo/2'),
             ('foo', {'page': 2})
         )
-        self.assert_equal(adapter.build('foo', {}), '/foo/')
-        self.assert_equal(adapter.build('foo', {'page': 1}), '/foo/')
-        self.assert_equal(adapter.build('foo', {'page': 2}), '/foo/2')
+        self.assertEqual(adapter.build('foo', {}), '/foo/')
+        self.assertEqual(adapter.build('foo', {'page': 1}), '/foo/')
+        self.assertEqual(adapter.build('foo', {'page': 2}), '/foo/2')
 
     def test_greedy(self):
         map = r.URLMap([
@@ -210,22 +208,22 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         adapter = map.bind('example.org', '/')
 
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/foo'),
             ('foo', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/blub'),
             ('bar', {'bar': 'blub'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/he/he'),
             ('bar', {'bar': 'he', 'blub': 'he'})
         )
 
-        self.assert_equal(adapter.build('foo', {}), '/foo')
-        self.assert_equal(adapter.build('bar', {'bar': 'blub'}), '/blub')
-        self.assert_equal(
+        self.assertEqual(adapter.build('foo', {}), '/foo')
+        self.assertEqual(adapter.build('bar', {'bar': 'blub'}), '/blub')
+        self.assertEqual(
             adapter.build('bar', {'bar': 'blub', 'blub': 'bar'}),
             '/blub/bar'
         )
@@ -252,51 +250,51 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         adapter = map.bind('example.org', '/')
 
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/'),
             ('page', {'name': 'FrontPage'})
         )
-        self.assert_raises(
+        self.assertRaises(
             r.RequestRedirect,
             lambda: adapter.match('/FrontPage')
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Special'),
             ('special', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/2007'),
             ('year', {'year': 2007})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Some/Page'),
             ('page', {'name': 'Some/Page'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Some/Page/edit'),
             ('editpage', {'name': 'Some/Page'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Foo/silly/bar'),
             ('sillypage', {'name': 'Foo', 'name2': 'bar'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Foo/silly/bar/edit'),
             ('editsillypage', {'name': 'Foo', 'name2': 'bar'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Talk:Foo/Bar'),
             ('talk', {'name': 'Foo/Bar'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/User:thomas'),
             ('user', {'username': 'thomas'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/User:thomas/projects/werkzeug'),
             ('userpage', {'username': 'thomas', 'name': 'projects/werkzeug'})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/Files/downloads/werkzeug/0.2.zip'),
             ('files', {'file': 'downloads/werkzeug/0.2.zip'})
         )
@@ -322,11 +320,11 @@ class RoutingTestCase(WerkzeugTestCase):
                 env
             )
 
-        self.assert_equal(dispatch('/').data, b"('root', {})")
-        self.assert_equal(dispatch('/foo').status_code, 301)
+        self.assertEqual(dispatch('/').data, b"('root', {})")
+        self.assertEqual(dispatch('/foo').status_code, 301)
         raise_this = r.NotFound()
-        self.assert_raises(r.NotFound, lambda: dispatch('/bar'))
-        self.assert_equal(dispatch('/bar', True).status_code, 404)
+        self.assertRaises(r.NotFound, lambda: dispatch('/bar'))
+        self.assertEqual(dispatch('/bar', True).status_code, 404)
 
     def test_http_host_before_server_name(self):
         env = {
@@ -340,22 +338,22 @@ class RoutingTestCase(WerkzeugTestCase):
         }
         map = r.URLMap([r.Route('/', endpoint='index', subdomain='wiki')])
         adapter = map.bind_to_environ(env, server_name='example.com')
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/'),
             ('index', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('index', force_external=True),
             'http://wiki.example.com/'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('index'),
             '/'
         )
 
         env['HTTP_HOST'] = 'admin.example.com'
         adapter = map.bind_to_environ(env, server_name='example.com')
-        self.assert_equal(adapter.build('index'), 'http://wiki.example.com/')
+        self.assertEqual(adapter.build('index'), 'http://wiki.example.com/')
 
     def test_adapter_url_parameter_sorting(self):
         map = r.URLMap(
@@ -364,7 +362,7 @@ class RoutingTestCase(WerkzeugTestCase):
             sort_key=lambda x: x[1]
         )
         adapter = map.bind('localhost', '/')
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('index', {'x': 20, 'y': 10, 'z': 30},
                           force_external=True),
             'http://localhost/?y=10&x=20&z=30'
@@ -376,7 +374,7 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match(u'/öäü')
         except r.RequestRedirect as e:
-            self.assert_equal(
+            self.assertEqual(
                 e.new_url,
                 'http://localhost/%C3%B6%C3%A4%C3%BC/'
             )
@@ -392,7 +390,7 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match(u'/foo/42')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://localhost/foo')
+            self.assertEqual(e.new_url, 'http://localhost/foo')
         else:  # pragma: no cover
             self.fail('expected request redirect exception')
 
@@ -405,7 +403,7 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             adapter.match(u'/foo/42')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://test.localhost/foo')
+            self.assertEqual(e.new_url, 'http://test.localhost/foo')
         else:  # pragma: no cover
             self.fail('expected request redirect exception')
 
@@ -413,7 +411,7 @@ class RoutingTestCase(WerkzeugTestCase):
         route = r.Route('/foo/', endpoint='foo')
         map = r.URLMap([route])
         adapter = map.bind('localhost', '/')
-        self.assert_equal(
+        self.assertEqual(
             adapter.match('/foo/', return_route=True),
             (route, {})
         )
@@ -427,21 +425,21 @@ class RoutingTestCase(WerkzeugTestCase):
 
         env = create_environ('/', 'http://%s/' % server_name)
         adapter = map.bind_to_environ(env, server_name=server_name)
-        self.assert_equal(
+        self.assertEqual(
             adapter.match(),
             ('index', {})
         )
 
         env = create_environ('/', 'http://alt.%s/' % server_name)
         adapter = map.bind_to_environ(env, server_name=server_name)
-        self.assert_equal(
+        self.assertEqual(
             adapter.match(),
             ('alt', {})
         )
 
         env = create_environ('/', 'http://%s/' % server_name)
         adapter = map.bind_to_environ(env, server_name='foo')
-        self.assert_equal(adapter.subdomain, '<invalid>')
+        self.assertEqual(adapter.subdomain, '<invalid>')
 
     def test_route_templates(self):
         testcase = r.RouteTemplate([
@@ -470,7 +468,7 @@ class RoutingTestCase(WerkzeugTestCase):
         out = sorted([(x.route, x.subdomain, x.endpoint)
                       for x in url_map.iter_routes()])
 
-        self.assert_equal(out, [
+        self.assertEqual(out, [
             ('/blah', 'test1', 'x_bar'),
             ('/blah', 'test2', 'x_bar'),
             ('/blah', 'test3', 'x_bar'),
@@ -506,7 +504,7 @@ class RoutingTestCase(WerkzeugTestCase):
             r.Route('/<foo>', endpoint='foo')
         ])
         a = m.bind('example.com')
-        self.assert_equal(a.build('foo', {'foo': 42}), '/42')
+        self.assertEqual(a.build('foo', {'foo': 42}), '/42')
 
     def test_complex_routing_routes(self):
         m = r.URLMap([
@@ -524,92 +522,92 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         a = m.bind('example.com')
 
-        self.assert_equal(
+        self.assertEqual(
             a.match('/'),
             ('index', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/42'),
             ('an_int', {'blub': 42})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/blub'),
             ('a_string', {'blub': 'blub'})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/foo/'),
             ('nested', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/foobar/'),
             ('nestedbar', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/foo/1/2/3/'),
             ('nested_show', {'testing': '1/2/3'})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/foo/1/2/3/edit'),
             ('nested_edit', {'testing': '1/2/3'})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/users/'),
             ('users', {'page': 1})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/users/page/2'),
             ('users', {'page': 2})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/foox'),
             ('foox', {})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/1/2/3'),
             ('barx_path_path', {'bar': '1', 'blub': '2/3'})
         )
 
-        self.assert_equal(
+        self.assertEqual(
             a.build('index'),
             '/'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('an_int', {'blub': 42}),
             '/42'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('a_string', {'blub': 'test'}),
             '/test'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('nested'),
             '/foo/'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('nestedbar'),
             '/foobar/'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('nested_show', {'testing': '1/2/3'}),
             '/foo/1/2/3/'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('nested_edit', {'testing': '1/2/3'}),
             '/foo/1/2/3/edit'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('users', {'page': 1}),
             '/users/'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('users', {'page': 2}),
             '/users/page/2'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('foox'),
             '/foox'
         )
-        self.assert_equal(
+        self.assertEqual(
             a.build('barx_path_path', {'bar': '1', 'blub': '2/3'}),
             '/1/2/3'
         )
@@ -625,9 +623,9 @@ class RoutingTestCase(WerkzeugTestCase):
             r.Route('/c/<c>', endpoint='c')
         ], converters={'bar': r.UnicodeConverter})
         a = m.bind('example.org', '/')
-        self.assert_equal(a.match('/a/1'), ('a', {'a': '1'}))
-        self.assert_equal(a.match('/b/2'), ('b', {'b': '2'}))
-        self.assert_equal(a.match('/c/3'), ('c', {'c': '3'}))
+        self.assertEqual(a.match('/a/1'), ('a', {'a': '1'}))
+        self.assertEqual(a.match('/b/2'), ('b', {'b': '2'}))
+        self.assertEqual(a.match('/c/3'), ('c', {'c': '3'}))
         assert 'foo' not in r.URLMap.default_converters
 
     def test_uuid_converter(self):
@@ -636,18 +634,18 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         a = m.bind('example.org', '/')
         rooute, kwargs = a.match('/a/a8098c1a-f86e-11da-bd1a-00112444be1e')
-        self.assert_equal(type(kwargs['a_uuid']), uuid.UUID)
+        self.assertEqual(type(kwargs['a_uuid']), uuid.UUID)
 
     def test_build_append_unknown(self):
         map = r.URLMap([
             r.Route('/bar/<float:bazf>', endpoint='barf')
         ])
         adapter = map.bind('example.org', '/', subdomain='blah')
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('barf', {'bazf': 0.815, 'bif': 1.0}),
             'http://example.org/bar/0.815?bif=1.0'
         )
-        self.assert_equal(
+        self.assertEqual(
             adapter.build('barf', {'bazf': 0.815, 'bif': 1.0},
                           append_unknown=False),
             'http://example.org/bar/0.815'
@@ -656,8 +654,8 @@ class RoutingTestCase(WerkzeugTestCase):
     def test_protocol_joining_bug(self):
         m = r.URLMap([r.Route('/<foo>', endpoint='x')])
         a = m.bind('example.org')
-        self.assert_equal(a.build('x', {'foo': 'x:y'}), '/x:y')
-        self.assert_equal(
+        self.assertEqual(a.build('x', {'foo': 'x:y'}), '/x:y')
+        self.assertEqual(
             a.build('x', {'foo': 'x:y'}, force_external=True),
             'http://example.org/x:y'
         )
@@ -668,7 +666,7 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         adapter = map.bind('example.org:5000', '/')
         built_url = adapter.build('index', {}, force_external=True)
-        self.assert_equal(built_url, 'http://example.org:5000/', built_url)
+        self.assertEqual(built_url, 'http://example.org:5000/', built_url)
 
     def test_external_building_with_port_bind_to_environ(self):
         map = r.URLMap([
@@ -679,7 +677,7 @@ class RoutingTestCase(WerkzeugTestCase):
             server_name="example.org:5000"
         )
         built_url = adapter.build('index', {}, force_external=True)
-        self.assert_equal(built_url, 'http://example.org:5000/', built_url)
+        self.assertEqual(built_url, 'http://example.org:5000/', built_url)
 
     def test_external_building_with_port_bind_to_environ_bad_servername(self):
         map = r.URLMap([
@@ -687,26 +685,26 @@ class RoutingTestCase(WerkzeugTestCase):
         ])
         environ = create_environ('/', 'http://example.org:5000/')
         adapter = map.bind_to_environ(environ, server_name="example.org")
-        self.assert_equal(adapter.subdomain, '<invalid>')
+        self.assertEqual(adapter.subdomain, '<invalid>')
 
     def test_converter_parser(self):
         args, kwargs = r.parse_converter_args(u'test, a=1, b=3.0')
 
-        self.assert_equal(args, ('test',))
-        self.assert_equal(kwargs, {'a': 1, 'b': 3.0})
+        self.assertEqual(args, ('test',))
+        self.assertEqual(kwargs, {'a': 1, 'b': 3.0})
 
         args, kwargs = r.parse_converter_args('')
         assert not args and not kwargs
 
         args, kwargs = r.parse_converter_args('a, b, c,')
-        self.assert_equal(args, ('a', 'b', 'c'))
+        self.assertEqual(args, ('a', 'b', 'c'))
         assert not kwargs
 
         args, kwargs = r.parse_converter_args('True, False, None')
-        self.assert_equal(args, (True, False, None))
+        self.assertEqual(args, (True, False, None))
 
         args, kwargs = r.parse_converter_args('"foo", u"bar"')
-        self.assert_equal(args, ('foo', 'bar'))
+        self.assertEqual(args, ('foo', 'bar'))
 
     def test_alias_redirects(self):
         m = r.URLMap([
@@ -725,7 +723,7 @@ class RoutingTestCase(WerkzeugTestCase):
             try:
                 a.match(path, query_args=args)
             except r.RequestRedirect as e:
-                self.assert_equal(e.new_url, 'http://example.com' + new_url)
+                self.assertEqual(e.new_url, 'http://example.com' + new_url)
             else:  # pragma: no cover
                 self.fail('expected redirect')
 
@@ -736,9 +734,9 @@ class RoutingTestCase(WerkzeugTestCase):
         ensure_redirect('/users/page-1.html', '/users/?foo=bar',
                         {'foo': 'bar'})
 
-        self.assert_equal(a.build('index'), '/')
-        self.assert_equal(a.build('users', {'page': 1}), '/users/')
-        self.assert_equal(a.build('users', {'page': 2}), '/users/page/2')
+        self.assertEqual(a.build('index'), '/')
+        self.assertEqual(a.build('users', {'page': 1}), '/users/')
+        self.assertEqual(a.build('users', {'page': 2}), '/users/page/2')
 
     def test_double_defaults(self):
         for prefix in '', '/aaa':
@@ -766,44 +764,44 @@ class RoutingTestCase(WerkzeugTestCase):
             ])
             a = m.bind('example.com')
 
-            self.assert_equal(
+            self.assertEqual(
                 a.match(prefix + '/'),
                 ('x', {'foo': 1, 'bar': False})
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.match(prefix + '/2'),
                 ('x', {'foo': 2, 'bar': False})
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.match(prefix + '/bar/'),
                 ('x', {'foo': 1, 'bar': True})
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.match(prefix + '/bar/2'),
                 ('x', {'foo': 2, 'bar': True})
             )
 
-            self.assert_equal(
+            self.assertEqual(
                 a.build('x', {'foo': 1, 'bar': False}),
                 prefix + '/'
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.build('x', {'foo': 2, 'bar': False}),
                 prefix + '/2'
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.build('x', {'bar': False}),
                 prefix + '/'
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.build('x', {'foo': 1, 'bar': True}),
                 prefix + '/bar/'
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.build('x', {'foo': 2, 'bar': True}),
                 prefix + '/bar/2'
             )
-            self.assert_equal(
+            self.assertEqual(
                 a.build('x', {'bar': True}),
                 prefix + '/bar/'
             )
@@ -834,34 +832,34 @@ class RoutingTestCase(WerkzeugTestCase):
         ], host_matching=True)
 
         a = m.bind('www.example.com')
-        self.assert_equal(
+        self.assertEqual(
             a.match('/'),
             ('index', {'domain': 'example.com'})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/foo/'),
             ('x', {'domain': 'example.com', 'page': 1})
         )
         try:
             a.match('/foo')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://www.example.com/foo/')
+            self.assertEqual(e.new_url, 'http://www.example.com/foo/')
         else:  # pragma: no cover
             self.fail('expected redirect')
 
         a = m.bind('files.example.com')
-        self.assert_equal(
+        self.assertEqual(
             a.match('/'),
             ('files', {'domain': 'example.com'})
         )
-        self.assert_equal(
+        self.assertEqual(
             a.match('/2'),
             ('x', {'domain': 'example.com', 'page': 2})
         )
         try:
             a.match('/1')
         except r.RequestRedirect as e:
-            self.assert_equal(e.new_url, 'http://www.example.com/foo/')
+            self.assertEqual(e.new_url, 'http://www.example.com/foo/')
         else:  # pragma: no cover
             self.fail('expected redirect')
 
@@ -873,7 +871,7 @@ class RoutingTestCase(WerkzeugTestCase):
         env = create_environ()
         env['SERVER_NAME'] = env['HTTP_HOST'] = 'FOO.EXAMPLE.COM'
         a = m.bind_to_environ(env, server_name='example.com')
-        self.assert_equal(a.match('/'), ('index', {}))
+        self.assertEqual(a.match('/'), ('index', {}))
 
         env = create_environ()
         env['SERVER_NAME'] = '127.0.0.1'
@@ -891,7 +889,7 @@ class RoutingTestCase(WerkzeugTestCase):
         exc = r.RequestRedirect('http://www.google.com/')
         exc.code = 307
         env = create_environ()
-        self.assert_strict_equal(exc.get_response(env).status_code, exc.code)
+        self.assertEqual(exc.get_response(env).status_code, exc.code)
 
     def test_redirect_path_quoting(self):
         url_map = r.URLMap([
@@ -904,8 +902,9 @@ class RoutingTestCase(WerkzeugTestCase):
             adapter.match('/foo bar/page/1')
         except r.RequestRedirect as e:
             response = e.get_response({})
-            self.assert_strict_equal(response.headers['location'],
-                                     u'http://example.com/foo%20bar')
+            self.assertEqual(
+                response.headers['location'], u'http://example.com/foo%20bar'
+            )
         else:  # pragma: no cover
             self.fail('Expected redirect')
 
@@ -918,33 +917,33 @@ class RoutingTestCase(WerkzeugTestCase):
         try:
             a.match(u'/войти')
         except r.RequestRedirect as e:
-            self.assert_strict_equal(
+            self.assertEqual(
                 e.new_url,
                 'http://xn--n3h.example.com/%D0%B2%D0%BE%D0%B9%D1%82%D0%B8/'
             )
         endpoint, values = a.match(u'/войти/')
-        self.assert_strict_equal(endpoint, 'enter')
-        self.assert_strict_equal(values, {})
+        self.assertEqual(endpoint, 'enter')
+        self.assertEqual(values, {})
 
         try:
             a.match(u'/foo+bar')
         except r.RequestRedirect as e:
-            self.assert_strict_equal(
+            self.assertEqual(
                 e.new_url,
                 'http://xn--n3h.example.com/foo+bar/'
             )
         endpoint, values = a.match(u'/foo+bar/')
-        self.assert_strict_equal(endpoint, 'foobar')
-        self.assert_strict_equal(values, {})
+        self.assertEqual(endpoint, 'foobar')
+        self.assertEqual(values, {})
 
         url = a.build('enter', {}, force_external=True)
-        self.assert_strict_equal(
+        self.assertEqual(
             url,
             'http://xn--n3h.example.com/%D0%B2%D0%BE%D0%B9%D1%82%D0%B8/'
         )
 
         url = a.build('foobar', {}, force_external=True)
-        self.assert_strict_equal(url, 'http://xn--n3h.example.com/foo+bar/')
+        self.assertEqual(url, 'http://xn--n3h.example.com/foo+bar/')
 
     def test_map_repr(self):
         m = r.URLMap([
@@ -952,7 +951,7 @@ class RoutingTestCase(WerkzeugTestCase):
             r.Route(u'/woop', endpoint='foobar')
         ])
         rv = repr(m)
-        self.assert_strict_equal(
+        self.assertEqual(
             rv,
             "URLMap([<Route '/woop' -> foobar>, <Route '/wat' -> enter>])"
         )
