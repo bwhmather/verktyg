@@ -8,7 +8,7 @@
 """
 import json
 
-from werkzeug import Response
+from verktyg.wrappers import Response
 from verktyg.dispatch import BindingFactory, Binding
 
 

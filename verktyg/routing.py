@@ -1334,7 +1334,7 @@ class MapAdapter(object):
 
         Here a small example for the dispatch usage::
 
-            from werkzeug.wrappers import Request, Response
+            from verktyg.wrappers import Request, Response
             from werkzeug.wsgi import responder
             from verktyg.routing import URLMap, Route
 

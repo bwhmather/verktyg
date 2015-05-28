@@ -10,7 +10,7 @@
 """
 import unittest
 
-from werkzeug.wrappers import Response
+from verktyg.wrappers import Response
 from werkzeug.exceptions import MethodNotAllowed
 
 import verktyg

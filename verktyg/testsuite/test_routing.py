@@ -14,7 +14,7 @@ import unittest
 import uuid
 
 from verktyg import routing as r
-from werkzeug.wrappers import Response
+from verktyg.wrappers import Response
 from werkzeug.datastructures import ImmutableDict
 from werkzeug.test import create_environ
 
