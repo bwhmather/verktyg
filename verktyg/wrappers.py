@@ -22,6 +22,7 @@
 """
 from functools import update_wrapper
 from datetime import datetime, timedelta
+from io import BytesIO
 
 from werkzeug.http import HTTP_STATUS_CODES, \
     parse_accept_header, parse_cache_control_header, parse_etags, \
@@ -43,9 +44,8 @@ from werkzeug.datastructures import MultiDict, CombinedMultiDict, Headers, \
     ResponseCacheControl, RequestCacheControl, CallbackDict, \
     ContentRange, iter_multi_items
 from werkzeug._internal import _get_environ
-from werkzeug._compat import to_bytes, string_types, text_type, \
-    integer_types, wsgi_decoding_dance, wsgi_get_bytes, \
-    to_unicode, to_native, BytesIO
+from werkzeug._compat import to_bytes, wsgi_decoding_dance, wsgi_get_bytes, \
+    to_unicode, to_native
 
 
 def _run_wsgi_app(*args):
@@ -61,7 +61,7 @@ def _warn_if_string(iterable):
     """Helper for the response objects to check if the iterable returned
     to the WSGI server is not a string.
     """
-    if isinstance(iterable, string_types):
+    if isinstance(iterable, str):
         from warnings import warn
         warn(Warning('response iterable was set to a string.  This appears '
                      'to work but means that the server will send the '
@@ -79,7 +79,7 @@ def _assert_not_shallow(request):
 
 def _iter_encoded(iterable, charset):
     for item in iterable:
-        if isinstance(item, text_type):
+        if isinstance(item, str):
             yield item.encode(charset)
         else:
             yield item
@@ -776,7 +776,7 @@ class BaseResponse(object):
             self.headers['Content-Type'] = content_type
         if status is None:
             status = self.default_status
-        if isinstance(status, integer_types):
+        if isinstance(status, int):
             self.status_code = status
         else:
             self.status = status
@@ -788,7 +788,7 @@ class BaseResponse(object):
         # the charset attribute, the data is set in the correct charset.
         if response is None:
             self.response = []
-        elif isinstance(response, (text_type, bytes, bytearray)):
+        elif isinstance(response, (str, bytes, bytearray)):
             self.set_data(response)
         else:
             self.response = response
@@ -922,7 +922,7 @@ class BaseResponse(object):
         """
         # if an unicode string is set, it's encoded directly so that we
         # can set the content length
-        if isinstance(value, text_type):
+        if isinstance(value, str):
             value = value.encode(self.charset)
         else:
             value = bytes(value)
@@ -1136,14 +1136,14 @@ class BaseResponse(object):
         # make sure the location header is an absolute URL
         if location is not None:
             old_location = location
-            if isinstance(location, text_type):
+            if isinstance(location, str):
                 # Safe conversion is necessary here as we might redirect
                 # to a broken URI scheme (for instance itms-services).
                 location = iri_to_uri(location, safe_conversion=True)
 
             if self.autocorrect_location_header:
                 current_url = get_current_url(environ, root_only=True)
-                if isinstance(current_url, text_type):
+                if isinstance(current_url, str):
                     current_url = iri_to_uri(current_url)
                 location = url_join(current_url, location)
             if location != old_location:
@@ -1151,7 +1151,7 @@ class BaseResponse(object):
 
         # make sure the content location is a URL
         if content_location is not None and \
-           isinstance(content_location, text_type):
+           isinstance(content_location, str):
             headers['Content-Location'] = iri_to_uri(content_location)
 
         # remove entity headers and set content length to zero if needed.
@@ -1502,7 +1502,7 @@ class ETagResponseMixin(object):
     def _set_content_range(self, value):
         if not value:
             del self.headers['content-range']
-        elif isinstance(value, string_types):
+        elif isinstance(value, str):
             self.headers['Content-Range'] = value
         else:
             self.headers['Content-Range'] = value.to_header()
@@ -1780,7 +1780,7 @@ class CommonResponseDescriptorsMixin(object):
         def fset(self, value):
             if not value:
                 del self.headers[name]
-            elif isinstance(value, string_types):
+            elif isinstance(value, str):
                 self.headers[name] = value
             else:
                 self.headers[name] = dump_header(value)

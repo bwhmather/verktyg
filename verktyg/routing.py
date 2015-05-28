@@ -102,9 +102,7 @@ from werkzeug.urls import url_encode, url_quote, url_join
 from werkzeug.utils import redirect, format_string
 from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug._internal import _get_environ, _encode_idna
-from werkzeug._compat import itervalues, iteritems, to_unicode, to_bytes, \
-    text_type, string_types, native_string_result, \
-    implements_to_string, wsgi_decoding_dance
+from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
 from werkzeug.datastructures import ImmutableDict, MultiDict
 
 
@@ -150,7 +148,7 @@ def _pythonize(value):
             pass
     if value[:1] == value[-1:] and value[0] in '"\'':
         value = value[1:-1]
-    return text_type(value)
+    return str(value)
 
 
 def parse_converter_args(argstr):
@@ -393,14 +391,14 @@ class RouteTemplateFactory(RouteFactory):
                 new_defaults = subdomain = None
                 if route.defaults:
                     new_defaults = {}
-                    for key, value in iteritems(route.defaults):
-                        if isinstance(value, string_types):
+                    for key, value in route.defaults.items():
+                        if isinstance(value, str):
                             value = format_string(value, self.context)
                         new_defaults[key] = value
                 if route.subdomain is not None:
                     subdomain = format_string(route.subdomain, self.context)
                 new_endpoint = route.endpoint
-                if isinstance(new_endpoint, string_types):
+                if isinstance(new_endpoint, str):
                     new_endpoint = format_string(new_endpoint, self.context)
                 yield Route(
                     format_string(route.route, self.context),
@@ -412,7 +410,6 @@ class RouteTemplateFactory(RouteFactory):
                 )
 
 
-@implements_to_string
 class Route(RouteFactory):
     """A Route represents one URL pattern.  There are some options for `Route`
     that change the way it behaves and are passed to the `Route` constructor.
@@ -663,7 +660,7 @@ class Route(RouteFactory):
                     del groups['__suffix__']
 
                 result = {}
-                for name, value in iteritems(groups):
+                for name, value in groups.items():
                     try:
                         value = self._converters[name].to_python(value)
                     except ValidationError:
@@ -738,7 +735,7 @@ class Route(RouteFactory):
         # in case defaults are given we ensure that either the value was
         # skipped or the value is the same as the default value.
         if defaults:
-            for key, value in iteritems(defaults):
+            for key, value in defaults.items():
                 if key in values and value != values[key]:
                     return False
 
@@ -780,7 +777,6 @@ class Route(RouteFactory):
     def __str__(self):
         return self.route
 
-    @native_string_result
     def __repr__(self):
         if self.router is None:
             return u'<%s (unbound)>' % self.__class__.__name__
@@ -1166,7 +1162,7 @@ class URLMap(object):
                     raise RequestRedirect(redirect_url)
 
             if route.redirect_to is not None:
-                if isinstance(route.redirect_to, string_types):
+                if isinstance(route.redirect_to, str):
                     def _handle_match(match):
                         value = rv[match.group(1)]
                         return route._converters[match.group(1)].to_url(value)
@@ -1294,7 +1290,7 @@ class URLMap(object):
         """
         if self._remap:
             self._routes.sort(key=lambda x: x.match_compare_key())
-            for routes in itervalues(self._routes_by_endpoint):
+            for routes in self._routes_by_endpoint.values():
                 routes.sort(key=lambda x: x.build_compare_key())
             self._remap = False
 
@@ -1466,7 +1462,7 @@ class MapAdapter(object):
                     raise RequestRedirect(redirect_url)
 
             if route.redirect_to is not None:
-                if isinstance(route.redirect_to, string_types):
+                if isinstance(route.redirect_to, str):
                     def _handle_match(match):
                         value = rv[match.group(1)]
                         return route._converters[match.group(1)].to_url(value)
@@ -1540,7 +1536,7 @@ class MapAdapter(object):
                     path, query_args, domain_part=domain_part)
 
     def encode_query_args(self, query_args):
-        if not isinstance(query_args, string_types):
+        if not isinstance(query_args, str):
             query_args = url_encode(query_args, self.router.charset)
         return query_args
 
@@ -1620,7 +1616,7 @@ class MapAdapter(object):
             if isinstance(values, MultiDict):
                 valueiter = values.iteritems(multi=True)
             else:
-                valueiter = iteritems(values)
+                valueiter = values.items()
             values = dict((k, v) for k, v in valueiter if v is not None)
         else:
             values = {}

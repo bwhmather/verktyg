@@ -13,7 +13,6 @@ import unittest
 import pickle
 from io import BytesIO
 from datetime import datetime
-from werkzeug._compat import iteritems
 
 from werkzeug.exceptions import SecurityError
 from werkzeug.wsgi import LimitedStream
@@ -21,7 +20,6 @@ from werkzeug.datastructures import MultiDict, ImmutableOrderedMultiDict, \
     ImmutableList, ImmutableTypeConversionDict, CharsetAccept, \
     MIMEAccept, LanguageAccept, Accept, CombinedMultiDict
 from werkzeug.test import Client, create_environ, run_wsgi_app
-from werkzeug._compat import implements_iterator, text_type
 
 from verktyg import wrappers
 
@@ -57,7 +55,7 @@ def request_demo_app(environ, start_response):
 
 def prepare_environ_pickle(environ):
     result = {}
-    for key, value in iteritems(environ):
+    for key, value in environ.items():
         try:
             pickle.dumps((key, value))
         except Exception:
@@ -270,7 +268,6 @@ class WrappersTestCase(unittest.TestCase):
         # close call forwarding
         closed = []
 
-        @implements_iterator
         class Iterable(object):
 
             def __next__(self):
@@ -546,7 +543,7 @@ class WrappersTestCase(unittest.TestCase):
         response.freeze()
         self.assertEqual(
             response.get_etag(),
-            (text_type(wrappers.generate_etag(b'Hello World')), False)
+            (str(wrappers.generate_etag(b'Hello World')), False)
         )
         response = WithoutFreeze('Hello World')
         response.freeze()
