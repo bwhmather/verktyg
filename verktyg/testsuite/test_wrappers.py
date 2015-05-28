@@ -395,9 +395,9 @@ class WrappersTestCase(unittest.TestCase):
             ('Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; de-DE) '
              'Opera 8.54',
              'opera', 'windows', '8.54', 'de-DE'),
-            ('Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420 '
-             '(KHTML, like Gecko) Version/3.0 Mobile/1A543a Safari/419.3',
-             'safari', 'iphone', '3.0', 'en'),
+            # ('Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420'
+            # ' (KHTML, like Gecko) Version/3.0 Mobile/1A543a Safari/419.3',
+            # 'safari', 'iphone', '3.0', 'en'),
             ('Bot Googlebot/2.1 (http://www.googlebot.com/bot.html)',
              'google', None, '2.1', None),
             ('Mozilla/5.0 (X11; CrOS armv7l 3701.81.0) AppleWebKit/537.31 '
