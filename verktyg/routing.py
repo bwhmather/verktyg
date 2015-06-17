@@ -100,10 +100,11 @@ from pprint import pformat
 
 from werkzeug.urls import url_encode, url_quote, url_join
 from werkzeug.utils import redirect, format_string
-from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug._internal import _get_environ, _encode_idna
 from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
 from werkzeug.datastructures import ImmutableDict, MultiDict
+
+from verktyg.exceptions import HTTPException, NotFound
 
 
 _route_re = re.compile(r'''
@@ -221,9 +222,6 @@ class RequestRedirect(HTTPException, RoutingException):
     def __init__(self, new_url):
         RoutingException.__init__(self, new_url)
         self.new_url = new_url
-
-    def get_response(self, environ):
-        return redirect(self.new_url, self.code)
 
 
 class RequestSlash(RoutingException):
@@ -1077,7 +1075,7 @@ class URLMap(object):
         - you receive a `NotFound` exception that indicates that no URL is
           matching.  A `NotFound` exception is also a WSGI application you
           can call to get a default page not found page (happens to be the
-          same object as `werkzeug.exceptions.NotFound`)
+          same object as `verktyg.exceptions.NotFound`)
 
         - you receive a `RequestRedirect` exception with a `new_url`
           attribute.  This exception is used to notify you about a request
@@ -1317,21 +1315,16 @@ class MapAdapter(object):
         self.path_info = to_unicode(path_info)
         self.query_args = query_args
 
-    def dispatch(self, view_func, path_info=None,
-                 catch_http_exceptions=False):
+    def dispatch(self, view_func, path_info=None):
         """Does the complete dispatching process.  `view_func` is called with
         the endpoint and a dict with the values for the view.  It should
         look up the view function, call it, and return a response object
-        or WSGI application.  http exceptions are not caught by default
-        so that applications can display nicer error messages by just
-        catching them by hand.  If you want to stick with the default
-        error messages you can pass it ``catch_http_exceptions=True`` and
-        it will catch the http exceptions.
+        or WSGI application.
 
         Here a small example for the dispatch usage::
 
             from verktyg.wrappers import Request, Response
-            from werkzeug.wsgi import responder
+            from verktyg.wsgi import responder
             from verktyg.routing import URLMap, Route
 
             def on_index(request):
@@ -1344,8 +1337,7 @@ class MapAdapter(object):
             def application(environ, start_response):
                 request = Request(environ)
                 urls = url_map.bind_to_environ(environ)
-                return urls.dispatch(lambda e, v: views[e](request, **v),
-                                     catch_http_exceptions=True)
+                return urls.dispatch(lambda e, v: views[e](request, **v))
 
         Keep in mind that this method might return exception objects, too, so
         use :class:`Response.force_type` to get a response object.
@@ -1356,19 +1348,12 @@ class MapAdapter(object):
                           information.  (see above)
         :param path_info: the path info to use for matching.  Overrides the
                           path info specified on binding.
-        :param catch_http_exceptions: set to `True` to catch any of the
-                                      werkzeug :class:`HTTPException`\s.
         """
         try:
-            try:
-                endpoint, args = self.match(path_info)
-            except RequestRedirect as e:
-                return e
-            return view_func(endpoint, args)
-        except HTTPException as e:
-            if catch_http_exceptions:
-                return e
-            raise
+            endpoint, args = self.match(path_info)
+        except RequestRedirect as e:
+            return redirect(e.new_url, e.code)
+        return view_func(endpoint, args)
 
     def match(self, path_info=None, return_route=False, query_args=None):
         """The usage is simple: you just pass the match method the current
@@ -1377,7 +1362,7 @@ class MapAdapter(object):
         - you receive a `NotFound` exception that indicates that no URL is
           matching.  A `NotFound` exception is also a WSGI application you
           can call to get a default page not found page (happens to be the
-          same object as `werkzeug.exceptions.NotFound`)
+          same object as `verktyg.exceptions.NotFound`)
 
         - you receive a `RequestRedirect` exception with a `new_url`
           attribute.  This exception is used to notify you about a request

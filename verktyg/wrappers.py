@@ -36,7 +36,7 @@ from werkzeug.urls import url_decode, iri_to_uri, url_join
 from werkzeug.formparser import FormDataParser, default_stream_factory
 from werkzeug.utils import cached_property, environ_property, \
     header_property, get_content_type
-from werkzeug.wsgi import get_current_url, get_host, \
+from verktyg.wsgi import get_current_url, get_host, \
     ClosingIterator, get_input_stream, get_content_length
 from werkzeug.datastructures import MultiDict, CombinedMultiDict, Headers, \
     EnvironHeaders, ImmutableMultiDict, ImmutableTypeConversionDict, \
@@ -141,7 +141,7 @@ class BaseRequest(object):
     #: parsing function (:func:`parse_form_data`).  When set and the
     #: :attr:`form` or :attr:`files` attribute is accessed and the
     #: parsing fails because more than the specified value is transmitted
-    #: a :exc:`~werkzeug.exceptions.RequestEntityTooLarge` exception is raised.
+    #: a :exc:`~verktyg.exceptions.RequestEntityTooLarge` exception is raised.
     #:
     #: Have a look at :ref:`dealing-with-request-data` for more details.
     #:
@@ -152,7 +152,7 @@ class BaseRequest(object):
     #: parsing function (:func:`parse_form_data`).  When set and the
     #: :attr:`form` or :attr:`files` attribute is accessed and the
     #: data in memory for post data is longer than the specified value a
-    #: :exc:`~werkzeug.exceptions.RequestEntityTooLarge` exception is raised.
+    #: :exc:`~verktyg.exceptions.RequestEntityTooLarge` exception is raised.
     #:
     #: Have a look at :ref:`dealing-with-request-data` for more details.
     #:
@@ -196,7 +196,7 @@ class BaseRequest(object):
     #: This is the recommended setup as a webserver should manually be set up
     #: to only route correct hosts to the application, and remove the
     #: `X-Forwarded-Host` header if it is not being used (see
-    #: :func:`werkzeug.wsgi.get_host`).
+    #: :func:`verktyg.wsgi.get_host`).
     #:
     #: .. versionadded:: 0.9
     trusted_hosts = None

@@ -6,8 +6,7 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug.exceptions import NotImplemented, MethodNotAllowed
-
+from verktyg.exceptions import NotImplemented, MethodNotAllowed
 from verktyg.accept import Representation, select_representation
 
 

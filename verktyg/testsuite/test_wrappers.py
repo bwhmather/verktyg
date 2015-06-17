@@ -5,8 +5,10 @@
 
     Tests for the response and request objects.
 
-    :copyright: (c) 2014 by Armin Ronacher.
-    :license: BSD, see LICENSE for more details.
+    :copyright:
+        (c) 2015 Ben Mather, based on Werkzeug, see AUTHORS for more details.
+    :license:
+        BSD, see LICENSE for more details.
 """
 import unittest
 
@@ -14,13 +16,13 @@ import pickle
 from io import BytesIO
 from datetime import datetime
 
-from werkzeug.exceptions import SecurityError
-from werkzeug.wsgi import LimitedStream
 from werkzeug.datastructures import MultiDict, ImmutableOrderedMultiDict, \
     ImmutableList, ImmutableTypeConversionDict, CharsetAccept, \
     MIMEAccept, LanguageAccept, Accept, CombinedMultiDict
 from werkzeug.test import Client, create_environ, run_wsgi_app
 
+from verktyg.wsgi import LimitedStream
+from verktyg.exceptions import SecurityError
 from verktyg import wrappers
 
 

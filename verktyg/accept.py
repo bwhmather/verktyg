@@ -12,7 +12,7 @@
 """
 import mimeparse
 
-from werkzeug.exceptions import NotAcceptable
+from verktyg.exceptions import NotAcceptable
 
 
 def select_representation(

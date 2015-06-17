@@ -10,10 +10,9 @@
 """
 import unittest
 
-from verktyg.wrappers import Response
-from werkzeug.exceptions import MethodNotAllowed
-
 import verktyg
+from verktyg.wrappers import Response
+from verktyg.exceptions import MethodNotAllowed
 import verktyg.views as vtv
 
 

@@ -12,8 +12,7 @@ import unittest
 
 from werkzeug.test import Client
 
-from werkzeug.exceptions import HTTPException, NotFound, ImATeapot
-
+from verktyg.exceptions import HTTPException, NotFound, ImATeapot
 from verktyg.wrappers import Response, BaseResponse
 from verktyg.views import expose
 from verktyg.routing import Route

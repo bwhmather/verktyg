@@ -19,7 +19,7 @@ from tempfile import TemporaryDirectory
 from contextlib import closing
 
 from verktyg.wrappers import BaseResponse
-from werkzeug.exceptions import BadRequest, ClientDisconnected
+from verktyg.exceptions import BadRequest, ClientDisconnected
 from verktyg import wsgi
 from werkzeug._compat import to_bytes
 

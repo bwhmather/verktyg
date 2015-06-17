@@ -6,7 +6,7 @@
     This module implements WSGI related helpers.
 
     :copyright:
-        (c) 2014 Ben Mather, based on Werkzeug, see AUTHORS for more details.
+        (c) 2015 Ben Mather, based on Werkzeug, see AUTHORS for more details.
     :license:
         BSD, see LICENSE for more details.
 """
@@ -26,7 +26,8 @@ from werkzeug._compat import (
 from werkzeug._internal import _empty_stream, _encode_idna
 from werkzeug.http import is_resource_modified, http_date
 from werkzeug.urls import uri_to_iri, url_quote, url_parse, url_join
-from werkzeug.filesystem import get_filesystem_encoding
+
+from verktyg.filesystem import get_filesystem_encoding
 
 
 def responder(f):
@@ -60,7 +61,7 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
 
     This optionally it verifies that the host is in a list of trusted hosts.
     If the host is not in there it will raise a
-    :exc:`~werkzeug.exceptions.SecurityError`.
+    :exc:`~verktyg.exceptions.SecurityError`.
 
     Note that the string returned might contain unicode characters as the
     representation is an IRI not an URI.  If you need an ASCII only
@@ -139,7 +140,7 @@ def get_host(environ, trusted_hosts=None):
 
     Optionally it verifies that the host is in a list of trusted hosts.
     If the host is not in there it will raise a
-    :exc:`~werkzeug.exceptions.SecurityError`.
+    :exc:`~verktyg.exceptions.SecurityError`.
 
     :param environ: the WSGI environment to get the host of.
     :param trusted_hosts: a list of trusted hosts, see :func:`host_is_trusted`
@@ -156,7 +157,7 @@ def get_host(environ, trusted_hosts=None):
             rv += ':' + environ['SERVER_PORT']
     if trusted_hosts is not None:
         if not host_is_trusted(rv, trusted_hosts):
-            from werkzeug.exceptions import SecurityError
+            from verktyg.exceptions import SecurityError
             raise SecurityError('Host "%s" is not trusted' % rv)
     return rv
 
@@ -969,9 +970,9 @@ class LimitedStream(object):
         """What should happen if a disconnect is detected?  The return
         value of this function is returned from read functions in case
         the client went away.  By default a
-        :exc:`~werkzeug.exceptions.ClientDisconnected` exception is raised.
+        :exc:`~verktyg.exceptions.ClientDisconnected` exception is raised.
         """
-        from werkzeug.exceptions import ClientDisconnected
+        from verktyg.exceptions import ClientDisconnected
         raise ClientDisconnected()
 
     def exhaust(self, chunk_size=1024 * 64):

@@ -10,8 +10,7 @@
 """
 import unittest
 
-from werkzeug.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
-
+from verktyg.exceptions import NotImplemented, MethodNotAllowed, NotAcceptable
 from verktyg.dispatch import Binding, Dispatcher
 
 

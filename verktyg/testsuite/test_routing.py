@@ -256,7 +256,7 @@ class RoutingTestCase(unittest.TestCase):
         )
         self.assertRaises(
             r.RequestRedirect,
-            lambda: adapter.match('/FrontPage')
+            adapter.match, '/FrontPage'
         )
         self.assertEqual(
             adapter.match('/Special'),
@@ -314,17 +314,16 @@ class RoutingTestCase(unittest.TestCase):
                 raise raise_this
             return Response(repr((endpoint, values)))
 
-        def dispatch(p, q=False):
+        def dispatch(p):
             return Response.force_type(
-                adapter.dispatch(view_func, p, catch_http_exceptions=q),
+                adapter.dispatch(view_func, p),
                 env
             )
 
         self.assertEqual(dispatch('/').data, b"('root', {})")
         self.assertEqual(dispatch('/foo').status_code, 301)
         raise_this = r.NotFound()
-        self.assertRaises(r.NotFound, lambda: dispatch('/bar'))
-        self.assertEqual(dispatch('/bar', True).status_code, 404)
+        self.assertRaises(r.NotFound, dispatch, '/bar')
 
     def test_http_host_before_server_name(self):
         env = {
@@ -885,12 +884,6 @@ class RoutingTestCase(unittest.TestCase):
         else:  # pragma: no cover
             self.fail('Expected not found exception')
 
-    def test_redirect_request_exception_code(self):
-        exc = r.RequestRedirect('http://www.google.com/')
-        exc.code = 307
-        env = create_environ()
-        self.assertEqual(exc.get_response(env).status_code, exc.code)
-
     def test_redirect_path_quoting(self):
         url_map = r.URLMap([
             r.Route('/<category>', defaults={'page': 1}, endpoint='category'),
@@ -901,10 +894,7 @@ class RoutingTestCase(unittest.TestCase):
         try:
             adapter.match('/foo bar/page/1')
         except r.RequestRedirect as e:
-            response = e.get_response({})
-            self.assertEqual(
-                response.headers['location'], u'http://example.com/foo%20bar'
-            )
+            self.assertEqual(e.new_url, 'http://example.com/foo%20bar')
         else:  # pragma: no cover
             self.fail('Expected redirect')
 
