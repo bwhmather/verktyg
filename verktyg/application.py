@@ -15,7 +15,7 @@ from verktyg.exception_dispatch import (
 )
 from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
-from verktyg.wrappers import Request
+from verktyg.requests import Request
 from verktyg.views import expose
 
 

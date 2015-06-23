@@ -10,7 +10,7 @@
 import unittest
 
 import verktyg
-from verktyg.wrappers import Response
+from verktyg.responses import Response
 from verktyg.exceptions import MethodNotAllowed
 import verktyg.views as vtv
 

@@ -9,7 +9,7 @@ import unittest
 
 from verktyg.testsuite import (
     test_accept, test_application, test_dispatch,
-    test_routing, test_views, test_wrappers,
+    test_routing, test_views, test_requests, test_responses,
 )
 
 
@@ -20,5 +20,6 @@ suite = unittest.TestSuite((
     loader.loadTestsFromModule(test_dispatch),
     loader.loadTestsFromModule(test_routing),
     loader.loadTestsFromModule(test_views),
-    loader.loadTestsFromModule(test_wrappers),
+    loader.loadTestsFromModule(test_requests),
+    loader.loadTestsFromModule(test_responses),
 ))

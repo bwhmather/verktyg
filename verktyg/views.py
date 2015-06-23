@@ -7,7 +7,7 @@
 """
 import json
 
-from verktyg.wrappers import Response
+from verktyg.responses import Response
 from verktyg.dispatch import BindingFactory, Binding
 
 
