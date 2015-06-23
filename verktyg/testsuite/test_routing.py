@@ -13,7 +13,6 @@ import unittest
 import uuid
 
 from verktyg import routing as r
-from verktyg.wrappers import Response
 from werkzeug.datastructures import ImmutableDict
 from werkzeug.test import create_environ
 
@@ -297,32 +296,6 @@ class RoutingTestCase(unittest.TestCase):
             adapter.match('/Files/downloads/werkzeug/0.2.zip'),
             ('files', {'file': 'downloads/werkzeug/0.2.zip'})
         )
-
-    def test_dispatch(self):
-        env = create_environ('/')
-        map = r.URLMap([
-            r.Route('/', endpoint='root'),
-            r.Route('/foo/', endpoint='foo')
-        ])
-        adapter = map.bind_to_environ(env)
-
-        raise_this = None
-
-        def view_func(endpoint, values):
-            if raise_this is not None:  # pragma: no cover
-                raise raise_this
-            return Response(repr((endpoint, values)))
-
-        def dispatch(p):
-            return Response.force_type(
-                adapter.dispatch(view_func, p),
-                env
-            )
-
-        self.assertEqual(dispatch('/').data, b"('root', {})")
-        self.assertEqual(dispatch('/foo').status_code, 301)
-        raise_this = r.NotFound()
-        self.assertRaises(r.NotFound, dispatch, '/bar')
 
     def test_http_host_before_server_name(self):
         env = {

@@ -98,7 +98,7 @@ import posixpath
 from pprint import pformat
 
 from werkzeug.urls import url_encode, url_quote, url_join
-from werkzeug.utils import redirect, format_string
+from werkzeug.utils import format_string
 from werkzeug._internal import _get_environ, _encode_idna
 from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
 from werkzeug.datastructures import ImmutableDict, MultiDict
@@ -1313,46 +1313,6 @@ class MapAdapter(object):
         self.url_scheme = to_unicode(url_scheme)
         self.path_info = to_unicode(path_info)
         self.query_args = query_args
-
-    def dispatch(self, view_func, path_info=None):
-        """Does the complete dispatching process.  `view_func` is called with
-        the endpoint and a dict with the values for the view.  It should
-        look up the view function, call it, and return a response object
-        or WSGI application.
-
-        Here a small example for the dispatch usage::
-
-            from verktyg.wrappers import Request, Response
-            from verktyg.wsgi import responder
-            from verktyg.routing import URLMap, Route
-
-            def on_index(request):
-                return Response('Hello from the index')
-
-            url_map = URLMap([Route('/', endpoint='index')])
-            views = {'index': on_index}
-
-            @responder
-            def application(environ, start_response):
-                request = Request(environ)
-                urls = url_map.bind_to_environ(environ)
-                return urls.dispatch(lambda e, v: views[e](request, **v))
-
-        Keep in mind that this method might return exception objects, too, so
-        use :class:`Response.force_type` to get a response object.
-
-        :param view_func: a function that is called with the endpoint as
-                          first argument and the value dict as second.  Has
-                          to dispatch to the actual view function with this
-                          information.  (see above)
-        :param path_info: the path info to use for matching.  Overrides the
-                          path info specified on binding.
-        """
-        try:
-            endpoint, args = self.match(path_info)
-        except RequestRedirect as e:
-            return redirect(e.new_url, e.code)
-        return view_func(endpoint, args)
 
     def match(self, path_info=None, return_route=False, query_args=None):
         """The usage is simple: you just pass the match method the current

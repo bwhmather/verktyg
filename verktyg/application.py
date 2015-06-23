@@ -8,12 +8,12 @@
 import sys
 
 from werkzeug.local import Local, LocalManager
-from werkzeug.utils import cached_property
+from werkzeug.utils import cached_property, redirect
 
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionHandler
 )
-from verktyg.routing import URLMap, Route
+from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
 from verktyg.wrappers import Request
 from verktyg.views import expose
@@ -170,9 +170,11 @@ class Application(object):
 
         request = self.request_class(wsgi_env)
 
-        def call_view(name, kwargs):
+        try:
+            endpoint, kwargs = self._map_adapter.match()
+
             binding = self.dispatcher.lookup(
-                name,
+                endpoint,
                 method=wsgi_env.get('REQUEST_METHOD'),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
@@ -181,10 +183,10 @@ class Application(object):
 
             request.binding = binding
 
-            return binding(self, request, **kwargs)
-
-        try:
-            response = self._map_adapter.dispatch(call_view)
+            response = binding(self, request, **kwargs)
+        except RequestRedirect as e:
+            # TODO roll into general exception dispatch
+            response = redirect(e.new_url, e.code)
         except Exception:
             type_, value_, traceback_ = sys.exc_info()
 
