@@ -17,7 +17,7 @@ from io import StringIO, BytesIO
 from tempfile import TemporaryDirectory
 from contextlib import closing
 
-from verktyg.wrappers import BaseResponse
+from verktyg.responses import BaseResponse
 from verktyg.exceptions import BadRequest, ClientDisconnected
 from verktyg import wsgi
 from werkzeug._compat import to_bytes
@@ -33,7 +33,7 @@ class WsgiTestCase(unittest.TestCase):
             start_response('404 NOT FOUND', [('Content-Type', 'text/plain')])
             yield b'NOT FOUND'
 
-        with TemporaryDirectory as test_dir:
+        with TemporaryDirectory() as test_dir:
             test_file_name = path.join(test_dir, 'äöü')
             with open(test_file_name, 'w') as test_file:
                 test_file.write('FOUND')
@@ -46,13 +46,14 @@ class WsgiTestCase(unittest.TestCase):
             })
 
             for p in '/test.txt', '/sources/test.txt', '/foo/äöü':
-                app_iter, status, headers = run_wsgi_app(
-                    app, create_environ(p)
-                )
-                self.assertEqual(status, '200 OK')
-                with closing(app_iter) as app_iter:
-                    data = b''.join(app_iter).strip()
-                self.assertEqual(data, b'FOUND')
+                with self.subTest(path=p):
+                    app_iter, status, headers = run_wsgi_app(
+                        app, create_environ(p)
+                    )
+                    self.assertEqual(status, '200 OK')
+                    with closing(app_iter) as app_iter:
+                        data = b''.join(app_iter).strip()
+                    self.assertEqual(data, b'FOUND')
 
             app_iter, status, headers = run_wsgi_app(
                 app, create_environ('/pkg/debugger.js'))
@@ -148,7 +149,7 @@ class WsgiTestCase(unittest.TestCase):
         env = original_env.copy()
 
         def pop():
-            wsgi.pop_path_info(env)
+            return wsgi.pop_path_info(env)
 
         assert_tuple('/foo', '/a/b///c')
         self.assertEqual(pop(), 'a')
