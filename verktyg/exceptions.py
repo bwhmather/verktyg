@@ -192,12 +192,6 @@ class MethodNotAllowed(HTTPException):
         HTTPException.__init__(self, description)
         self.valid_methods = valid_methods
 
-    def get_headers(self, environ):
-        headers = HTTPException.get_headers(self, environ)
-        if self.valid_methods:
-            headers.append(('Allow', ', '.join(self.valid_methods)))
-        return headers
-
 
 class NotAcceptable(HTTPException):
     """*406* `Not Acceptable`
