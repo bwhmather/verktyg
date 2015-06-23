@@ -7,7 +7,6 @@
 """
 import sys
 
-from werkzeug import Request
 from werkzeug.local import Local, LocalManager
 from werkzeug.utils import cached_property
 
@@ -16,6 +15,7 @@ from verktyg.exception_dispatch import (
 )
 from verktyg.routing import URLMap, Route
 from verktyg.dispatch import Dispatcher
+from verktyg.wrappers import Request
 from verktyg.views import expose
 
 
@@ -24,7 +24,7 @@ class Application(object):
     bindings.
 
     `url_map`
-        werkzeug `URLMap` object that maps from urls to names
+        verktyg `URLMap` object that maps from urls to names
 
     `dispatcher`
         object to map from endpoint names to handler functions
