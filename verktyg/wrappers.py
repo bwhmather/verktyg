@@ -143,8 +143,6 @@ class BaseRequest(object):
     #: a :exc:`~verktyg.exceptions.RequestEntityTooLarge` exception is raised.
     #:
     #: Have a look at :ref:`dealing-with-request-data` for more details.
-    #:
-    #: .. versionadded:: 0.5
     max_content_length = None
 
     #: the maximum form field size.  This is forwarded to the form data
@@ -154,8 +152,6 @@ class BaseRequest(object):
     #: :exc:`~verktyg.exceptions.RequestEntityTooLarge` exception is raised.
     #:
     #: Have a look at :ref:`dealing-with-request-data` for more details.
-    #:
-    #: .. versionadded:: 0.5
     max_form_memory_size = None
 
     #: the class to use for `args` and `form`.  The default is an
@@ -165,23 +161,17 @@ class BaseRequest(object):
     #: preserves order or a :class:`~werkzeug.datastructures.ImmutableDict`
     #: which is the fastest but only remembers the last key.  It is also
     #: possible to use mutable structures, but this is not recommended.
-    #:
-    #: .. versionadded:: 0.6
     parameter_storage_class = ImmutableMultiDict
 
     #: the type to be used for list values from the incoming WSGI environment.
     #: By default an :class:`~werkzeug.datastructures.ImmutableList` is used
     #: (for example for :attr:`access_list`).
-    #:
-    #: .. versionadded:: 0.6
     list_storage_class = ImmutableList
 
     #: the type to be used for dict values from the incoming WSGI environment.
     #: By default an
     #: :class:`~werkzeug.datastructures.ImmutableTypeConversionDict` is used
     #: (for example for :attr:`cookies`).
-    #:
-    #: .. versionadded:: 0.6
     dict_storage_class = ImmutableTypeConversionDict
 
     #: The form data parser that shoud be used.  Can be replaced to customize
@@ -196,14 +186,10 @@ class BaseRequest(object):
     #: to only route correct hosts to the application, and remove the
     #: `X-Forwarded-Host` header if it is not being used (see
     #: :func:`verktyg.wsgi.get_host`).
-    #:
-    #: .. versionadded:: 0.9
     trusted_hosts = None
 
     #: Indicates whether the data descriptor should be allowed to read and
     #: buffer up the input stream.  By default it's enabled.
-    #:
-    #: .. versionadded:: 0.9
     disable_data_descriptor = False
 
     def __init__(self, environ, populate_request=True, shallow=False):
@@ -232,8 +218,6 @@ class BaseRequest(object):
     def url_charset(self):
         """The charset that is assumed for URLs.  Defaults to the value
         of :attr:`charset`.
-
-        .. versionadded:: 0.6
         """
         return self.charset
 
@@ -320,16 +304,12 @@ class BaseRequest(object):
     def want_form_data_parsed(self):
         """Returns True if the request method carries content.  As of
         Werkzeug 0.9 this will be the case if a content type is transmitted.
-
-        .. versionadded:: 0.8
         """
         return bool(self.environ.get('CONTENT_TYPE'))
 
     def make_form_data_parser(self):
         """Creates the form data parser.  Instanciates the
         :attr:`form_data_parser_class` with some parameters.
-
-        .. versionadded:: 0.8
         """
         return self.form_data_parser_class(self._get_file_stream,
                                            self.charset,
@@ -344,8 +324,6 @@ class BaseRequest(object):
         filled with the incoming form data.  As a matter of fact the input
         stream will be empty afterwards.  You can also call this method to
         force the parsing of the form data.
-
-        .. versionadded:: 0.8
         """
         # abort early if we have already consumed the stream
         if 'form' in self.__dict__:
@@ -373,8 +351,6 @@ class BaseRequest(object):
         """This is the same as accessing :attr:`stream` with the difference
         that if it finds cached data from calling :meth:`get_data` first it
         will create a new stream out of the cached data.
-
-        .. versionadded:: 0.9.3
         """
         cached_data = getattr(self, '_cached_data', None)
         if cached_data is not None:
@@ -385,8 +361,6 @@ class BaseRequest(object):
         """Closes associated resources of this request object.  This
         closes all file handles explicitly.  You can also use the request
         object in a with statement which will automatically close it.
-
-        .. versionadded:: 0.9
         """
         files = self.__dict__.get('files')
         for key, value in iter_multi_items(files or ()):
@@ -468,8 +442,6 @@ class BaseRequest(object):
 
         If `as_text` is set to `True` the return value will be a decoded
         unicode string.
-
-        .. versionadded:: 0.9
         """
         rv = getattr(self, '_cached_data', None)
         if rv is None:
@@ -630,9 +602,7 @@ class BaseRequest(object):
         authenticated as.''')
 
     scheme = environ_property('wsgi.url_scheme', doc='''
-        URL scheme (http or https).
-
-        .. versionadded:: 0.7''')
+        URL scheme (http or https).''')
 
     is_xhr = property(lambda x: x.environ.get('HTTP_X_REQUESTED_WITH', '')
                       .lower() == 'xmlhttprequest', doc='''
@@ -736,24 +706,14 @@ class BaseResponse(object):
 
     #: if set to `False` accessing properties on the response object will
     #: not try to consume the response iterator and convert it into a list.
-    #:
-    #: .. versionadded:: 0.6.2
-    #:
-    #:    That attribute was previously called `implicit_seqence_conversion`.
-    #:    (Notice the typo).  If you did use this feature, you have to adapt
-    #:    your code to the name change.
     implicit_sequence_conversion = True
 
     #: Should this response object correct the location header to be RFC
     #: conformant?  This is true by default.
-    #:
-    #: .. versionadded:: 0.8
     autocorrect_location_header = True
 
     #: Should this response object automatically set the content-length
     #: header if possible?  This is true by default.
-    #:
-    #: .. versionadded:: 0.8
     automatically_set_content_length = True
 
     def __init__(self, response=None, status=None, headers=None,
@@ -797,8 +757,6 @@ class BaseResponse(object):
         be called as part of closing down the response.  Since 0.7 this
         function also returns the function that was passed so that this
         can be used as a decorator.
-
-        .. versionadded:: 0.6
         """
         self._on_close.append(func)
         return func
@@ -903,8 +861,6 @@ class BaseResponse(object):
 
         If `as_text` is set to `True` the return value will be a decoded
         unicode string.
-
-        .. versionadded:: 0.9
         """
         self._ensure_sequence()
         rv = b''.join(self.iter_encoded())
@@ -916,8 +872,6 @@ class BaseResponse(object):
         """Sets a new string as response.  The value set must either by a
         unicode or bytestring.  If a unicode string is set it's encoded
         automatically to the charset of the response (utf-8 by default).
-
-        .. versionadded:: 0.9
         """
         # if an unicode string is set, it's encoded directly so that we
         # can set the content length
@@ -946,8 +900,6 @@ class BaseResponse(object):
         """This method can be called by methods that need a sequence.  If
         `mutable` is true, it will also ensure that the response sequence
         is a standard Python list.
-
-        .. versionadded:: 0.6
         """
         if self.is_sequence:
             # if we need a mutable object, we ensure it's a list.
@@ -970,8 +922,6 @@ class BaseResponse(object):
         automatically if required.  If `implicit_sequence_conversion` is
         disabled, this method is not automatically called and some properties
         might raise exceptions.  This also encodes all the items.
-
-        .. versionadded:: 0.6
         """
         if not self.is_sequence:
             # if we consume an iterable we have to ensure that the close
@@ -1054,17 +1004,12 @@ class BaseResponse(object):
         """If the iterator is buffered, this property will be `True`.  A
         response object will consider an iterator to be buffered if the
         response attribute is a list or tuple.
-
-        .. versionadded:: 0.6
         """
         return isinstance(self.response, (tuple, list))
 
     def close(self):
         """Close the wrapped response if possible.  You can also use the object
         in a with statement which will automatically close it.
-
-        .. versionadded:: 0.9
-           Can now be used in a with statement.
         """
         if hasattr(self.response, 'close'):
             self.response.close()
@@ -1190,8 +1135,6 @@ class BaseResponse(object):
         where the HTTP specification requires an empty response, an empty
         iterable is returned.
 
-        .. versionadded:: 0.6
-
         :param environ: the WSGI environment of the request.
         :return: a response iterable.
         """
@@ -1214,8 +1157,6 @@ class BaseResponse(object):
         specially for the given environment.  For example if the request
         method in the WSGI environment is ``'HEAD'`` the response will
         be empty and only the headers and status code will be present.
-
-        .. versionadded:: 0.6
 
         :param environ: the WSGI environment of the request.
         :return: an ``(app_iter, status, headers)`` tuple.
@@ -1327,8 +1268,6 @@ class ETagRequestMixin(object):
     def if_range(self):
         """The parsed `If-Range` header.
 
-        .. versionadded:: 0.7
-
         :rtype: :class:`~werkzeug.datastructures.IfRange`
         """
         return parse_if_range_header(self.environ.get('HTTP_IF_RANGE'))
@@ -1336,8 +1275,6 @@ class ETagRequestMixin(object):
     @cached_property
     def range(self):
         """The parsed `Range` header.
-
-        .. versionadded:: 0.7
 
         :rtype: :class:`~werkzeug.datastructures.Range`
         """
@@ -1378,8 +1315,6 @@ class StreamOnlyMixin(object):
     of it to disable handling of form parsing.  This disables the
     :attr:`files`, :attr:`form` attributes and will just provide a
     :attr:`stream` attribute that however is always available.
-
-    .. versionadded:: 0.9
     """
 
     disable_data_descriptor = True
@@ -1479,9 +1414,7 @@ class ETagResponseMixin(object):
         The `Accept-Ranges` header.  Even though the name would indicate
         that multiple values are supported, it must be one string token only.
 
-        The values ``'bytes'`` and ``'none'`` are common.
-
-        .. versionadded:: 0.7''')
+        The values ``'bytes'`` and ``'none'`` are common.''')
 
     def _get_content_range(self):
         def on_update(rng):
@@ -1509,9 +1442,7 @@ class ETagResponseMixin(object):
         The `Content-Range` header as
         :class:`~werkzeug.datastructures.ContentRange` object.  Even if the
         header is not set it wil provide such an object for easier
-        manipulation.
-
-        .. versionadded:: 0.7''')
+        manipulation.''')
     del _get_content_range, _set_content_range
 
 
@@ -1574,8 +1505,6 @@ class CommonRequestDescriptorsMixin(object):
     """A mixin for :class:`BaseRequest` subclasses.  Request objects that
     mix this class in will automatically get descriptors for a couple of
     HTTP headers with automatic type conversion.
-
-    .. versionadded:: 0.5
     """
 
     content_type = environ_property('CONTENT_TYPE', doc='''
@@ -1598,17 +1527,14 @@ class CommonRequestDescriptorsMixin(object):
         media-type.  When present, its value indicates what additional content
         codings have been applied to the entity-body, and thus what decoding
         mechanisms must be applied in order to obtain the media-type
-        referenced by the Content-Type header field.
-
-        .. versionadded:: 0.9''')
+        referenced by the Content-Type header field.''')
     content_md5 = environ_property('HTTP_CONTENT_MD5', doc='''
          The Content-MD5 entity-header field, as defined in RFC 1864, is an
          MD5 digest of the entity-body for the purpose of providing an
          end-to-end message integrity check (MIC) of the entity-body.  (Note:
          a MIC is good for detecting accidental modification of the
          entity-body in transit, but is not proof against malicious attacks.)
-
-        .. versionadded:: 0.9''')
+         ''')
     referrer = environ_property('HTTP_REFERER', doc='''
         The Referer[sic] request-header field allows the client to specify,
         for the server's benefit, the address (URI) of the resource from which
@@ -1686,8 +1612,6 @@ class CommonResponseDescriptorsMixin(object):
         The mimetype parameters as dict.  For example if the content
         type is ``text/html; charset=utf-8`` the params would be
         ``{'charset': 'utf-8'}``.
-
-        .. versionadded:: 0.5
         ''')
     location = header_property('Location', doc='''
         The Location response-header field is used to redirect the recipient
@@ -1839,8 +1763,6 @@ class Request(BaseRequest, AcceptMixin, ETagRequestMixin,
 class PlainRequest(StreamOnlyMixin, Request):
 
     """A request object without special form parsing capabilities.
-
-    .. versionadded:: 0.9
     """
 
 

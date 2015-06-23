@@ -99,8 +99,6 @@ def host_is_trusted(hostname, trusted_list):
     """Checks if a host is trusted against a list.  This also takes care
     of port normalization.
 
-    .. versionadded:: 0.9
-
     :param hostname: the hostname to check
     :param trusted_list: a list of hostnames to check against.  If a
                          hostname starts with a dot it will match against
@@ -165,8 +163,6 @@ def get_content_length(environ):
     """Returns the content length from the WSGI environment as
     integer.  If it's not available `None` is returned.
 
-    .. versionadded:: 0.9
-
     :param environ: the WSGI environ to fetch the content length from.
     """
     content_length = environ.get('CONTENT_LENGTH')
@@ -182,8 +178,6 @@ def get_input_stream(environ, safe_fallback=True):
     in the most sensible way possible.  The stream returned is not the
     raw WSGI stream in most cases but one that is safe to read from
     without taking into account the content length.
-
-    .. versionadded:: 0.9
 
     :param environ: the WSGI environ to fetch the stream from.
     :param safe: indicates whether the function should use an empty
@@ -217,8 +211,6 @@ def get_query_string(environ):
     native string.  The string returned will be restricted to ASCII
     characters.
 
-    .. versionadded:: 0.9
-
     :param environ: the WSGI environment object to get the query string from.
     """
     qs = wsgi_get_bytes(environ.get('QUERY_STRING', ''))
@@ -233,8 +225,6 @@ def get_path_info(environ, charset='utf-8', errors='replace'):
     decodes it.  This also takes care about the WSGI decoding dance
     on Python 3 environments.  if the `charset` is set to `None` a
     bytestring is returned.
-
-    .. versionadded:: 0.9
 
     :param environ: the WSGI environment object to get the path from.
     :param charset: the charset for the path info, or `None` if no
@@ -252,8 +242,6 @@ def get_script_name(environ, charset='utf-8', errors='replace'):
     decodes it.  This also takes care about the WSGI decoding dance
     on Python 3 environments.  if the `charset` is set to `None` a
     bytestring is returned.
-
-    .. versionadded:: 0.9
 
     :param environ: the WSGI environment object to get the path from.
     :param charset: the charset for the path, or `None` if no
@@ -284,12 +272,6 @@ def pop_path_info(environ, charset='utf-8', errors='replace'):
     'b'
     >>> env['SCRIPT_NAME']
     '/foo/a/b'
-
-    .. versionadded:: 0.5
-
-    .. versionchanged:: 0.9
-       The path is now decoded and a charset and encoding
-       parameter can be provided.
 
     :param environ: the WSGI environment that is modified.
     """
@@ -333,12 +315,6 @@ def peek_path_info(environ, charset='utf-8', errors='replace'):
 
     If the `charset` is set to `None` a bytestring is returned.
 
-    .. versionadded:: 0.5
-
-    .. versionchanged:: 0.9
-       The path is now decoded and a charset and encoding
-       parameter can be provided.
-
     :param environ: the WSGI environment that is checked.
     """
     segments = environ.get('PATH_INFO', '').lstrip('/').split('/', 1)
@@ -368,8 +344,6 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
     True
 
     Instead of providing a base URL you can also pass a WSGI environment.
-
-    .. versionadded:: 0.6
 
     :param environ_or_baseurl: a WSGI environment dict, a base URL or
                                base IRI.  This is the root of the
@@ -476,12 +450,6 @@ class SharedDataMiddleware(object):
     The middleware will guess the mimetype using the Python `mimetype`
     module.  If it's unable to figure out the charset it will fall back
     to `fallback_mimetype`.
-
-    .. versionchanged:: 0.5
-       The cache timeout is configurable now.
-
-    .. versionadded:: 0.6
-       The `fallback_mimetype` parameter was added.
 
     :param app: the application to wrap.  If you don't want to wrap an
                 application you can pass it :exc:`NotFound`.
@@ -712,8 +680,6 @@ def wrap_file(environ, file, buffer_size=8192):
     """Wraps a file.  This uses the WSGI server's file wrapper if available
     or otherwise the generic :class:`FileWrapper`.
 
-    .. versionadded:: 0.5
-
     If the file wrapper from the WSGI server is used it's important to not
     iterate over it from inside the application but to pass it through
     unchanged.  If you want to pass out a file wrapper inside a response
@@ -736,8 +702,6 @@ class FileWrapper(object):
     You should not use this class directly but rather use the
     :func:`wrap_file` function that uses the WSGI server's file wrapper
     support if it's available.
-
-    .. versionadded:: 0.5
 
     If you're using this object together with a :class:`BaseResponse` you have
     to use the `direct_passthrough` mode.
@@ -799,12 +763,6 @@ def make_line_iter(stream, limit=None, buffer_size=10 * 1024):
     If you need line-by-line processing it's strongly recommended to iterate
     over the input stream using this helper function.
 
-    .. versionchanged:: 0.8
-       This function now ensures that the limit was reached.
-
-    .. versionadded:: 0.9
-       added support for iterators as input stream.
-
     :param stream: the stream or iterate to iterate over.
     :param limit: the limit in bytes for the stream.  (Usually
                   content length.  Not necessary if the `stream`
@@ -861,11 +819,6 @@ def make_chunk_iter(stream, separator, limit=None, buffer_size=10 * 1024):
     which divides chunks.  If you want newline based processing
     you should use :func:`make_line_iter` instead as it
     supports arbitrary newline markers.
-
-    .. versionadded:: 0.8
-
-    .. versionadded:: 0.9
-       added support for iterators as input stream.
 
     :param stream: the stream or iterate to iterate over.
     :param separator: the separator that divides chunks.
@@ -1049,8 +1002,6 @@ class LimitedStream(object):
 
     def tell(self):
         """Returns the position of the stream.
-
-        .. versionadded:: 0.9
         """
         return self._pos
 
