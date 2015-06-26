@@ -35,7 +35,7 @@ from werkzeug.datastructures import (
     Headers, ResponseCacheControl, CallbackDict, ContentRange
 )
 from werkzeug._internal import _get_environ
-from werkzeug._compat import to_bytes, to_native
+from werkzeug._compat import to_bytes
 
 
 def _run_wsgi_app(*args):
@@ -283,7 +283,7 @@ class BaseResponse(object):
         return self._status
 
     def _set_status(self, value):
-        self._status = to_native(value)
+        self._status = value
         try:
             self._status_code = int(self._status.split(None, 1)[0])
         except ValueError:
