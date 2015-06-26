@@ -34,13 +34,13 @@ class WsgiTestCase(unittest.TestCase):
             yield b'NOT FOUND'
 
         with TemporaryDirectory() as test_dir:
-            test_file_name = path.join(test_dir, 'äöü')
+            test_file_name = path.join(test_dir, 'äöü').encode()
             with open(test_file_name, 'w') as test_file:
                 test_file.write('FOUND')
 
             app = wsgi.SharedDataMiddleware(null_application, {
-                '/':        path.join(path.dirname(__file__), 'res'),
-                '/sources': path.join(path.dirname(__file__), 'res'),
+                '/':        path.join(path.dirname(__file__), 'resources'),
+                '/sources': path.join(path.dirname(__file__), 'resources'),
                 '/pkg':     ('werkzeug.debug', 'shared'),
                 '/foo':     test_dir
             })
