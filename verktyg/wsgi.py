@@ -11,6 +11,7 @@
 """
 import re
 import os
+import sys
 import posixpath
 import mimetypes
 from itertools import chain
@@ -25,8 +26,6 @@ from werkzeug._compat import (
 from werkzeug._internal import _empty_stream, _encode_idna
 from werkzeug.http import is_resource_modified, http_date
 from werkzeug.urls import uri_to_iri, url_quote, url_parse, url_join
-
-from verktyg.filesystem import get_filesystem_encoding
 
 
 def responder(f):
@@ -537,7 +536,7 @@ class SharedDataMiddleware(object):
 
     def generate_etag(self, mtime, file_size, real_filename):
         if not isinstance(real_filename, bytes):
-            real_filename = real_filename.encode(get_filesystem_encoding())
+            real_filename = real_filename.encode(sys.getfilesystemencoding())
         return 'wzsdm-%d-%s-%s' % (
             mktime(mtime.timetuple()),
             file_size,
