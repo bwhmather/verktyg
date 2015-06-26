@@ -324,11 +324,6 @@ class BaseResponse(object):
         if self.automatically_set_content_length:
             self.headers['Content-Length'] = str(len(value))
 
-    data = property(get_data, set_data, doc='''
-        A descriptor that calls :meth:`get_data` and :meth:`set_data`.  This
-        should not be used and will eventually get deprecated.
-        ''')
-
     def calculate_content_length(self):
         """Returns the content length if available or `None` otherwise."""
         try:

@@ -137,7 +137,7 @@ class WsgiTestCase(unittest.TestCase):
         client = Client(wsgi.responder(foo), BaseResponse)
         response = client.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, b'Test')
+        self.assertEqual(response.get_data(), b'Test')
 
     def test_pop_path_info(self):
         original_env = {'SCRIPT_NAME': '/foo', 'PATH_INFO': '/a/b///c'}

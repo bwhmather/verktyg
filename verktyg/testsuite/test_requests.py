@@ -238,7 +238,6 @@ class RequestsTestCase(unittest.TestCase):
         )
         self.assertEqual(list(request.files.items()), [])
         self.assertEqual(list(request.form.items()), [])
-        self.assertRaises(AttributeError, lambda: request.data)
         self.assertEqual(request.stream.read(), b'foo=blub+hehe')
 
     def test_accept_mixin(self):
@@ -353,7 +352,7 @@ class RequestsTestCase(unittest.TestCase):
             '/', method='POST', data=data,
             content_type='application/x-www-form-urlencoded')
 
-        self.assertEqual(req.data, b'')
+        self.assertEqual(req.get_data(parse_form_data=True), b'')
         self.assertEqual(req.form['foo'], u'Hello World')
 
     def test_get_data_method_parsing_caching_behavior(self):

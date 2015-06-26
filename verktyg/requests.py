@@ -358,19 +358,6 @@ class BaseRequest(object):
                           self.url_charset, errors=self.encoding_errors,
                           cls=self.parameter_storage_class)
 
-    @cached_property
-    def data(self):
-        if self.disable_data_descriptor:
-            raise AttributeError('data descriptor is disabled')
-        # XXX: this should eventually be deprecated.
-
-        # We trigger form data parsing first which means that the descriptor
-        # will not cache the data that would otherwise be .form or .files
-        # data.  This restores the behavior that was there in Werkzeug
-        # before 0.9.  New code should use :meth:`get_data` explicitly as
-        # this will make behavior explicit.
-        return self.get_data(parse_form_data=True)
-
     def get_data(self, cache=True, as_text=False, parse_form_data=False):
         """This reads the buffered incoming data from the client into one
         bytestring.  By default this is cached but that behavior can be
