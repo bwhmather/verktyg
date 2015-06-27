@@ -15,8 +15,9 @@ from verktyg.exception_dispatch import (
 )
 from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
-from verktyg.requests import BaseRequest
 from verktyg.views import expose
+from verktyg.requests import BaseRequest
+from verktyg import requests
 
 
 def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
@@ -106,7 +107,10 @@ class BaseApplication(object):
 
 
 class ApplicationBuilder(object):
-    def __init__(self, *, default_redirect_handler=True):
+    def __init__(
+                self, *,
+                default_redirect_handler=True, default_request_mixins=True
+            ):
         self._application_bases = [BaseApplication]
         self._request_bases = [BaseRequest]
 
@@ -120,6 +124,15 @@ class ApplicationBuilder(object):
             self.add_exception_handlers(
                 ExceptionHandler(RequestRedirect, _default_redirect_handler),
             )
+
+        if default_request_mixins:
+            self.add_request_mixins(
+                requests.BaseRequest, requests.AcceptMixin,
+                requests.ETagRequestMixin, requests.UserAgentMixin,
+                requests.AuthorizationMixin,
+                requests.CommonRequestDescriptorsMixin,
+            )
+
 
     def add_application_mixins(self, *mixins):
         for mixin in mixins:
