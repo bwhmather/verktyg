@@ -133,7 +133,6 @@ class ApplicationBuilder(object):
                 requests.CommonRequestDescriptorsMixin,
             )
 
-
     def add_application_mixins(self, *mixins):
         for mixin in mixins:
             if mixin not in self._application_bases:
