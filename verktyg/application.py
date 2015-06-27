@@ -19,6 +19,10 @@ from verktyg.requests import BaseRequest
 from verktyg.views import expose
 
 
+def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
+    return redirect(exc_value.new_url, exc_value.code)
+
+
 class BaseApplication(object):
     def __init__(
                 self, *, routes, bindings, handlers,
@@ -71,9 +75,6 @@ class BaseApplication(object):
             request.binding = binding
 
             response = binding(self, request, **kwargs)
-        except RequestRedirect as e:
-            # TODO roll into general exception dispatch
-            response = redirect(e.new_url, e.code)
         except Exception:
             type_, value_, traceback_ = sys.exc_info()
 
@@ -105,7 +106,7 @@ class BaseApplication(object):
 
 
 class ApplicationBuilder(object):
-    def __init__(self):
+    def __init__(self, *, default_redirect_handler=True):
         self._application_bases = [BaseApplication]
         self._request_bases = [BaseRequest]
 
@@ -114,6 +115,11 @@ class ApplicationBuilder(object):
         self._routes = []
         self._bindings = []
         self._handlers = []
+
+        if default_redirect_handler:
+            self.add_exception_handlers(
+                ExceptionHandler(RequestRedirect, _default_redirect_handler),
+            )
 
     def add_application_mixins(self, *mixins):
         for mixin in mixins:
@@ -157,6 +163,9 @@ class ApplicationBuilder(object):
         """
         self._middleware.append((middleware, args, kwargs))
 
+    def add_exception_handlers(self, *handlers):
+        self._handlers.extend(handlers)
+
     def add_exception_handler(self, exception_class, handler, **kwargs):
         """ Bind a function to render exceptions of the given class and all
         sub classes.
@@ -170,7 +179,7 @@ class ApplicationBuilder(object):
         The last three arguments are the same as the return value of
         `sys.exc_info()`
         """
-        self._handlers.append(
+        self.add_exception_handlers(
             ExceptionHandler(exception_class, handler, **kwargs)
         )
 
