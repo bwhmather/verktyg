@@ -8,57 +8,39 @@
 import sys
 
 from werkzeug.local import Local, LocalManager
-from werkzeug.utils import cached_property, redirect
+from werkzeug.utils import redirect
 
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionHandler
 )
 from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
-from verktyg.requests import Request
 from verktyg.views import expose
+from verktyg.requests import BaseRequest
+from verktyg import requests
 
 
-class Application(object):
-    """ helper class for creating a wsgi application from a url map and list of
-    bindings.
+def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
+    return redirect(exc_value.new_url, exc_value.code)
 
-    `url_map`
-        verktyg `URLMap` object that maps from urls to names
 
-    `dispatcher`
-        object to map from endpoint names to handler functions
+class BaseApplication(object):
+    def __init__(
+                self, *, routes, bindings, handlers,
+                middleware, request_class
+            ):
+        self._url_map = URLMap(routes)
+        self._dispatcher = Dispatcher(bindings)
+        self._exception_dispatcher = ExceptionDispatcher(handlers)
 
-    """
-
-    #: Constructor applied to each wsgi environment to create the request
-    #: object to be passed to the handler
-    request_class = Request
-
-    @cached_property
-    def url_map(self):
-        return URLMap()
-
-    @cached_property
-    def dispatcher(self):
-        return Dispatcher()
-
-    @cached_property
-    def exception_dispatcher(self):
-        return ExceptionDispatcher()
-
-    def __init__(self, debug=False):
-        # Application.__setattr__ depends on _properties so we need to set it
-        # using the parent implementation.  A bit magic
-        super(Application, self).__setattr__('_properties', {})
-        self._methods = {}
-
-        self.debug = debug
+        self.request_class = request_class
 
         # reference to the bottom of a stack of wsgi middleware wrapping
         # :method:`_dispatch_request`. Invoked by :method:`__call__`.
         # Essentially the real wsgi application.
         self._stack = self._dispatch_request
+        for wrapper, args, kwargs in middleware:
+            self._stack = wrapper(self._stack, *args, **kwargs)
 
         # TODO provide a way of adding request specific variables.  Need to be
         # able to register name, `(Application, wsgi_env) -> value` pairs
@@ -68,13 +50,105 @@ class Application(object):
         self._map_adapter = self._local('map_adapter')
 
         local_manager = LocalManager([self._local])
-        self.add_middleware(local_manager.make_middleware)
+        # TODO
+        self._stack = local_manager.make_middleware(self._stack)
+
+    def _bind(self, wsgi_env):
+        self._local.wsgi_env = wsgi_env
+        self._local.map_adapter = self._url_map.bind_to_environ(wsgi_env)
+
+    def _dispatch_request(self, wsgi_env, start_response):
+        self._bind(wsgi_env)
+
+        request = self.request_class(wsgi_env)
+
+        try:
+            endpoint, kwargs = self._map_adapter.match()
+
+            binding = self._dispatcher.lookup(
+                endpoint,
+                method=wsgi_env.get('REQUEST_METHOD'),
+                accept=wsgi_env.get('HTTP_ACCEPT'),
+                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
+                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
+            )
+
+            request.binding = binding
+
+            response = binding(self, request, **kwargs)
+        except Exception:
+            type_, value_, traceback_ = sys.exc_info()
+
+            handler = self._exception_dispatcher.lookup(
+                type_,
+                accept=wsgi_env.get('HTTP_ACCEPT'),
+                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
+                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
+            )
+            if handler is None:
+                raise
+
+            response = handler(self, request, type_, value_, traceback_)
+
+        return response(wsgi_env, start_response)
+
+    def __call__(self, wsgi_env, start_response):
+        wsgi_env['verktyg.application'] = self
+        return self._stack(wsgi_env, start_response)
+
+    def url_for(self, endpoint, **kwargs):
+        """ construct the url corresponding to an endpoint name and parameters
+
+        Unfortunately will only work if the application has been bound to a
+        wsgi request.  If it is not then there is not generally enough
+        information to construct full urls.  TODO.
+        """
+        return self._map_adapter.build(endpoint, values=kwargs)
+
+
+class ApplicationBuilder(object):
+    def __init__(
+                self, *,
+                default_redirect_handler=True, default_request_mixins=True
+            ):
+        self._application_bases = [BaseApplication]
+        self._request_bases = [BaseRequest]
+
+        self._middleware = []
+
+        self._routes = []
+        self._bindings = []
+        self._handlers = []
+
+        if default_redirect_handler:
+            self.add_exception_handlers(
+                ExceptionHandler(RequestRedirect, _default_redirect_handler),
+            )
+
+        if default_request_mixins:
+            self.add_request_mixins(
+                requests.BaseRequest, requests.AcceptMixin,
+                requests.ETagRequestMixin, requests.UserAgentMixin,
+                requests.AuthorizationMixin,
+                requests.CommonRequestDescriptorsMixin,
+            )
+
+
+    def add_application_mixins(self, *mixins):
+        for mixin in mixins:
+            if mixin not in self._application_bases:
+                self._application_bases.append(mixin)
+
+    def add_request_mixins(self, *mixins):
+        for mixin in mixins:
+            if mixin not in self._request_bases:
+                self._request_bases.append(mixin)
 
     def add_routes(self, *routes):
-        self.url_map.add_routes(*routes)
+        self._routes.extend(routes)
 
     def add_bindings(self, *views):
-        self.dispatcher.add_bindings(*views)
+        self._bindings.extend(views)
 
     def expose(self, endpoint=None, *args, **kwargs):
         """ Decorator to bind a function to an endpoint and optionally the
@@ -89,7 +163,7 @@ class Application(object):
             if route is not None:
                 self.add_routes(Route(route, endpoint=endpoint))
 
-            return expose(self.dispatcher, endpoint, *args, **kwargs)(f)
+            return expose(self, endpoint, *args, **kwargs)(f)
         return wrapper
 
     def add_middleware(self, middleware, *args, **kwargs):
@@ -100,7 +174,10 @@ class Application(object):
             and returns a new wsgi application.  Any other args or kwargs are
             passed after.
         """
-        self._stack = middleware(self._stack, *args, **kwargs)
+        self._middleware.append((middleware, args, kwargs))
+
+    def add_exception_handlers(self, *handlers):
+        self._handlers.extend(handlers)
 
     def add_exception_handler(self, exception_class, handler, **kwargs):
         """ Bind a function to render exceptions of the given class and all
@@ -115,7 +192,7 @@ class Application(object):
         The last three arguments are the same as the return value of
         `sys.exc_info()`
         """
-        self.exception_dispatcher.add_exception_handlers(
+        self.add_exception_handlers(
             ExceptionHandler(exception_class, handler, **kwargs)
         )
 
@@ -128,89 +205,16 @@ class Application(object):
             return handler
         return wrapper
 
-    def __getattr__(self, name):
-        if name in self._properties:
-            geter, seter = self._properties[name]
-            return geter(self)
-        elif name in self._methods:
-            method = self._methods[name]
-            # functions are also descriptors
-            # TODO make this work with callables
-            # TODO merge with properties
-            return method.__get__(self, self.__class__)
-        else:
-            raise AttributeError(name)
+    def __call__(self):
+        class Application(*self._application_bases):
+            pass
 
-    def __setattr__(self, name, value):
-        if name in self._properties:
-            geter, seter = self._properties[name]
-            if seter is None:
-                raise AttributeError("can't set attribute")
-            seter(self, value)
-        else:
-            super(Application, self).__setattr__(name, value)
+        class Request(*self._request_bases):
+            pass
 
-    def add_property(self, name, geter, seter=None):
-        self._properties[name] = geter, seter
-
-    def add_method(self, name, method):
-        """ Bind function as a method of the application
-
-        When the method is called, a `self` parameter will be prepended to it's
-        list of arguments.
-        """
-        self._methods[name] = method
-
-    def _bind(self, wsgi_env):
-        self._local.wsgi_env = wsgi_env
-        self._local.map_adapter = self.url_map.bind_to_environ(wsgi_env)
-
-    def _dispatch_request(self, wsgi_env, start_response):
-        self._bind(wsgi_env)
-
-        request = self.request_class(wsgi_env)
-
-        try:
-            endpoint, kwargs = self._map_adapter.match()
-
-            binding = self.dispatcher.lookup(
-                endpoint,
-                method=wsgi_env.get('REQUEST_METHOD'),
-                accept=wsgi_env.get('HTTP_ACCEPT'),
-                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
-                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
-            )
-
-            request.binding = binding
-
-            response = binding(self, request, **kwargs)
-        except RequestRedirect as e:
-            # TODO roll into general exception dispatch
-            response = redirect(e.new_url, e.code)
-        except Exception:
-            type_, value_, traceback_ = sys.exc_info()
-
-            handler = self.exception_dispatcher.lookup(
-                type_,
-                accept=wsgi_env.get('HTTP_ACCEPT'),
-                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
-                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
-            )
-            if handler is None:
-                raise
-
-            response = handler(self, request, type_, value_, traceback_)
-
-        return response(wsgi_env, start_response)
-
-    def __call__(self, wsgi_env, start_response):
-        return self._stack(wsgi_env, start_response)
-
-    def url_for(self, endpoint, **kwargs):
-        """ construct the url corresponding to an endpoint name and parameters
-
-        Unfortunately will only work if the application has been bound to a
-        wsgi request.  If it is not then there is not generally enough
-        information to construct full urls.  TODO.
-        """
-        return self._map_adapter.build(endpoint, values=kwargs)
+        return Application(
+            routes=iter(self._routes), bindings=iter(self._bindings),
+            handlers=iter(self._handlers),
+            middleware=iter(self._middleware),
+            request_class=Request,
+        )

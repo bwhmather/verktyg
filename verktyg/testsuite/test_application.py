@@ -15,19 +15,20 @@ from verktyg.exceptions import HTTPException, NotFound, ImATeapot
 from verktyg.responses import Response, BaseResponse
 from verktyg.views import expose
 from verktyg.routing import Route
-from verktyg.application import Application
+from verktyg.application import ApplicationBuilder
 
 
 class ApplicationTestCase(unittest.TestCase):
     def test_basic(self):
-        app = Application()
+        builder = ApplicationBuilder()
 
-        app.add_routes(Route('/', endpoint='index'))
+        builder.add_routes(Route('/', endpoint='index'))
 
-        @expose(app.dispatcher, 'index')
+        @expose(builder, 'index')
         def index(app, request):
             return Response('Hello World')
 
+        app = builder()
         client = Client(app, BaseResponse)
 
         resp = client.get('/')
@@ -35,28 +36,29 @@ class ApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.get_data(), b'Hello World')
 
     def test_exception_handlers(self):
-        app = Application()
+        builder = ApplicationBuilder()
 
-        @app.exception_handler(BaseException)
+        @builder.exception_handler(BaseException)
         def default_handler(app, req, exc_type, exc_value, exc_traceback):
             return Response('default handler', status=500)
 
-        @app.exception_handler(HTTPException)
+        @builder.exception_handler(HTTPException)
         def werkzeug_handler(app, req, exc_type, exc_value, exc_traceback):
             return Response('werkzeug handler', exc_value.code)
 
-        @app.expose(route='/raise_execption')
+        @builder.expose(route='/raise_execption')
         def raise_exception(app, req):
             raise Exception()
 
-        @app.expose(route='/raise_key_error')
+        @builder.expose(route='/raise_key_error')
         def raise_key_error(app, req):
             raise KeyError()
 
-        @app.expose(route='/raise_teapot')
+        @builder.expose(route='/raise_teapot')
         def raise_teapot(app, req):
             raise ImATeapot()
 
+        app = builder()
         client = Client(app, BaseResponse)
 
         resp = client.get('/raise_execption')
@@ -72,9 +74,9 @@ class ApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.get_data(), b'werkzeug handler')
 
     def test_middleware(self):
-        app = Application()
+        builder = ApplicationBuilder()
 
-        @app.expose(route='/')
+        @builder.expose(route='/')
         def index(app, req):
             return Response()
 
@@ -94,8 +96,9 @@ class ApplicationTestCase(unittest.TestCase):
                 return app(env, handle_start_response)
             return handler
 
-        app.add_middleware(middleware)
+        builder.add_middleware(middleware)
 
+        app = builder()
         client = Client(app, BaseResponse)
 
         client.get('/')
@@ -104,13 +107,15 @@ class ApplicationTestCase(unittest.TestCase):
         self.assertTrue(got_response)
 
     def test_exception_content_type(self):
-        app = Application()
+        builder = ApplicationBuilder()
 
-        @app.exception_handler(HTTPException)
+        @builder.exception_handler(HTTPException)
         def default_handler(app, req, exc_type, exc_value, exc_traceback):
             return Response('default handler', status=exc_value.code)
 
-        @app.exception_handler(HTTPException, content_type='application/json')
+        @builder.exception_handler(
+            HTTPException, content_type='application/json'
+        )
         def default_json_handler(app, req, exc_type, exc_value, exc_traceback):
             return Response(
                 '{"type": "json"}',
@@ -118,19 +123,20 @@ class ApplicationTestCase(unittest.TestCase):
                 content_type='application/json'
             )
 
-        @app.exception_handler(NotFound, content_type='text/html')
+        @builder.exception_handler(NotFound, content_type='text/html')
         def html_not_found_handler(
                 app, req, exc_type, exc_value, exc_traceback):
             return Response('pretty NotFound', status=exc_value.code)
 
-        @app.expose(route='/raise_418')
+        @builder.expose(route='/raise_418')
         def raise_418(app, req):
             raise ImATeapot()
 
-        @app.expose(route='/raise_404')
+        @builder.expose(route='/raise_404')
         def raise_404(app, req):
             raise NotFound()
 
+        app = builder()
         client = Client(app, BaseResponse)
 
         resp = client.get('/raise_418')
@@ -156,45 +162,6 @@ class ApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
         self.assertEqual(resp.headers['Content-Type'], 'application/json')
-
-    def test_properties(self):
-        app = Application()
-
-        # test getters
-        app.add_property('foo', lambda self: 'bar')
-
-        self.assertEqual(app.foo, 'bar')
-
-        try:
-            app.foo = 'baz'
-        except AttributeError:
-            pass
-        else:  # pragma: no cover
-            self.fail("Should raise AttributeError")
-
-        # test setters
-        def geter(self):
-            if hasattr(self, '_fizz'):
-                return self._fizz * 2
-            else:
-                return 'default'
-
-        def seter(self, value):
-            self._fizz = value
-
-        app.add_property('fizz', geter, seter)
-
-        self.assertEqual(app.fizz, 'default')
-
-        app.fizz = 2
-
-        self.assertEqual(app.fizz, 4)
-
-    def test_methods(self):
-        app = Application()
-
-        app.add_method('get_self', lambda self: self)
-        self.assertEqual(app.get_self(), app)
 
 
 def suite():

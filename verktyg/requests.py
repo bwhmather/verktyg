@@ -785,6 +785,7 @@ class CommonRequestDescriptorsMixin(object):
         return parse_set_header(self.environ.get('HTTP_PRAGMA', ''))
 
 
+# TODO deprecate.  Superseded by request class building in ApplicationBuilder
 class Request(BaseRequest, AcceptMixin, ETagRequestMixin,
               UserAgentMixin, AuthorizationMixin,
               CommonRequestDescriptorsMixin):
