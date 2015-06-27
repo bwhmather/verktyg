@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.accept
     ~~~~~~~~~~~~~~
@@ -12,7 +11,7 @@
 """
 import mimeparse
 
-from werkzeug.exceptions import NotAcceptable
+from verktyg.exceptions import NotAcceptable
 
 
 def select_representation(
@@ -43,7 +42,7 @@ def select_representation(
 
 
 class Representation(object):
-    def __init__(self, content_type=None, language=None,
+    def __init__(self, *, content_type=None, language=None,
                  charset=None, qs=None):
         self.content_type = content_type
         self.language = language
@@ -55,8 +54,8 @@ class Representation(object):
             else:
                 self.qs = 1.0
 
-    def quality(self, accept=None, accept_charset=None,
-                accept_language=None):
+    def quality(self, *, accept=None,
+                accept_charset=None, accept_language=None):
         """
         :param accept: string in the same format as an http `Accept` header
 

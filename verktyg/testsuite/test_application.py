@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.testsuite.application
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -11,17 +10,15 @@
 import unittest
 
 from werkzeug.test import Client
-from werkzeug.testsuite import WerkzeugTestCase
 
-from werkzeug import Response, BaseResponse
-from werkzeug.exceptions import HTTPException, NotFound, ImATeapot
-
+from verktyg.exceptions import HTTPException, NotFound, ImATeapot
+from verktyg.responses import Response, BaseResponse
 from verktyg.views import expose
 from verktyg.routing import Route
 from verktyg.application import Application
 
 
-class ApplicationTestCase(WerkzeugTestCase):
+class ApplicationTestCase(unittest.TestCase):
     def test_basic(self):
         app = Application()
 
@@ -81,20 +78,20 @@ class ApplicationTestCase(WerkzeugTestCase):
         def index(app, req):
             return Response()
 
-        results = dict(
-            got_request=False,
-            got_response=False,
-        )
+        got_request = False,
+        got_response = False,
 
         def middleware(app):
             def handler(env, start_response):
-                results['got_request'] = True
+                nonlocal got_request
+                got_request = True
 
                 def handle_start_response(*args, **kwargs):
-                    results['got_response'] = True
+                    nonlocal got_response
+                    got_response = True
                     return start_response(*args, **kwargs)
 
-                app(env, handle_start_response)
+                return app(env, handle_start_response)
             return handler
 
         app.add_middleware(middleware)
@@ -103,8 +100,8 @@ class ApplicationTestCase(WerkzeugTestCase):
 
         client.get('/')
 
-        self.assertTrue(results['got_request'])
-        self.assertTrue(results['got_response'])
+        self.assertTrue(got_request)
+        self.assertTrue(got_response)
 
     def test_exception_content_type(self):
         app = Application()
@@ -172,7 +169,7 @@ class ApplicationTestCase(WerkzeugTestCase):
             app.foo = 'baz'
         except AttributeError:
             pass
-        else:
+        else:  # pragma: no cover
             self.fail("Should raise AttributeError")
 
         # test setters

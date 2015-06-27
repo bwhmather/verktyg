@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.routing
     ~~~~~~~~~~~~~~~
@@ -99,13 +98,12 @@ import posixpath
 from pprint import pformat
 
 from werkzeug.urls import url_encode, url_quote, url_join
-from werkzeug.utils import redirect, format_string
-from werkzeug.exceptions import HTTPException, NotFound
+from werkzeug.utils import format_string
 from werkzeug._internal import _get_environ, _encode_idna
-from werkzeug._compat import itervalues, iteritems, to_unicode, to_bytes, \
-    text_type, string_types, native_string_result, \
-    implements_to_string, wsgi_decoding_dance
+from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
 from werkzeug.datastructures import ImmutableDict, MultiDict
+
+from verktyg.exceptions import HTTPException, NotFound
 
 
 _route_re = re.compile(r'''
@@ -150,7 +148,7 @@ def _pythonize(value):
             pass
     if value[:1] == value[-1:] and value[0] in '"\'':
         value = value[1:-1]
-    return text_type(value)
+    return str(value)
 
 
 def parse_converter_args(argstr):
@@ -223,9 +221,6 @@ class RequestRedirect(HTTPException, RoutingException):
     def __init__(self, new_url):
         RoutingException.__init__(self, new_url)
         self.new_url = new_url
-
-    def get_response(self, environ):
-        return redirect(self.new_url, self.code)
 
 
 class RequestSlash(RoutingException):
@@ -393,14 +388,14 @@ class RouteTemplateFactory(RouteFactory):
                 new_defaults = subdomain = None
                 if route.defaults:
                     new_defaults = {}
-                    for key, value in iteritems(route.defaults):
-                        if isinstance(value, string_types):
+                    for key, value in route.defaults.items():
+                        if isinstance(value, str):
                             value = format_string(value, self.context)
                         new_defaults[key] = value
                 if route.subdomain is not None:
                     subdomain = format_string(route.subdomain, self.context)
                 new_endpoint = route.endpoint
-                if isinstance(new_endpoint, string_types):
+                if isinstance(new_endpoint, str):
                     new_endpoint = format_string(new_endpoint, self.context)
                 yield Route(
                     format_string(route.route, self.context),
@@ -412,7 +407,6 @@ class RouteTemplateFactory(RouteFactory):
                 )
 
 
-@implements_to_string
 class Route(RouteFactory):
     """A Route represents one URL pattern.  There are some options for `Route`
     that change the way it behaves and are passed to the `Route` constructor.
@@ -528,7 +522,7 @@ class Route(RouteFactory):
         self.redirect_to = redirect_to
 
         if defaults:
-            self.arguments = set(map(str, defaults))
+            self.arguments = {str(default) for default in defaults}
         else:
             self.arguments = set()
         self._trace = self._converters = self._regex = self._weights = None
@@ -663,7 +657,7 @@ class Route(RouteFactory):
                     del groups['__suffix__']
 
                 result = {}
-                for name, value in iteritems(groups):
+                for name, value in groups.items():
                     try:
                         value = self._converters[name].to_python(value)
                     except ValidationError:
@@ -738,7 +732,7 @@ class Route(RouteFactory):
         # in case defaults are given we ensure that either the value was
         # skipped or the value is the same as the default value.
         if defaults:
-            for key, value in iteritems(defaults):
+            for key, value in defaults.items():
                 if key in values and value != values[key]:
                     return False
 
@@ -780,7 +774,6 @@ class Route(RouteFactory):
     def __str__(self):
         return self.route
 
-    @native_string_result
     def __repr__(self):
         if self.router is None:
             return u'<%s (unbound)>' % self.__class__.__name__
@@ -1081,7 +1074,7 @@ class URLMap(object):
         - you receive a `NotFound` exception that indicates that no URL is
           matching.  A `NotFound` exception is also a WSGI application you
           can call to get a default page not found page (happens to be the
-          same object as `werkzeug.exceptions.NotFound`)
+          same object as `verktyg.exceptions.NotFound`)
 
         - you receive a `RequestRedirect` exception with a `new_url`
           attribute.  This exception is used to notify you about a request
@@ -1166,7 +1159,7 @@ class URLMap(object):
                     raise RequestRedirect(redirect_url)
 
             if route.redirect_to is not None:
-                if isinstance(route.redirect_to, string_types):
+                if isinstance(route.redirect_to, str):
                     def _handle_match(match):
                         value = rv[match.group(1)]
                         return route._converters[match.group(1)].to_url(value)
@@ -1294,7 +1287,7 @@ class URLMap(object):
         """
         if self._remap:
             self._routes.sort(key=lambda x: x.match_compare_key())
-            for routes in itervalues(self._routes_by_endpoint):
+            for routes in self._routes_by_endpoint.values():
                 routes.sort(key=lambda x: x.build_compare_key())
             self._remap = False
 
@@ -1321,59 +1314,6 @@ class MapAdapter(object):
         self.path_info = to_unicode(path_info)
         self.query_args = query_args
 
-    def dispatch(self, view_func, path_info=None,
-                 catch_http_exceptions=False):
-        """Does the complete dispatching process.  `view_func` is called with
-        the endpoint and a dict with the values for the view.  It should
-        look up the view function, call it, and return a response object
-        or WSGI application.  http exceptions are not caught by default
-        so that applications can display nicer error messages by just
-        catching them by hand.  If you want to stick with the default
-        error messages you can pass it ``catch_http_exceptions=True`` and
-        it will catch the http exceptions.
-
-        Here a small example for the dispatch usage::
-
-            from werkzeug.wrappers import Request, Response
-            from werkzeug.wsgi import responder
-            from verktyg.routing import URLMap, Route
-
-            def on_index(request):
-                return Response('Hello from the index')
-
-            url_map = URLMap([Route('/', endpoint='index')])
-            views = {'index': on_index}
-
-            @responder
-            def application(environ, start_response):
-                request = Request(environ)
-                urls = url_map.bind_to_environ(environ)
-                return urls.dispatch(lambda e, v: views[e](request, **v),
-                                     catch_http_exceptions=True)
-
-        Keep in mind that this method might return exception objects, too, so
-        use :class:`Response.force_type` to get a response object.
-
-        :param view_func: a function that is called with the endpoint as
-                          first argument and the value dict as second.  Has
-                          to dispatch to the actual view function with this
-                          information.  (see above)
-        :param path_info: the path info to use for matching.  Overrides the
-                          path info specified on binding.
-        :param catch_http_exceptions: set to `True` to catch any of the
-                                      werkzeug :class:`HTTPException`\s.
-        """
-        try:
-            try:
-                endpoint, args = self.match(path_info)
-            except RequestRedirect as e:
-                return e
-            return view_func(endpoint, args)
-        except HTTPException as e:
-            if catch_http_exceptions:
-                return e
-            raise
-
     def match(self, path_info=None, return_route=False, query_args=None):
         """The usage is simple: you just pass the match method the current
         path info.  The following things can then happen:
@@ -1381,7 +1321,7 @@ class MapAdapter(object):
         - you receive a `NotFound` exception that indicates that no URL is
           matching.  A `NotFound` exception is also a WSGI application you
           can call to get a default page not found page (happens to be the
-          same object as `werkzeug.exceptions.NotFound`)
+          same object as `verktyg.exceptions.NotFound`)
 
         - you receive a `RequestRedirect` exception with a `new_url`
           attribute.  This exception is used to notify you about a request
@@ -1466,7 +1406,7 @@ class MapAdapter(object):
                     raise RequestRedirect(redirect_url)
 
             if route.redirect_to is not None:
-                if isinstance(route.redirect_to, string_types):
+                if isinstance(route.redirect_to, str):
                     def _handle_match(match):
                         value = rv[match.group(1)]
                         return route._converters[match.group(1)].to_url(value)
@@ -1540,7 +1480,7 @@ class MapAdapter(object):
                     path, query_args, domain_part=domain_part)
 
     def encode_query_args(self, query_args):
-        if not isinstance(query_args, string_types):
+        if not isinstance(query_args, str):
             query_args = url_encode(query_args, self.router.charset)
         return query_args
 
@@ -1620,7 +1560,7 @@ class MapAdapter(object):
             if isinstance(values, MultiDict):
                 valueiter = values.iteritems(multi=True)
             else:
-                valueiter = iteritems(values)
+                valueiter = values.items()
             values = dict((k, v) for k, v in valueiter if v is not None)
         else:
             values = {}

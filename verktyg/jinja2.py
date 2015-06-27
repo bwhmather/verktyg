@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.jinja2
     ~~~~~~~~~~~~~~
@@ -6,7 +5,6 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from __future__ import absolute_import
 
 
 def add_templates(self, *loaders):

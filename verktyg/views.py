@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.views
     ~~~~~~~~~~~~~
@@ -8,7 +7,7 @@
 """
 import json
 
-from werkzeug import Response
+from verktyg.responses import Response
 from verktyg.dispatch import BindingFactory, Binding
 
 
@@ -16,13 +15,14 @@ class View(BindingFactory):
     """ Wraps a function or callable so that it can be bound to a name in a
     dispatcher.
     """
-    def __init__(self, name, action, methods=None, content_type=None, qs=None):
+    def __init__(self, name, action, *,
+                 methods=None, content_type=None, qs=None):
         self._name = name
 
         if methods is None:
-            self._methods = set(['GET'])
+            self._methods = {'GET'}
         elif isinstance(methods, str):
-            self._methods = set([methods])
+            self._methods = {methods}
         else:
             self._methods = methods
 
@@ -42,7 +42,7 @@ class View(BindingFactory):
 
 class ClassView(BindingFactory):
     def get_bindings(self):
-        for method in set(['GET', 'HEAD', 'POST', 'PUT', 'DELETE']):  # TODO
+        for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
                 yield Binding(self.name, getattr(self, method),
                               method=method)
@@ -59,9 +59,8 @@ class TemplateView(View):
                      the environment or a callable applied to the result to
                      create an http `Response` object
     """
-    def __init__(self, name, action,
-                 methods=None, template=None,
-                 content_type='text/html'):
+    def __init__(self, name, action, *,
+                 methods=None, template=None, content_type='text/html'):
         super(TemplateView, self).__init__(
             name, action,
             methods=methods,
@@ -69,15 +68,13 @@ class TemplateView(View):
         self._template = template
 
     def __call__(self, env, req, *args, **kwargs):
-        res = super(JsonView, self).__call__(env, req, *args, **kwargs)
+        res = super(TemplateView, self).__call__(env, req, *args, **kwargs)
 
         if isinstance(res, Response):
             return res
 
-        return Response(
-            env.get_renderer(self._template)(res),
-            content_type=self._content_type
-        )
+        renderer = env.get_renderer(self._template)
+        return renderer(res)
 
 
 class JsonView(View):
@@ -98,7 +95,12 @@ class JsonView(View):
             # no content
             return Response(status=204)
 
-        return Response(json.dumps(res), content_type='application/json')
+        if env.debug:
+            json_response = json.dumps(res, indent=4)
+        else:
+            json_response = json.dumps(res, separators=(',', ':'))
+
+        return Response(json_response, content_type='application/json')
 
 
 def expose(dispatcher, name, *args, **kwargs):
@@ -108,10 +110,11 @@ def expose(dispatcher, name, *args, **kwargs):
     return decorator
 
 
-def expose_html(*args, **kwargs):
-    if 'content_type' not in kwargs:
-        kwargs['content_type'] = 'text/html'
-    return expose(*args, **kwargs)
+def expose_html(dispatcher, name, *args, **kwargs):
+    def decorator(f):
+        dispatcher.add_bindings(TemplateView(name, f, *args, **kwargs))
+        return f
+    return decorator
 
 
 def expose_json(dispatcher, name, *args, **kwargs):

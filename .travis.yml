@@ -1,19 +1,21 @@
 language: python
+sudo: false
 python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
   - "3.4"
 
 install:
   - "pip install -e ."
+  - "pip install coveralls"
   - "pip install pyflakes"
   - "pip install pep8"
 
 script:
-  - python -c 'from verktyg.testsuite import main; main()';
-  - pep8 verktyg setup.py
-  - pyflakes verktyg setup.py
+  - "coverage run --source=verktyg setup.py test"
+  - "pep8 verktyg setup.py"
+  - "pyflakes verktyg setup.py"
+
+after_success:
+  - "coveralls"
 
 deploy:
   provider: pypi

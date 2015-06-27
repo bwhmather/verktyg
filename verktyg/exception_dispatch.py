@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.exception_dispatch
     ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -6,8 +5,7 @@
     :copyright: (c) 2014 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-from werkzeug.exceptions import NotAcceptable
-
+from verktyg.exceptions import NotAcceptable
 from verktyg.accept import Representation, select_representation
 
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     verktyg.application
     ~~~~~~~~~~~~~~~~~~~
@@ -8,15 +7,15 @@
 """
 import sys
 
-from werkzeug import Request
 from werkzeug.local import Local, LocalManager
-from werkzeug.utils import cached_property
+from werkzeug.utils import cached_property, redirect
 
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionHandler
 )
-from verktyg.routing import URLMap, Route
+from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
+from verktyg.requests import Request
 from verktyg.views import expose
 
 
@@ -25,7 +24,7 @@ class Application(object):
     bindings.
 
     `url_map`
-        werkzeug `URLMap` object that maps from urls to names
+        verktyg `URLMap` object that maps from urls to names
 
     `dispatcher`
         object to map from endpoint names to handler functions
@@ -82,16 +81,15 @@ class Application(object):
         endpoint to a route.
         """
         def wrapper(f):
-            # nonlocal workaround
-            endpoint_ = endpoint
-            if endpoint_ is None:
-                endpoint_ = f.__name__
+            nonlocal endpoint
+            if endpoint is None:
+                endpoint = f.__name__
 
             route = kwargs.pop('route', None)
             if route is not None:
-                self.add_routes(Route(route, endpoint=endpoint_))
+                self.add_routes(Route(route, endpoint=endpoint))
 
-            return expose(self.dispatcher, endpoint_, *args, **kwargs)(f)
+            return expose(self.dispatcher, endpoint, *args, **kwargs)(f)
         return wrapper
 
     def add_middleware(self, middleware, *args, **kwargs):
@@ -172,9 +170,11 @@ class Application(object):
 
         request = self.request_class(wsgi_env)
 
-        def call_view(name, kwargs):
+        try:
+            endpoint, kwargs = self._map_adapter.match()
+
             binding = self.dispatcher.lookup(
-                name,
+                endpoint,
                 method=wsgi_env.get('REQUEST_METHOD'),
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
@@ -183,11 +183,11 @@ class Application(object):
 
             request.binding = binding
 
-            return binding(self, request, **kwargs)
-
-        try:
-            response = self._map_adapter.dispatch(call_view)
-        except BaseException:
+            response = binding(self, request, **kwargs)
+        except RequestRedirect as e:
+            # TODO roll into general exception dispatch
+            response = redirect(e.new_url, e.code)
+        except Exception:
             type_, value_, traceback_ = sys.exc_info()
 
             handler = self.exception_dispatcher.lookup(
