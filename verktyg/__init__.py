@@ -9,9 +9,9 @@ from verktyg.requests import BaseRequest, Request
 from verktyg.responses import BaseResponse, Response
 from verktyg.routing import URLMap
 from verktyg.dispatch import Dispatcher
-from verktyg.application import Application
+from verktyg.application import ApplicationBuilder
 
 __all__ = [
-    'URLMap', 'Dispatcher', 'Application',
+    'URLMap', 'Dispatcher', 'ApplicationBuilder',
     'BaseResponse', 'BaseRequest', 'Request', 'Response',
 ]
