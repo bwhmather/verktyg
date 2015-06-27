@@ -204,6 +204,7 @@ class Application(object):
         return response(wsgi_env, start_response)
 
     def __call__(self, wsgi_env, start_response):
+        wsgi_env['verktyg.application'] = self
         return self._stack(wsgi_env, start_response)
 
     def url_for(self, endpoint, **kwargs):
