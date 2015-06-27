@@ -26,10 +26,10 @@ def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
 
 class BaseApplication(object):
     def __init__(
-                self, *, routes, bindings, handlers,
+                self, *, routes, converters, bindings, handlers,
                 middleware, request_class
             ):
-        self._url_map = URLMap(routes)
+        self._url_map = URLMap(routes, converters=converters)
         self._dispatcher = Dispatcher(bindings)
         self._exception_dispatcher = ExceptionDispatcher(handlers)
 
@@ -117,6 +117,7 @@ class ApplicationBuilder(object):
         self._middleware = []
 
         self._routes = []
+        self._converters = {}
         self._bindings = []
         self._handlers = []
 
@@ -142,6 +143,9 @@ class ApplicationBuilder(object):
         for mixin in mixins:
             if mixin not in self._request_bases:
                 self._request_bases.append(mixin)
+
+    def add_converters(self, **converters):
+        self._converters.update(**converters)
 
     def add_routes(self, *routes):
         self._routes.extend(routes)
@@ -212,7 +216,9 @@ class ApplicationBuilder(object):
             pass
 
         return Application(
-            routes=iter(self._routes), bindings=iter(self._bindings),
+            routes=iter(self._routes),
+            converters=dict(self._converters.items()),
+            bindings=iter(self._bindings),
             handlers=iter(self._handlers),
             middleware=iter(self._middleware),
             request_class=Request,
