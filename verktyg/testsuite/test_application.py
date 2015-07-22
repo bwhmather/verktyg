@@ -9,8 +9,7 @@
 """
 import unittest
 
-from werkzeug.test import Client
-
+from verktyg.test import Client
 from verktyg.exceptions import HTTPException, NotFound, ImATeapot
 from verktyg.responses import Response, BaseResponse
 from verktyg.views import expose

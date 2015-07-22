@@ -20,8 +20,8 @@ from werkzeug.datastructures import (
     ImmutableTypeConversionDict, CombinedMultiDict,
     CharsetAccept, MIMEAccept, LanguageAccept, Accept,
 )
-from werkzeug.test import Client
 
+from verktyg.test import Client
 from verktyg.wsgi import LimitedStream
 from verktyg.exceptions import SecurityError
 from verktyg.requests import BaseRequest, Request, PlainRequest

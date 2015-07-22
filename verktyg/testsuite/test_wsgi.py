@@ -10,17 +10,18 @@
         BSD, see LICENSE for more details.
 """
 import unittest
-from werkzeug.test import Client, create_environ, run_wsgi_app
 
 from os import path
 from io import StringIO, BytesIO
 from tempfile import TemporaryDirectory
 from contextlib import closing
 
+from werkzeug._compat import to_bytes
+
+from verktyg.test import Client, create_environ, run_wsgi_app
 from verktyg.responses import BaseResponse
 from verktyg.exceptions import BadRequest, ClientDisconnected
 from verktyg import wsgi
-from werkzeug._compat import to_bytes
 
 
 class WsgiTestCase(unittest.TestCase):

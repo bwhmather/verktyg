@@ -14,8 +14,8 @@ import unittest
 from datetime import datetime
 
 from werkzeug.datastructures import Headers
-from werkzeug.test import create_environ, run_wsgi_app
 
+from verktyg.test import create_environ, run_wsgi_app
 from verktyg.requests import Request
 from verktyg.responses import (
     BaseResponse, Response, ETagResponseMixin, generate_etag
