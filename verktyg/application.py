@@ -17,6 +17,7 @@ from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
 from verktyg.views import expose
 from verktyg.requests import BaseRequest
+from verktyg.wsgi import ClosingIterator
 from verktyg import requests
 
 
@@ -90,7 +91,10 @@ class BaseApplication(object):
 
             response = handler(self, request, type_, value_, traceback_)
 
-        return response(wsgi_env, start_response)
+        return ClosingIterator(
+            response(wsgi_env, start_response),
+            callbacks=[request.close]
+        )
 
     def __call__(self, wsgi_env, start_response):
         wsgi_env['verktyg.application'] = self
