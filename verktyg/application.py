@@ -17,7 +17,6 @@ from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
 from verktyg.views import expose
 from verktyg.requests import BaseRequest
-from verktyg.wsgi import ClosingIterator
 from verktyg import requests
 
 
@@ -39,7 +38,7 @@ class BaseApplication(object):
         # reference to the bottom of a stack of wsgi middleware wrapping
         # :method:`_dispatch_request`. Invoked by :method:`__call__`.
         # Essentially the real wsgi application.
-        self._stack = self._dispatch_request
+        self._stack = self._invoke
         for wrapper, args, kwargs in middleware:
             self._stack = wrapper(self._stack, *args, **kwargs)
 
@@ -58,45 +57,43 @@ class BaseApplication(object):
         self._local.wsgi_env = wsgi_env
         self._local.map_adapter = self._url_map.bind_to_environ(wsgi_env)
 
-    def _dispatch_request(self, wsgi_env, start_response):
-        self._bind(wsgi_env)
-
-        request = self.request_class(wsgi_env)
-
+    def _dispatch_request(self, request):
         try:
             endpoint, kwargs = self._map_adapter.match()
 
             binding = self._dispatcher.lookup(
                 endpoint,
-                method=wsgi_env.get('REQUEST_METHOD'),
-                accept=wsgi_env.get('HTTP_ACCEPT'),
-                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
-                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
+                method=request.environ.get('REQUEST_METHOD'),
+                accept=request.environ.get('HTTP_ACCEPT'),
+                accept_charset=request.environ.get('HTTP_ACCEPT_CHARSET'),
+                accept_language=request.environ.get('HTTP_ACCEPT_LANGUAGE')
             )
 
             request.binding = binding
 
-            response = binding(self, request, **kwargs)
+            return binding(self, request, **kwargs)
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
 
             handler = self._exception_dispatcher.lookup(
                 exc_type,
-                accept=wsgi_env.get('HTTP_ACCEPT'),
-                accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
-                accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
+                accept=request.environ.get('HTTP_ACCEPT'),
+                accept_charset=request.environ.get('HTTP_ACCEPT_CHARSET'),
+                accept_language=request.environ.get('HTTP_ACCEPT_LANGUAGE')
             )
             if handler is None:
                 raise
 
-            response = handler(
-                self, request, exc_type, exc_value, exc_traceback
-            )
+            return handler(self, request, exc_type, exc_value, exc_traceback)
 
-        return ClosingIterator(
-            response(wsgi_env, start_response),
-            callbacks=[request.close]
-        )
+    def _invoke(self, wsgi_env, start_response):
+        self._bind(wsgi_env)
+        request = self.request_class(wsgi_env)
+        try:
+            response = self._dispatch_request(request)
+            yield from response(wsgi_env, start_response)
+        finally:
+            request.close()
 
     def __call__(self, wsgi_env, start_response):
         wsgi_env['verktyg.application'] = self
