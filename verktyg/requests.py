@@ -19,7 +19,6 @@
     :copyright: (c) 2014 by the Werkzeug Team, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
-from functools import update_wrapper
 from io import BytesIO
 
 from werkzeug.http import (
@@ -206,31 +205,6 @@ class BaseRequest(object):
             return builder.get_request(cls)
         finally:
             builder.close()
-
-    @classmethod
-    def application(cls, f):
-        """Decorate a function as responder that accepts the request as first
-        argument.  This works like the :func:`responder` decorator but the
-        function is passed the request object as first argument and the
-        request object will be closed automatically::
-
-            @Request.application
-            def my_wsgi_app(request):
-                return Response('Hello World!')
-
-        :param f: the WSGI callable to decorate
-        :return: a new WSGI callable
-        """
-        #: return a callable that wraps the -2nd argument with the request
-        #: and calls the function with all the arguments up to that one and
-        #: the request.  The return value is then called with the latest
-        #: two arguments.  This makes it possible to use this decorator for
-        #: both methods and standalone WSGI functions.
-        def application(*args):
-            request = cls(args[-2])
-            with request:
-                return f(*args[:-2] + (request,))(*args[-2:])
-        return update_wrapper(application, f)
 
     def _get_file_stream(
             self, total_content_length, content_type,
