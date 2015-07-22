@@ -43,7 +43,7 @@ def _run_wsgi_app(*args):
     imported unless required.  DO NOT USE!
     """
     global _run_wsgi_app
-    from werkzeug.test import run_wsgi_app as _run_wsgi_app
+    from verktyg.test import run_wsgi_app as _run_wsgi_app
     return _run_wsgi_app(*args)
 
 
