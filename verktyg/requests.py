@@ -159,6 +159,7 @@ class BaseRequest(object):
         if populate_request and not shallow:
             self.environ['verktyg.request'] = self
         self.shallow = shallow
+        self._on_close = []
 
     def __repr__(self):
         # make sure the __repr__ even works if the request was created
@@ -313,6 +314,14 @@ class BaseRequest(object):
             return BytesIO(cached_data)
         return self.stream
 
+    def call_on_close(self, func):
+        """Adds a function to the internal list of functions that should
+        be called as part of closing down the request.  Also returns the
+        function that was passed so that this can be used as a decorator.
+        """
+        self._on_close.append(func)
+        return func
+
     def close(self):
         """Closes associated resources of this request object.  This
         closes all file handles explicitly.  You can also use the request
@@ -321,6 +330,8 @@ class BaseRequest(object):
         files = self.__dict__.get('files')
         for key, value in iter_multi_items(files or ()):
             value.close()
+        for func in self._on_close:
+            func()
 
     def __enter__(self):
         return self
