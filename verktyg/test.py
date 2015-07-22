@@ -31,7 +31,7 @@ from werkzeug.urls import (
 )
 from werkzeug.utils import dump_cookie
 from werkzeug.datastructures import (
-    FileMultiDict, MultiDict, CombinedMultiDict, Headers, FileStorage,
+    FileMultiDict, MultiDict, CombinedMultiDict, Headers,
 )
 
 from verktyg.wsgi import get_host, get_current_url, ClosingIterator
@@ -118,14 +118,6 @@ def encode_multipart(values, boundary=None, charset='utf-8'):
     stream, length, boundary = stream_encode_multipart(
         values, use_tempfile=False, boundary=boundary, charset=charset)
     return boundary, stream.read()
-
-
-def File(fd, filename=None, mimetype=None):
-    """Backwards compat."""
-    from warnings import warn
-    warn(DeprecationWarning('werkzeug.test.File is deprecated, use the '
-                            'EnvironBuilder or FileStorage instead'))
-    return FileStorage(fd, filename=filename, content_type=mimetype)
 
 
 class _TestCookieHeaders(object):
@@ -339,16 +331,6 @@ class EnvironBuilder(object):
         """Called in the EnvironBuilder to add files from the data dict."""
         if isinstance(value, tuple):
             self.files.add_file(key, *value)
-        elif isinstance(value, dict):
-            from warnings import warn
-            warn(DeprecationWarning('it\'s no longer possible to pass dicts '
-                                    'as `data`.  Use tuples or FileStorage '
-                                    'objects instead'), stacklevel=2)
-            value = dict(value)
-            mimetype = value.pop('mimetype', None)
-            if mimetype is not None:
-                value['content_type'] = mimetype
-            self.files.add_file(key, **value)
         else:
             self.files.add_file(key, value)
 
