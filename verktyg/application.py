@@ -88,12 +88,9 @@ class BaseApplication(object):
 
     def _invoke(self, wsgi_env, start_response):
         self._bind(wsgi_env)
-        request = self.request_class(wsgi_env)
-        try:
+        with self.request_class(wsgi_env) as request:
             response = self._dispatch_request(request)
             yield from response(wsgi_env, start_response)
-        finally:
-            request.close()
 
     def __call__(self, wsgi_env, start_response):
         wsgi_env['verktyg.application'] = self
