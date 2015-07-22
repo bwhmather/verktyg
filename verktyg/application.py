@@ -78,10 +78,10 @@ class BaseApplication(object):
 
             response = binding(self, request, **kwargs)
         except Exception:
-            type_, value_, traceback_ = sys.exc_info()
+            exc_type, exc_value, exc_traceback = sys.exc_info()
 
             handler = self._exception_dispatcher.lookup(
-                type_,
+                exc_type,
                 accept=wsgi_env.get('HTTP_ACCEPT'),
                 accept_charset=wsgi_env.get('HTTP_ACCEPT_CHARSET'),
                 accept_language=wsgi_env.get('HTTP_ACCEPT_LANGUAGE')
@@ -89,7 +89,9 @@ class BaseApplication(object):
             if handler is None:
                 raise
 
-            response = handler(self, request, type_, value_, traceback_)
+            response = handler(
+                self, request, exc_type, exc_value, exc_traceback
+            )
 
         return ClosingIterator(
             response(wsgi_env, start_response),
