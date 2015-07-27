@@ -162,6 +162,40 @@ class ApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
         self.assertEqual(resp.headers['Content-Type'], 'application/json')
 
+    def test_close_request(self):
+        closed = 0
+
+        class CheckRequestCloseMixin(object):
+            def __init__(self):
+                def _increment_closed_count():
+                    nonlocal closed
+                    closed += 1
+                self.call_on_close(_increment_closed_count)
+                super(CheckRequestCloseMixin, self).__init__()
+
+        builder = ApplicationBuilder()
+        builder.add_request_mixins(CheckRequestCloseMixin)
+
+        builder.add_routes(Route('/', endpoint='index'))
+
+        @expose(builder, 'index')
+        def index(app, request):
+            return Response('Hello World')
+
+        app = builder()
+        client = Client(app, BaseResponse)
+
+        # check that requests are closed after success
+        client.get('/')
+        self.assertEqual(closed, 1)
+
+        # check that requests are closed after an error
+        try:
+            client.get('/nonexistant')
+        except NotFound:
+            pass
+        self.assertEqual(closed, 2)
+
 
 def suite():
     suite = unittest.TestSuite()
