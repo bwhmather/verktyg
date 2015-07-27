@@ -77,7 +77,7 @@ class ApplicationTestCase(unittest.TestCase):
 
         @builder.expose(route='/')
         def index(app, req):
-            return Response()
+            return Response('Hello')
 
         got_request = False,
         got_response = False,
