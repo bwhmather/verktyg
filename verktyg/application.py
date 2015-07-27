@@ -89,8 +89,8 @@ class BaseApplication(object):
     def _wsgi_inner(self, wsgi_env, start_response):
         self._bind(wsgi_env)
         with self.request_class(wsgi_env) as request:
-            response = self._get_response(request)
-            yield from response(wsgi_env, start_response)
+            with self._get_response(request) as response:
+                yield from response(wsgi_env, start_response)
 
     def __call__(self, wsgi_env, start_response):
         wsgi_env['verktyg.application'] = self
