@@ -38,7 +38,7 @@ class BaseApplication(object):
         # reference to the bottom of a stack of wsgi middleware wrapping
         # :method:`_dispatch_request`. Invoked by :method:`__call__`.
         # Essentially the real wsgi application.
-        self._stack = self._invoke
+        self._stack = self._wsgi_inner
         for wrapper, args, kwargs in middleware:
             self._stack = wrapper(self._stack, *args, **kwargs)
 
@@ -57,7 +57,7 @@ class BaseApplication(object):
         self._local.wsgi_env = wsgi_env
         self._local.map_adapter = self._url_map.bind_to_environ(wsgi_env)
 
-    def _dispatch_request(self, request):
+    def _get_response(self, request):
         try:
             endpoint, kwargs = self._map_adapter.match()
 
@@ -86,10 +86,10 @@ class BaseApplication(object):
 
             return handler(self, request, exc_type, exc_value, exc_traceback)
 
-    def _invoke(self, wsgi_env, start_response):
+    def _wsgi_inner(self, wsgi_env, start_response):
         self._bind(wsgi_env)
         with self.request_class(wsgi_env) as request:
-            response = self._dispatch_request(request)
+            response = self._get_response(request)
             yield from response(wsgi_env, start_response)
 
     def __call__(self, wsgi_env, start_response):
