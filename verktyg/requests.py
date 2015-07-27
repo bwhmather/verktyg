@@ -159,6 +159,7 @@ class BaseRequest(object):
             self.environ['verktyg.request'] = self
         self.shallow = shallow
         self._on_close = []
+        super(BaseRequest, self).__init__()
 
     def __repr__(self):
         # make sure the __repr__ even works if the request was created
