@@ -178,6 +178,14 @@ class BaseRequest(object):
         )
 
     @property
+    def app(self):
+        """The verktyg application the created the request
+
+        :return: a `verktyg.application.Application` object or `None`
+        """
+        return self.environ.get('verktyg.application')
+
+    @property
     def url_charset(self):
         """The charset that is assumed for URLs.  Defaults to the value
         of :attr:`charset`.
