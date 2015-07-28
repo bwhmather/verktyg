@@ -12,9 +12,10 @@
 import unittest
 import uuid
 
-from verktyg import routing as r
 from werkzeug.datastructures import ImmutableDict
-from werkzeug.test import create_environ
+
+from verktyg.test import create_environ
+from verktyg import routing as r
 
 
 class RoutingTestCase(unittest.TestCase):

@@ -19,7 +19,6 @@
     :copyright: (c) 2014 by the Werkzeug Team, see AUTHORS for more details.
     :license: BSD, see LICENSE for more details.
 """
-from functools import update_wrapper
 from io import BytesIO
 
 from werkzeug.http import (
@@ -159,6 +158,8 @@ class BaseRequest(object):
         if populate_request and not shallow:
             self.environ['verktyg.request'] = self
         self.shallow = shallow
+        self._on_close = []
+        super(BaseRequest, self).__init__()
 
     def __repr__(self):
         # make sure the __repr__ even works if the request was created
@@ -175,6 +176,14 @@ class BaseRequest(object):
             self.__class__.__name__,
             ' '.join(args)
         )
+
+    @property
+    def app(self):
+        """The verktyg application the created the request
+
+        :return: a `verktyg.application.Application` object or `None`
+        """
+        return self.environ.get('verktyg.application')
 
     @property
     def url_charset(self):
@@ -205,31 +214,6 @@ class BaseRequest(object):
             return builder.get_request(cls)
         finally:
             builder.close()
-
-    @classmethod
-    def application(cls, f):
-        """Decorate a function as responder that accepts the request as first
-        argument.  This works like the :func:`responder` decorator but the
-        function is passed the request object as first argument and the
-        request object will be closed automatically::
-
-            @Request.application
-            def my_wsgi_app(request):
-                return Response('Hello World!')
-
-        :param f: the WSGI callable to decorate
-        :return: a new WSGI callable
-        """
-        #: return a callable that wraps the -2nd argument with the request
-        #: and calls the function with all the arguments up to that one and
-        #: the request.  The return value is then called with the latest
-        #: two arguments.  This makes it possible to use this decorator for
-        #: both methods and standalone WSGI functions.
-        def application(*args):
-            request = cls(args[-2])
-            with request:
-                return f(*args[:-2] + (request,))(*args[-2:])
-        return update_wrapper(application, f)
 
     def _get_file_stream(
             self, total_content_length, content_type,
@@ -313,6 +297,14 @@ class BaseRequest(object):
             return BytesIO(cached_data)
         return self.stream
 
+    def call_on_close(self, func):
+        """Adds a function to the internal list of functions that should
+        be called as part of closing down the request.  Also returns the
+        function that was passed so that this can be used as a decorator.
+        """
+        self._on_close.append(func)
+        return func
+
     def close(self):
         """Closes associated resources of this request object.  This
         closes all file handles explicitly.  You can also use the request
@@ -321,6 +313,8 @@ class BaseRequest(object):
         files = self.__dict__.get('files')
         for key, value in iter_multi_items(files or ()):
             value.close()
+        for func in self._on_close:
+            func()
 
     def __enter__(self):
         return self
