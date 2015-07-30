@@ -32,7 +32,6 @@ class BaseApplication(object):
             ):
         self._url_map = URLMap(routes, converters=converters)
         root_components = urlparse(app_root)
-        print(root_components)
         self._map_adapter = self._url_map.bind(
             url_scheme=root_components.scheme,
             server_name=root_components.netloc,
