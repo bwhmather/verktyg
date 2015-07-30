@@ -6,8 +6,8 @@
     :license: BSD, see LICENSE for more details.
 """
 import sys
+from urllib.parse import urlparse
 
-from werkzeug.local import Local, LocalManager
 from werkzeug.utils import redirect
 
 from verktyg.exception_dispatch import (
@@ -26,10 +26,19 @@ def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
 
 class BaseApplication(object):
     def __init__(
-                self, *, routes, converters, bindings, handlers,
+                self, app_root, *,
+                routes, converters, bindings, handlers,
                 middleware, request_class
             ):
         self._url_map = URLMap(routes, converters=converters)
+        root_components = urlparse(app_root)
+        print(root_components)
+        self._map_adapter = self._url_map.bind(
+            url_scheme=root_components.scheme,
+            server_name=root_components.netloc,
+            script_name=root_components.path,
+        )
+
         self._dispatcher = Dispatcher(bindings)
         self._exception_dispatcher = ExceptionDispatcher(handlers)
 
@@ -42,24 +51,13 @@ class BaseApplication(object):
         for wrapper, args, kwargs in middleware:
             self._stack = wrapper(self._stack, *args, **kwargs)
 
-        # TODO provide a way of adding request specific variables.  Need to be
-        # able to register name, `(Application, wsgi_env) -> value` pairs
-        # Alternatively get rid of this entirely as it's a massive hack
-        self._local = Local()
-        self._wsgi_env = self._local('wsgi_env')
-        self._map_adapter = self._local('map_adapter')
-
-        local_manager = LocalManager([self._local])
-        # TODO
-        self._stack = local_manager.make_middleware(self._stack)
-
-    def _bind(self, wsgi_env):
-        self._local.wsgi_env = wsgi_env
-        self._local.map_adapter = self._url_map.bind_to_environ(wsgi_env)
-
     def _get_response(self, request):
         try:
-            endpoint, kwargs = self._map_adapter.match()
+            # TODO verify that request matches expected hostname, protocol and
+            # mountpoint
+            endpoint, kwargs = self._map_adapter.match(
+                path_info=request.path, query_args=request.query_string,
+            )
 
             binding = self._dispatcher.lookup(
                 endpoint,
@@ -87,7 +85,6 @@ class BaseApplication(object):
             return handler(self, request, exc_type, exc_value, exc_traceback)
 
     def _wsgi_inner(self, wsgi_env, start_response):
-        self._bind(wsgi_env)
         with self.request_class(wsgi_env) as request:
             with self._get_response(request) as response:
                 yield from response(wsgi_env, start_response)
@@ -208,7 +205,7 @@ class ApplicationBuilder(object):
             return handler
         return wrapper
 
-    def __call__(self):
+    def __call__(self, app_root=''):
         class Application(*self._application_bases):
             pass
 
@@ -216,6 +213,7 @@ class ApplicationBuilder(object):
             pass
 
         return Application(
+            app_root,
             routes=iter(self._routes),
             converters=dict(self._converters.items()),
             bindings=iter(self._bindings),
