@@ -9,6 +9,7 @@ import sys
 from urllib.parse import urlparse
 
 from werkzeug.utils import redirect
+from werkzeug.datastructures import ImmutableDict
 
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionHandler
@@ -26,10 +27,12 @@ def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
 
 class BaseApplication(object):
     def __init__(
-                self, app_root, *,
+                self, app_root, config, *,
                 routes, converters, bindings, handlers,
                 middleware, request_class
             ):
+        self.config = ImmutableDict(config)
+
         self._url_map = URLMap(routes, converters=converters)
         root_components = urlparse(app_root)
         self._map_adapter = self._url_map.bind(
@@ -107,6 +110,8 @@ class ApplicationBuilder(object):
                 self, *,
                 default_redirect_handler=True, default_request_mixins=True
             ):
+        self.config = {}
+
         self._application_bases = [BaseApplication]
         self._request_bases = [BaseRequest]
 
@@ -212,7 +217,7 @@ class ApplicationBuilder(object):
             pass
 
         return Application(
-            app_root,
+            app_root, self.config,
             routes=iter(self._routes),
             converters=dict(self._converters.items()),
             bindings=iter(self._bindings),
