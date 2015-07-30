@@ -21,6 +21,6 @@ deploy:
   provider: pypi
   user: "bwhmather-travis"
   password:
-    secure: "vN/YhRVHdIIlvjW3fJ+E/tnYz00ts9uGOG0TWFl0zcoQLHxYRxLzqOK2Y8KG/R/9GWdaC0LflG/7FohqQCCkb6DTBsuYDRG3SxieKiRIaHCnncbiubv1MQxAgjrvGXk4BXpcH36XvFpLYIR8ljSWHLv62wEJuRfSI8s/IPc7EF0="
+    secure: "jAegxiqHTt+yyI4KuJzMXIJ9jp5aGZXZGf0J9L4Snat9W4Efy6+FY0zFuM4e7SLIAcpQdXcDCdN8vonEv2BT99Clo7cBHFEOWqCtKKWYVVqtCfOudy9Qs988EetG6jb0iQeTowA5se7D2BwN8tFZScnwbYA75rMByGjGfwOTh/4="
   on:
     branch: "master"
