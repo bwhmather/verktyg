@@ -29,28 +29,6 @@ class HTTPUtilityTestCase(unittest.TestCase):
         d = http.parse_dict_header('foo="bar baz", blah=42')
         self.assertEqual(d, {'foo': 'bar baz', 'blah': '42'})
 
-    def test_cache_control_header(self):
-        cc = http.parse_cache_control_header('max-age=0, no-cache')
-        self.assertEqual(cc.max_age, 0)
-        assert cc.no_cache
-        cc = http.parse_cache_control_header(
-            'private, community="UCI"', None,
-            datastructures.ResponseCacheControl
-        )
-        assert cc.private
-        self.assertEqual(cc['community'], 'UCI')
-
-        c = datastructures.ResponseCacheControl()
-        self.assertIs(c.no_cache, None)
-        self.assertIs(c.private, None)
-        c.no_cache = True
-        self.assertEqual(c.no_cache, '*')
-        c.private = True
-        self.assertEqual(c.private, '*')
-        del c.private
-        self.assertIs(c.private, None)
-        self.assertEqual(c.to_header(), 'no-cache')
-
     def test_authorization_header(self):
         a = http.parse_authorization_header(
             'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=='
@@ -617,6 +595,38 @@ class AcceptTestCase(unittest.TestCase):
         self.assertIn('en', a)
         self.assertEqual(a['de-at'], 1)
         self.assertEqual(a['en'], 0.5)
+
+
+class CacheControlTestCase(unittest.TestCase):
+    def test_repr(self):
+        cc = datastructures.RequestCacheControl(
+            [("max-age", "0"), ("private", "True")],
+        )
+        self.assertEqual(
+            repr(cc), "<RequestCacheControl max-age='0' private='True'>"
+        )
+
+    def test_cache_control_header(self):
+        cc = http.parse_cache_control_header('max-age=0, no-cache')
+        self.assertEqual(cc.max_age, 0)
+        self.assertTrue(cc.no_cache)
+        cc = http.parse_cache_control_header(
+            'private, community="UCI"', None,
+            datastructures.ResponseCacheControl
+        )
+        self.assertTrue(cc.private)
+        self.assertEqual(cc['community'], 'UCI')
+
+        c = datastructures.ResponseCacheControl()
+        self.assertIs(c.no_cache, None)
+        self.assertIs(c.private, None)
+        c.no_cache = True
+        self.assertEqual(c.no_cache, '*')
+        c.private = True
+        self.assertEqual(c.private, '*')
+        del c.private
+        self.assertIs(c.private, None)
+        self.assertEqual(c.to_header(), 'no-cache')
 
 
 class ETagsTestCase(unittest.TestCase):

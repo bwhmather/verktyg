@@ -24,7 +24,7 @@ from werkzeug._internal import (
     _cookie_quote, _make_cookie_domain, _cookie_parse_impl,
 )
 from werkzeug._compat import to_unicode, to_bytes
-from werkzeug.datastructures import ImmutableList
+from werkzeug import datastructures
 
 
 _cookie_charset = 'latin1'
@@ -346,7 +346,7 @@ def parse_options_header(value):
     return name, extra
 
 
-class Accept(ImmutableList):
+class Accept(datastructures.ImmutableList):
     """An :class:`Accept` object is just a list subclass for lists of
     ``(value, quality)`` tuples.  It is automatically sorted by quality.
 
@@ -601,6 +601,129 @@ def parse_accept_header(value, cls=None):
     return cls(result)
 
 
+def cache_property(key, empty, type):
+    """Return a new property object for a cache header.  Useful if you
+    want to add support for a cache extension in a subclass."""
+    return property(lambda x: x._get_cache_value(key, empty, type),
+                    lambda x, v: x._set_cache_value(key, v, type),
+                    lambda x: x._del_cache_value(key),
+                    'accessor for %r' % key)
+
+
+class _CacheControl(datastructures.UpdateDictMixin, dict):
+    """Subclass of a dict that stores values for a Cache-Control header.  It
+    has accessors for all the cache-control directives specified in RFC 2616.
+    The class does not differentiate between request and response directives.
+
+    Because the cache-control directives in the HTTP header use dashes the
+    python descriptors use underscores for that.
+
+    To get a header of the :class:`CacheControl` object again you can convert
+    the object into a string or call the :meth:`to_header` method.  If you plan
+    to subclass it and add your own items have a look at the sourcecode for
+    that class.
+    """
+
+    no_cache = cache_property('no-cache', '*', None)
+    no_store = cache_property('no-store', None, bool)
+    max_age = cache_property('max-age', -1, int)
+    no_transform = cache_property('no-transform', None, None)
+
+    def __init__(self, values=(), on_update=None):
+        dict.__init__(self, values or ())
+        self.on_update = on_update
+        self.provided = values is not None
+
+    def _get_cache_value(self, key, empty, type):
+        """Used internally by the accessor properties."""
+        if type is bool:
+            return key in self
+        if key in self:
+            value = self[key]
+            if value is None:
+                return empty
+            elif type is not None:
+                try:
+                    value = type(value)
+                except ValueError:
+                    pass
+            return value
+
+    def _set_cache_value(self, key, value, type):
+        """Used internally by the accessor properties."""
+        if type is bool:
+            if value:
+                self[key] = None
+            else:
+                self.pop(key, None)
+        else:
+            if value is None:
+                self.pop(key)
+            elif value is True:
+                self[key] = None
+            else:
+                self[key] = value
+
+    def _del_cache_value(self, key):
+        """Used internally by the accessor properties."""
+        if key in self:
+            del self[key]
+
+    def to_header(self):
+        """Convert the stored values into a cache control header."""
+        return dump_header(self)
+
+    def __str__(self):
+        return self.to_header()
+
+    def __repr__(self):
+        return '<%s %s>' % (
+            self.__class__.__name__,
+            " ".join(
+                "%s=%r" % (k, v) for k, v in sorted(self.items())
+            ),
+        )
+
+
+class RequestCacheControl(datastructures.ImmutableDictMixin, _CacheControl):
+    """A cache control for requests.  This is immutable and gives access
+    to all the request-relevant cache control headers.
+
+    To get a header of the :class:`RequestCacheControl` object again you can
+    convert the object into a string or call the :meth:`to_header` method.  If
+    you plan to subclass it and add your own items have a look at the
+    sourcecode for that class.
+    """
+
+    max_stale = cache_property('max-stale', '*', int)
+    min_fresh = cache_property('min-fresh', '*', int)
+    no_transform = cache_property('no-transform', None, None)
+    only_if_cached = cache_property('only-if-cached', None, bool)
+
+
+class ResponseCacheControl(_CacheControl):
+    """A cache control for responses.  Unlike :class:`RequestCacheControl`
+    this is mutable and gives access to response-relevant cache control
+    headers.
+
+    To get a header of the :class:`ResponseCacheControl` object again you can
+    convert the object into a string or call the :meth:`to_header` method.  If
+    you plan to subclass it and add your own items have a look at the
+    sourcecode for that class.
+    """
+
+    public = cache_property('public', None, bool)
+    private = cache_property('private', '*', None)
+    must_revalidate = cache_property('must-revalidate', None, bool)
+    proxy_revalidate = cache_property('proxy-revalidate', None, bool)
+    s_maxage = cache_property('s-maxage', None, None)
+
+
+# attach cache_property to the _CacheControl as staticmethod
+# so that others can reuse it.
+_CacheControl.cache_property = staticmethod(cache_property)
+
+
 def parse_cache_control_header(value, on_update=None, cls=None):
     """Parse a cache control header.  The RFC differs between response and
     request cache control, this method does not.  It's your responsibility
@@ -610,10 +733,10 @@ def parse_cache_control_header(value, on_update=None, cls=None):
         A cache control header to be parsed.
     :param on_update:
         An optional callable that is called every time a value on the
-        :class:`~werkzeug.datastructures.CacheControl` object is changed.
+        :class:`~verktyg.CacheControl` object is changed.
     :param cls:
         The class for the returned object.  By default
-        :class:`~werkzeug.datastructures.RequestCacheControl` is used.
+        :class:`~verktyg.RequestCacheControl` is used.
     :return:
         A `cls` object.
     """
@@ -1453,7 +1576,6 @@ def is_byte_range_valid(start, stop, length):
 
 # circular dependency fun
 from werkzeug.datastructures import Authorization, \
-    WWWAuthenticate, TypeConversionDict, IfRange, Range, ContentRange, \
-    RequestCacheControl
+    WWWAuthenticate, TypeConversionDict, IfRange, Range, ContentRange
 
 from werkzeug.urls import iri_to_uri
