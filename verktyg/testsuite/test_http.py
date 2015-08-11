@@ -29,33 +29,6 @@ class HTTPUtilityTestCase(unittest.TestCase):
         d = http.parse_dict_header('foo="bar baz", blah=42')
         self.assertEqual(d, {'foo': 'bar baz', 'blah': '42'})
 
-    def test_www_authenticate_header(self):
-        wa = http.parse_www_authenticate_header('Basic realm="WallyWorld"')
-        self.assertEqual(wa.type, 'basic')
-        self.assertEqual(wa.realm, 'WallyWorld')
-        wa.realm = 'Foo Bar'
-        self.assertEqual(wa.to_header(), 'Basic realm="Foo Bar"')
-
-        wa = http.parse_www_authenticate_header(
-            'Digest '
-            'realm="testrealm@host.com", '
-            'qop="auth,auth-int", '
-            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
-            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
-        )
-        self.assertEqual(wa.type, 'digest')
-        self.assertEqual(wa.realm, 'testrealm@host.com')
-        self.assertIn('auth', wa.qop)
-        self.assertIn('auth-int', wa.qop)
-        self.assertEqual(wa.nonce, 'dcd98b7102dd2f0e8b11d0f600bfb0c093')
-        self.assertEqual(wa.opaque, '5ccc069c403ebaf9f0171e9517f40e41')
-
-        wa = http.parse_www_authenticate_header('broken')
-        self.assertEqual(wa.type, 'broken')
-
-        assert not http.parse_www_authenticate_header('').type
-        assert not http.parse_www_authenticate_header('')
-
     def test_etags_nonzero(self):
         etags = http.parse_etags('w/"foo"')
         assert bool(etags)
@@ -651,6 +624,33 @@ class AuthorizationTestCase(unittest.TestCase):
         self.assertIs(http.parse_authorization_header('foo'), None)
 
 
+class WWWAuthenticateTestCase(unittest.TestCase):
+    def test_parse_www_authenticate_header(self):
+        wa = http.parse_www_authenticate_header('Basic realm="WallyWorld"')
+        self.assertEqual(wa.type, 'basic')
+        self.assertEqual(wa.realm, 'WallyWorld')
+        wa.realm = 'Foo Bar'
+        self.assertEqual(wa.to_header(), 'Basic realm="Foo Bar"')
+
+        wa = http.parse_www_authenticate_header(
+            'Digest '
+            'realm="testrealm@host.com", '
+            'qop="auth,auth-int", '
+            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
+            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
+        )
+        self.assertEqual(wa.type, 'digest')
+        self.assertEqual(wa.realm, 'testrealm@host.com')
+        self.assertIn('auth', wa.qop)
+        self.assertIn('auth-int', wa.qop)
+        self.assertEqual(wa.nonce, 'dcd98b7102dd2f0e8b11d0f600bfb0c093')
+        self.assertEqual(wa.opaque, '5ccc069c403ebaf9f0171e9517f40e41')
+
+        wa = http.parse_www_authenticate_header('broken')
+        self.assertEqual(wa.type, 'broken')
+
+        assert not http.parse_www_authenticate_header('').type
+        assert not http.parse_www_authenticate_header('')
 
 
 class RegressionTestCase(unittest.TestCase):
