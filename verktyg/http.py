@@ -24,6 +24,7 @@ from werkzeug._internal import (
     _cookie_quote, _make_cookie_domain, _cookie_parse_impl,
 )
 from werkzeug._compat import to_unicode, to_bytes
+from werkzeug.urls import iri_to_uri
 from werkzeug import datastructures
 
 
@@ -1809,7 +1810,7 @@ def parse_cookie(header, charset='utf-8', errors='replace', cls=None):
         header = header.encode('latin1', 'replace')
 
     if cls is None:
-        cls = TypeConversionDict
+        cls = datastructures.TypeConversionDict
 
     def _parse_pairs():
         for key, val in _cookie_parse_impl(header):
@@ -1924,8 +1925,3 @@ def is_byte_range_valid(start, stop, length):
     elif start >= stop:
         return False
     return 0 <= start < length
-
-
-# circular dependency fun
-from werkzeug.datastructures import TypeConversionDict
-from werkzeug.urls import iri_to_uri
