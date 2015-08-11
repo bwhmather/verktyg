@@ -84,15 +84,6 @@ class HTTPUtilityTestCase(unittest.TestCase):
         self.assertEqual(a['de-at'], 1)
         self.assertEqual(a['en'], 0.5)
 
-    def test_set_header(self):
-        hs = http.parse_set_header('foo, Bar, "Blah baz", Hehe')
-        self.assertIn('blah baz', hs)
-        self.assertNotIn('foobar', hs)
-        self.assertIn('foo', hs)
-        self.assertEqual(list(hs), ['foo', 'Bar', 'Blah baz', 'Hehe'])
-        hs.add('Foo')
-        self.assertEqual(hs.to_header(), 'foo, Bar, "Blah baz", Hehe')
-
     def test_list_header(self):
         hl = http.parse_list_header('foo baz, blah')
         self.assertEqual(hl, ['foo baz', 'blah'])
@@ -543,6 +534,37 @@ class RangeTestCase(unittest.TestCase):
         self.assertIs(rv.stop, None)
         self.assertEqual(rv.length, 100)
         self.assertEqual(rv.units, 'bytes')
+
+
+class HeaderSetTestCase(unittest.TestCase):
+    def test_basic_interface(self):
+        hs = http.HeaderSet()
+        hs.add('foo')
+        hs.add('bar')
+        self.assertIn('Bar', hs)
+        self.assertEqual(hs.find('foo'), 0)
+        self.assertEqual(hs.find('BAR'), 1)
+        self.assertLess(hs.find('baz'), 0)
+        hs.discard('missing')
+        hs.discard('foo')
+        self.assertLess(hs.find('foo'), 0)
+        self.assertEqual(hs.find('bar'), 0)
+
+        self.assertRaises(IndexError, hs.index, 'missing')
+
+        self.assertEqual(hs.index('bar'), 0)
+        self.assertTrue(hs)
+        hs.clear()
+        self.assertFalse(hs)
+
+    def test_parse_set_header(self):
+        hs = http.parse_set_header('foo, Bar, "Blah baz", Hehe')
+        self.assertIn('blah baz', hs)
+        self.assertNotIn('foobar', hs)
+        self.assertIn('foo', hs)
+        self.assertEqual(list(hs), ['foo', 'Bar', 'Blah baz', 'Hehe'])
+        hs.add('Foo')
+        self.assertEqual(hs.to_header(), 'foo, Bar, "Blah baz", Hehe')
 
 
 class RegressionTestCase(unittest.TestCase):

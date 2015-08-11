@@ -10,7 +10,7 @@
 """
 import unittest
 
-from verktyg.headers import Headers, EnvironHeaders, HeaderSet
+from verktyg.headers import Headers, EnvironHeaders
 
 
 class HeadersTestCase(unittest.TestCase):
@@ -214,27 +214,3 @@ class EnvironHeadersTestCase(unittest.TestCase):
 
         self.assertEqual(h.get('x-foo', as_bytes=True), b'\xff')
         self.assertEqual(h.get('x-foo'), u'\xff')
-
-
-class HeaderSetTestCase(unittest.TestCase):
-    storage_class = HeaderSet
-
-    def test_basic_interface(self):
-        hs = self.storage_class()
-        hs.add('foo')
-        hs.add('bar')
-        self.assertIn('Bar', hs)
-        self.assertEqual(hs.find('foo'), 0)
-        self.assertEqual(hs.find('BAR'), 1)
-        self.assertLess(hs.find('baz'), 0)
-        hs.discard('missing')
-        hs.discard('foo')
-        self.assertLess(hs.find('foo'), 0)
-        self.assertEqual(hs.find('bar'), 0)
-
-        self.assertRaises(IndexError, hs.index, 'missing')
-
-        self.assertEqual(hs.index('bar'), 0)
-        self.assertTrue(hs)
-        hs.clear()
-        self.assertFalse(hs)
