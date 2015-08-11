@@ -436,3 +436,50 @@ class WsgiTestCase(unittest.TestCase):
                 StringIO(data), limit=len(data), buffer_size=4
             ))
             self.assertEqual(lines, ['1234567890\n', '1234567890\n'])
+
+
+class EnvironHeadersTestCase(unittest.TestCase):
+    def test_basic_interface(self):
+        # this happens in multiple WSGI servers because they
+        # use a vary naive way to convert the headers;
+        broken_env = {
+            'HTTP_CONTENT_TYPE':        'text/html',
+            'CONTENT_TYPE':             'text/html',
+            'HTTP_CONTENT_LENGTH':      '0',
+            'CONTENT_LENGTH':           '0',
+            'HTTP_ACCEPT':              '*',
+            'wsgi.version':             (1, 0)
+        }
+        headers = wsgi.EnvironHeaders(broken_env)
+        self.assertTrue(headers)
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(sorted(headers), [
+            ('Accept', '*'),
+            ('Content-Length', '0'),
+            ('Content-Type', 'text/html')
+        ])
+        self.assertFalse(wsgi.EnvironHeaders({'wsgi.version': (1, 0)}))
+        self.assertEqual(len(wsgi.EnvironHeaders({'wsgi.version': (1, 0)})), 0)
+
+    def test_return_type_is_unicode(self):
+        # environ contains native strings; we return unicode
+        headers = wsgi.EnvironHeaders({
+            'HTTP_FOO': '\xe2\x9c\x93',
+            'CONTENT_TYPE': 'text/plain',
+        })
+        self.assertEqual(headers['Foo'], u"\xe2\x9c\x93")
+        self.assertIsInstance(headers['Foo'], str)
+        self.assertIsInstance(headers['Content-Type'], str)
+        iter_output = dict(iter(headers))
+        self.assertEqual(iter_output['Foo'], u"\xe2\x9c\x93")
+        self.assertIsInstance(iter_output['Foo'], str)
+        self.assertIsInstance(iter_output['Content-Type'], str)
+
+    def test_bytes_operations(self):
+        foo_val = '\xff'
+        h = wsgi.EnvironHeaders({
+            'HTTP_X_FOO': foo_val
+        })
+
+        self.assertEqual(h.get('x-foo', as_bytes=True), b'\xff')
+        self.assertEqual(h.get('x-foo'), u'\xff')

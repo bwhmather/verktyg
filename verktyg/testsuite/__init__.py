@@ -11,7 +11,7 @@
 import unittest
 
 from verktyg.testsuite import (
-    test_headers, test_accept, test_application, test_dispatch,
+    test_accept, test_application, test_dispatch,
     test_exceptions, test_routing, test_views, test_requests, test_responses,
     test_wsgi, test_http,
 )
@@ -19,7 +19,6 @@ from verktyg.testsuite import (
 
 loader = unittest.TestLoader()
 suite = unittest.TestSuite((
-    loader.loadTestsFromModule(test_headers),
     loader.loadTestsFromModule(test_accept),
     loader.loadTestsFromModule(test_application),
     loader.loadTestsFromModule(test_dispatch),
