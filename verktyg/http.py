@@ -1009,6 +1009,88 @@ def unquote_etag(etag):
     return etag, weak
 
 
+class ETags(object):
+    """A set that can be used to check if one etag is present in a collection
+    of etags.
+    """
+
+    def __init__(self, strong_etags=None, weak_etags=None, star_tag=False):
+        self._strong = frozenset(not star_tag and strong_etags or ())
+        self._weak = frozenset(weak_etags or ())
+        self.star_tag = star_tag
+
+    def as_set(self, include_weak=False):
+        """Convert the `ETags` object into a python set.  Per default all the
+        weak etags are not part of this set."""
+        rv = set(self._strong)
+        if include_weak:
+            rv.update(self._weak)
+        return rv
+
+    def is_weak(self, etag):
+        """Check if an etag is weak."""
+        return etag in self._weak
+
+    def contains_weak(self, etag):
+        """Check if an etag is part of the set including weak and strong tags.
+        """
+        return self.is_weak(etag) or self.contains(etag)
+
+    def contains(self, etag):
+        """Check if an etag is part of the set ignoring weak tags.
+        It is also possible to use the ``in`` operator.
+
+        """
+        if self.star_tag:
+            return True
+        return etag in self._strong
+
+    def contains_raw(self, etag):
+        """When passed a quoted tag it will check if this tag is part of the
+        set.  If the tag is weak it is checked against weak and strong tags,
+        otherwise strong only."""
+        etag, weak = unquote_etag(etag)
+        if weak:
+            return self.contains_weak(etag)
+        return self.contains(etag)
+
+    def to_header(self):
+        """Convert the etags set into a HTTP header string."""
+        if self.star_tag:
+            return '*'
+        return ', '.join(
+            ['"%s"' % x for x in self._strong] +
+            ['w/"%s"' % x for x in self._weak]
+        )
+
+    def __call__(self, etag=None, data=None, include_weak=False):
+        if [etag, data].count(None) != 1:
+            raise TypeError('either tag or data required, but at least one')
+        if etag is None:
+            etag = generate_etag(data)
+        if include_weak:
+            if etag in self._weak:
+                return True
+        return etag in self._strong
+
+    def __bool__(self):
+        return bool(self.star_tag or self._strong or self._weak)
+
+    __nonzero__ = __bool__
+
+    def __str__(self):
+        return self.to_header()
+
+    def __iter__(self):
+        return iter(self._strong)
+
+    def __contains__(self, etag):
+        return self.contains(etag)
+
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, str(self))
+
+
 def parse_etags(value):
     """Parse an etag header.
 
@@ -1370,7 +1452,7 @@ def is_byte_range_valid(start, stop, length):
 
 
 # circular dependency fun
-from werkzeug.datastructures import ETags, Authorization, \
+from werkzeug.datastructures import Authorization, \
     WWWAuthenticate, TypeConversionDict, IfRange, Range, ContentRange, \
     RequestCacheControl
 

@@ -128,24 +128,6 @@ class HTTPUtilityTestCase(unittest.TestCase):
         assert not http.parse_www_authenticate_header('').type
         assert not http.parse_www_authenticate_header('')
 
-    def test_etags(self):
-        self.assertEqual(http.quote_etag('foo'), '"foo"')
-        self.assertEqual(http.quote_etag('foo', True), 'w/"foo"')
-        self.assertEqual(http.unquote_etag('"foo"'), ('foo', False))
-        self.assertEqual(http.unquote_etag('w/"foo"'), ('foo', True))
-        es = http.parse_etags('"foo", "bar", w/"baz", blar')
-        self.assertEqual(sorted(es), ['bar', 'blar', 'foo'])
-        self.assertIn('foo', es)
-        self.assertNotIn('baz', es)
-        assert es.contains_weak('baz')
-        self.assertIn('blar', es)
-        assert es.contains_raw('w/"baz"')
-        assert es.contains_raw('"foo"')
-        self.assertEqual(
-            sorted(es.to_header().split(', ')),
-            ['"bar"', '"blar"', '"foo"', 'w/"baz"']
-        )
-
     def test_etags_nonzero(self):
         etags = http.parse_etags('w/"foo"')
         assert bool(etags)
@@ -635,6 +617,26 @@ class AcceptTestCase(unittest.TestCase):
         self.assertIn('en', a)
         self.assertEqual(a['de-at'], 1)
         self.assertEqual(a['en'], 0.5)
+
+
+class ETagsTestCase(unittest.TestCase):
+    def test_parse_etags(self):
+        self.assertEqual(http.quote_etag('foo'), '"foo"')
+        self.assertEqual(http.quote_etag('foo', True), 'w/"foo"')
+        self.assertEqual(http.unquote_etag('"foo"'), ('foo', False))
+        self.assertEqual(http.unquote_etag('w/"foo"'), ('foo', True))
+        es = http.parse_etags('"foo", "bar", w/"baz", blar')
+        self.assertEqual(sorted(es), ['bar', 'blar', 'foo'])
+        self.assertIn('foo', es)
+        self.assertNotIn('baz', es)
+        assert es.contains_weak('baz')
+        self.assertIn('blar', es)
+        assert es.contains_raw('w/"baz"')
+        assert es.contains_raw('"foo"')
+        self.assertEqual(
+            sorted(es.to_header().split(', ')),
+            ['"bar"', '"blar"', '"foo"', 'w/"baz"']
+        )
 
 
 class RegressionTestCase(unittest.TestCase):
