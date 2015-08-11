@@ -12,6 +12,7 @@
         BSD, see LICENSE for more details.
 """
 import re
+import sys
 import codecs
 from time import time, gmtime
 from email.utils import parsedate_tz
@@ -21,9 +22,10 @@ from hashlib import md5
 import base64
 
 from werkzeug._internal import (
-    _cookie_quote, _make_cookie_domain, _cookie_parse_impl, _missing,
+    _cookie_quote, _make_cookie_domain, _cookie_parse_impl,
+    _missing, _empty_stream,
 )
-from werkzeug._compat import to_unicode, to_bytes
+from werkzeug._compat import to_unicode, to_bytes, make_literal_wrapper
 from werkzeug.urls import iri_to_uri
 from werkzeug import datastructures
 from werkzeug.datastructures import is_immutable
@@ -2345,3 +2347,127 @@ def is_byte_range_valid(start, stop, length):
     elif start >= stop:
         return False
     return 0 <= start < length
+
+
+class FileStorage(object):
+    """The :class:`FileStorage` class is a thin wrapper over incoming files.
+    It is used by the request object to represent uploaded files.  All the
+    attributes of the wrapper stream are proxied by the file storage so
+    it's possible to do ``storage.read()`` instead of the long form
+    ``storage.stream.read()``.
+    """
+
+    def __init__(self, stream=None, filename=None, name=None,
+                 content_type=None, content_length=None,
+                 headers=None):
+        self.name = name
+        self.stream = stream or _empty_stream
+
+        # if no filename is provided we can attempt to get the filename
+        # from the stream object passed.  There we have to be careful to
+        # skip things like <fdopen>, <stderr> etc.  Python marks these
+        # special filenames with angular brackets.
+        if filename is None:
+            filename = getattr(stream, 'name', None)
+            s = make_literal_wrapper(filename)
+            if filename and filename[0] == s('<') and filename[-1] == s('>'):
+                filename = None
+
+            # On Python 3 we want to make sure the filename is always unicode.
+            # This might not be if the name attribute is bytes due to the
+            # file being opened from the bytes API.
+            if isinstance(filename, bytes):
+                filename = filename.decode(sys.getfilesystemencoding(),
+                                           'replace')
+
+        self.filename = filename
+        if headers is None:
+            headers = Headers()
+        self.headers = headers
+        if content_type is not None:
+            headers['Content-Type'] = content_type
+        if content_length is not None:
+            headers['Content-Length'] = str(content_length)
+
+    def _parse_content_type(self):
+        if not hasattr(self, '_parsed_content_type'):
+            self._parsed_content_type = \
+                parse_options_header(self.content_type)
+
+    @property
+    def content_type(self):
+        """The content-type sent in the header.  Usually not available"""
+        return self.headers.get('content-type')
+
+    @property
+    def content_length(self):
+        """The content-length sent in the header.  Usually not available"""
+        return int(self.headers.get('content-length') or 0)
+
+    @property
+    def mimetype(self):
+        """Like :attr:`content_type`, but without parameters (eg, without
+        charset, type etc.) and always lowercase.  For example if the content
+        type is ``text/HTML; charset=utf-8`` the mimetype would be
+        ``'text/html'``.
+        """
+        self._parse_content_type()
+        return self._parsed_content_type[0].lower()
+
+    @property
+    def mimetype_params(self):
+        """The mimetype parameters as dict.  For example if the content
+        type is ``text/html; charset=utf-8`` the params would be
+        ``{'charset': 'utf-8'}``.
+        """
+        self._parse_content_type()
+        return self._parsed_content_type[1]
+
+    def save(self, dst, buffer_size=16384):
+        """Save the file to a destination path or file object.  If the
+        destination is a file object you have to close it yourself after the
+        call.  The buffer size is the number of bytes held in memory during
+        the copy process.  It defaults to 16KB.
+
+        For secure file saving also have a look at :func:`secure_filename`.
+
+        :param dst:
+            A filename or open file object the uploaded file is saved to.
+        :param buffer_size:
+            The size of the buffer.  This works the same as the `length`
+            parameter of :func:`shutil.copyfileobj`.
+        """
+        from shutil import copyfileobj
+        close_dst = False
+        if isinstance(dst, str):
+            dst = open(dst, 'wb')
+            close_dst = True
+        try:
+            copyfileobj(self.stream, dst, buffer_size)
+        finally:
+            if close_dst:
+                dst.close()
+
+    def close(self):
+        """Close the underlying file if possible."""
+        try:
+            self.stream.close()
+        except Exception:
+            pass
+
+    def __nonzero__(self):
+        return bool(self.filename)
+    __bool__ = __nonzero__
+
+    def __getattr__(self, name):
+        return getattr(self.stream, name)
+
+    def __iter__(self):
+        return iter(self.readline, '')
+
+    def __repr__(self):
+        return '<%s: %r (%r)>' % (
+            self.__class__.__name__,
+            self.filename,
+            self.content_type
+        )

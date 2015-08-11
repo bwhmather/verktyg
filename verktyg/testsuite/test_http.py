@@ -821,3 +821,9 @@ class RegressionTestCase(unittest.TestCase):
             datastructures.MIMEAccept
         ).best_match(['foo/bar'])
         self.assertEqual(rv, 'foo/bar')
+
+
+class FileStorageTestCase(object):
+    def test_mimetype_always_lowercase(self):
+        file_storage = http.FileStorage(content_type='APPLICATION/JSON')
+        self.assertEqual(file_storage.mimetype, 'application/json')

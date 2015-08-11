@@ -30,10 +30,9 @@ from werkzeug.urls import (
     url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
 )
 from werkzeug.utils import dump_cookie
-from werkzeug.datastructures import (
-    FileMultiDict, MultiDict, CombinedMultiDict, Headers,
-)
+from werkzeug.datastructures import MultiDict, CombinedMultiDict, Headers
 
+from verktyg.http import FileStorage
 from verktyg.wsgi import get_host, get_current_url, ClosingIterator
 from verktyg.requests import BaseRequest
 
@@ -196,6 +195,40 @@ def _iter_data(data):
                     yield key, value
             else:
                 yield key, values
+
+
+class FileMultiDict(MultiDict):
+    """A special :class:`MultiDict` that has convenience methods to add
+    files to it.  This is used for :class:`EnvironBuilder` and generally
+    useful for unittesting.
+    """
+
+    def add_file(self, name, file, filename=None, content_type=None):
+        """Adds a new file to the dict.  `file` can be a file name or
+        a :class:`file`-like or a :class:`FileStorage` object.
+
+        :param name:
+            The name of the field.
+        :param file:
+            A filename or :class:`file`-like object
+        :param filename:
+            An optional filename
+        :param content_type:
+            An optional content type
+        """
+        if isinstance(file, FileStorage):
+            value = file
+        else:
+            if isinstance(file, str):
+                if filename is None:
+                    filename = file
+                file = open(file, 'rb')
+            if filename and content_type is None:
+                content_type = mimetypes.guess_type(filename)[0] or \
+                    'application/octet-stream'
+            value = FileStorage(file, filename, name, content_type)
+
+        self.add(name, value)
 
 
 class EnvironBuilder(object):
