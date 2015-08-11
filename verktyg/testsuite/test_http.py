@@ -271,9 +271,8 @@ class HTTPUtilityTestCase(unittest.TestCase):
         self.assertEqual(val, 'foo=bar; Domain=.foo.com; Path=/')
 
 
-class RangeTestCase(unittest.TestCase):
-
-    def test_if_range_parsing(self):
+class IfRangeTestCase(unittest.TestCase):
+    def test_parse_if_range_header(self):
         rv = http.parse_if_range_header('"Test"')
         self.assertEqual(rv.etag, 'Test')
         self.assertIs(rv.date, None)
@@ -302,7 +301,9 @@ class RangeTestCase(unittest.TestCase):
             self.assertIs(rv.date, None)
             self.assertEqual(rv.to_header(), '')
 
-    def test_range_parsing(self):
+
+class RangeTestCase(unittest.TestCase):
+    def test_parse_range(self):
         rv = http.parse_range_header('bytes=52')
         self.assertIs(rv, None)
 
@@ -331,7 +332,9 @@ class RangeTestCase(unittest.TestCase):
         self.assertEqual(rv.ranges, [(0, 1000)])
         self.assertEqual(rv.to_header(), 'awesomes=0-999')
 
-    def test_content_range_parsing(self):
+
+class ContentRangeTestCase(unittest.TestCase):
+    def test_parse_content_range(self):
         rv = http.parse_content_range_header('bytes 0-98/*')
         self.assertEqual(rv.units, 'bytes')
         self.assertEqual(rv.start, 0)
