@@ -933,16 +933,73 @@ def parse_set_header(value, on_update=None):
     return HeaderSet(parse_list_header(value), on_update)
 
 
+class Authorization(datastructures.ImmutableDictMixin, dict):
+    """Represents an `Authorization` header sent by the client.  You should
+    not create this kind of object yourself but use it when it's returned by
+    the `parse_authorization_header` function.
+
+    This object is a dict subclass and can be altered by setting dict items
+    but it should be considered immutable as it's returned by the client and
+    not meant for modifications.
+    """
+
+    def __init__(self, auth_type, data=None):
+        dict.__init__(self, data or {})
+        self.type = auth_type
+
+    username = property(lambda x: x.get('username'), doc='''
+        The username transmitted.  This is set for both basic and digest
+        auth all the time.''')
+    password = property(lambda x: x.get('password'), doc='''
+        When the authentication type is basic this is the password
+        transmitted by the client, else `None`.''')
+    realm = property(lambda x: x.get('realm'), doc='''
+        This is the server realm sent back for HTTP digest auth.''')
+    nonce = property(lambda x: x.get('nonce'), doc='''
+        The nonce the server sent for digest auth, sent back by the client.
+        A nonce should be unique for every 401 response for HTTP digest
+        auth.''')
+    uri = property(lambda x: x.get('uri'), doc='''
+        The URI from Request-URI of the Request-Line; duplicated because
+        proxies are allowed to change the Request-Line in transit.  HTTP
+        digest auth only.''')
+    nc = property(lambda x: x.get('nc'), doc='''
+        The nonce count value transmitted by clients if a qop-header is
+        also transmitted.  HTTP digest auth only.''')
+    cnonce = property(lambda x: x.get('cnonce'), doc='''
+        If the server sent a qop-header in the ``WWW-Authenticate``
+        header, the client has to provide this value for HTTP digest auth.
+        See the RFC for more details.''')
+    response = property(lambda x: x.get('response'), doc='''
+        A string of 32 hex digits computed as defined in RFC 2617, which
+        proves that the user knows a password.  Digest auth only.''')
+    opaque = property(lambda x: x.get('opaque'), doc='''
+        The opaque header from the server returned unchanged by the client.
+        It is recommended that this string be base64 or hexadecimal data.
+        Digest auth only.''')
+
+    @property
+    def qop(self):
+        """Indicates what "quality of protection" the client has applied to
+        the message for HTTP digest auth."""
+        def on_update(header_set):
+            if not header_set and 'qop' in self:
+                del self['qop']
+            elif header_set:
+                self['qop'] = header_set.to_header()
+        return parse_set_header(self.get('qop'), on_update)
+
+
 def parse_authorization_header(value):
     """Parse an HTTP basic/digest authorization header transmitted by the web
     browser.  The return value is either `None` if the header was invalid or
-    not given, otherwise an :class:`~werkzeug.datastructures.Authorization`
+    not given, otherwise an :class:`~Authorization`
     object.
 
     :param value:
         The authorization header to parse.
     :return:
-        A:class:`~werkzeug.datastructures.Authorization` object or `None`.
+        A:class:`~Authorization` object or `None`.
     """
     if not value:
         return
@@ -1575,7 +1632,6 @@ def is_byte_range_valid(start, stop, length):
 
 
 # circular dependency fun
-from werkzeug.datastructures import Authorization, \
-    WWWAuthenticate, TypeConversionDict, IfRange, Range, ContentRange
+from werkzeug.datastructures import WWWAuthenticate, TypeConversionDict, IfRange, Range, ContentRange
 
 from werkzeug.urls import iri_to_uri

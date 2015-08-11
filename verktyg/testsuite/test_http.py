@@ -29,56 +29,6 @@ class HTTPUtilityTestCase(unittest.TestCase):
         d = http.parse_dict_header('foo="bar baz", blah=42')
         self.assertEqual(d, {'foo': 'bar baz', 'blah': '42'})
 
-    def test_authorization_header(self):
-        a = http.parse_authorization_header(
-            'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=='
-        )
-        self.assertEqual(a.type, 'basic')
-        self.assertEqual(a.username, 'Aladdin')
-        self.assertEqual(a.password, 'open sesame')
-
-        a = http.parse_authorization_header(
-            'Digest username="Mufasa", '
-            'realm="testrealm@host.invalid", '
-            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
-            'uri="/dir/index.html", '
-            'qop=auth, '
-            'nc=00000001, '
-            'cnonce="0a4f113b", '
-            'response="6629fae49393a05397450978507c4ef1", '
-            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
-        )
-        self.assertEqual(a.type, 'digest')
-        self.assertEqual(a.username, 'Mufasa')
-        self.assertEqual(a.realm, 'testrealm@host.invalid')
-        self.assertEqual(a.nonce, 'dcd98b7102dd2f0e8b11d0f600bfb0c093')
-        self.assertEqual(a.uri, '/dir/index.html')
-        self.assertIn('auth', a.qop)
-        self.assertEqual(a.nc, '00000001')
-        self.assertEqual(a.cnonce, '0a4f113b')
-        self.assertEqual(a.response, '6629fae49393a05397450978507c4ef1')
-        self.assertEqual(a.opaque, '5ccc069c403ebaf9f0171e9517f40e41')
-
-        a = http.parse_authorization_header(
-            'Digest username="Mufasa", '
-            'realm="testrealm@host.invalid", '
-            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
-            'uri="/dir/index.html", '
-            'response="e257afa1414a3340d93d30955171dd0e", '
-            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
-        )
-        self.assertEqual(a.type, 'digest')
-        self.assertEqual(a.username, 'Mufasa')
-        self.assertEqual(a.realm, 'testrealm@host.invalid')
-        self.assertEqual(a.nonce, 'dcd98b7102dd2f0e8b11d0f600bfb0c093')
-        self.assertEqual(a.uri, '/dir/index.html')
-        self.assertEqual(a.response, 'e257afa1414a3340d93d30955171dd0e')
-        self.assertEqual(a.opaque, '5ccc069c403ebaf9f0171e9517f40e41')
-
-        self.assertIs(http.parse_authorization_header(''), None)
-        self.assertIs(http.parse_authorization_header(None), None)
-        self.assertIs(http.parse_authorization_header('foo'), None)
-
     def test_www_authenticate_header(self):
         wa = http.parse_www_authenticate_header('Basic realm="WallyWorld"')
         self.assertEqual(wa.type, 'basic')
@@ -647,6 +597,60 @@ class ETagsTestCase(unittest.TestCase):
             sorted(es.to_header().split(', ')),
             ['"bar"', '"blar"', '"foo"', 'w/"baz"']
         )
+
+
+class AuthorizationTestCase(unittest.TestCase):
+    def test_parse_authorization_header(self):
+        a = http.parse_authorization_header(
+            'Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=='
+        )
+        self.assertEqual(a.type, 'basic')
+        self.assertEqual(a.username, 'Aladdin')
+        self.assertEqual(a.password, 'open sesame')
+
+        a = http.parse_authorization_header(
+            'Digest username="Mufasa", '
+            'realm="testrealm@host.invalid", '
+            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
+            'uri="/dir/index.html", '
+            'qop=auth, '
+            'nc=00000001, '
+            'cnonce="0a4f113b", '
+            'response="6629fae49393a05397450978507c4ef1", '
+            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
+        )
+        self.assertEqual(a.type, 'digest')
+        self.assertEqual(a.username, 'Mufasa')
+        self.assertEqual(a.realm, 'testrealm@host.invalid')
+        self.assertEqual(a.nonce, 'dcd98b7102dd2f0e8b11d0f600bfb0c093')
+        self.assertEqual(a.uri, '/dir/index.html')
+        self.assertIn('auth', a.qop)
+        self.assertEqual(a.nc, '00000001')
+        self.assertEqual(a.cnonce, '0a4f113b')
+        self.assertEqual(a.response, '6629fae49393a05397450978507c4ef1')
+        self.assertEqual(a.opaque, '5ccc069c403ebaf9f0171e9517f40e41')
+
+        a = http.parse_authorization_header(
+            'Digest username="Mufasa", '
+            'realm="testrealm@host.invalid", '
+            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
+            'uri="/dir/index.html", '
+            'response="e257afa1414a3340d93d30955171dd0e", '
+            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
+        )
+        self.assertEqual(a.type, 'digest')
+        self.assertEqual(a.username, 'Mufasa')
+        self.assertEqual(a.realm, 'testrealm@host.invalid')
+        self.assertEqual(a.nonce, 'dcd98b7102dd2f0e8b11d0f600bfb0c093')
+        self.assertEqual(a.uri, '/dir/index.html')
+        self.assertEqual(a.response, 'e257afa1414a3340d93d30955171dd0e')
+        self.assertEqual(a.opaque, '5ccc069c403ebaf9f0171e9517f40e41')
+
+        self.assertIs(http.parse_authorization_header(''), None)
+        self.assertIs(http.parse_authorization_header(None), None)
+        self.assertIs(http.parse_authorization_header('foo'), None)
+
+
 
 
 class RegressionTestCase(unittest.TestCase):
