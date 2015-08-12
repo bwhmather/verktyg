@@ -30,9 +30,9 @@ from werkzeug.urls import (
     url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
 )
 from werkzeug.utils import dump_cookie
-from werkzeug.datastructures import MultiDict, CombinedMultiDict, Headers
 
-from verktyg.http import FileStorage
+from verktyg.datastructures import MultiDict, CombinedMultiDict
+from verktyg.http import Headers, FileStorage
 from verktyg.wsgi import get_host, get_current_url, ClosingIterator
 from verktyg.requests import BaseRequest
 

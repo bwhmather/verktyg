@@ -27,9 +27,9 @@ from werkzeug._internal import (
 )
 from werkzeug._compat import to_unicode, to_bytes, make_literal_wrapper
 from werkzeug.urls import iri_to_uri
-from werkzeug import datastructures
-from werkzeug.datastructures import is_immutable
 
+from verktyg import datastructures
+from verktyg.datastructures import is_immutable
 from verktyg import exceptions
 
 

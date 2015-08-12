@@ -23,13 +23,12 @@ from datetime import datetime, timedelta
 
 from werkzeug.urls import iri_to_uri, url_join
 from werkzeug.utils import cached_property, header_property, get_content_type
-from werkzeug.datastructures import (
-    Headers, ResponseCacheControl, CallbackDict, ContentRange
-)
 from werkzeug._internal import _get_environ
 from werkzeug._compat import to_bytes
 
+from verktyg.datastructures import CallbackDict
 from verktyg.http import (
+    Headers, ResponseCacheControl, ContentRange,
     HTTP_STATUS_CODES, parse_cache_control_header,  parse_date, generate_etag,
     is_resource_modified, unquote_etag, quote_etag, parse_set_header,
     parse_www_authenticate_header, remove_entity_headers, parse_options_header,

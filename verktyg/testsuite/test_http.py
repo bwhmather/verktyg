@@ -15,7 +15,6 @@ from datetime import datetime
 
 from werkzeug._compat import itervalues, wsgi_encoding_dance
 
-from werkzeug import datastructures
 from verktyg import http
 from verktyg.test import create_environ
 
@@ -221,13 +220,13 @@ class HTTPUtilityTestCase(unittest.TestCase):
             ('Content-Type', 'text/html'),
             ('Content-Length', '0'),
         ]
-        headers2 = datastructures.Headers(headers1)
+        headers2 = http.Headers(headers1)
 
         http.remove_entity_headers(headers1)
         self.assertEqual(headers1, [('Date', now)])
 
         http.remove_entity_headers(headers2)
-        self.assertEqual(headers2, datastructures.Headers([(u'Date', now)]))
+        self.assertEqual(headers2, http.Headers([(u'Date', now)]))
 
     def test_remove_hop_by_hop_headers(self):
         headers1 = [
@@ -235,13 +234,13 @@ class HTTPUtilityTestCase(unittest.TestCase):
             ('Foo', 'bar'),
             ('Keep-Alive', 'wtf'),
         ]
-        headers2 = datastructures.Headers(headers1)
+        headers2 = http.Headers(headers1)
 
         http.remove_hop_by_hop_headers(headers1)
         self.assertEqual(headers1, [('Foo', 'bar')])
 
         http.remove_hop_by_hop_headers(headers2)
-        self.assertEqual(headers2, datastructures.Headers([('Foo', 'bar')]))
+        self.assertEqual(headers2, http.Headers([('Foo', 'bar')]))
 
     def test_parse_options_header(self):
         self.assertEqual(
@@ -391,7 +390,7 @@ class HTTPUtilityTestCase(unittest.TestCase):
 
     def test_cookie_unicode_dumping(self):
         val = http.dump_cookie('foo', u'\N{SNOWMAN}')
-        h = datastructures.Headers()
+        h = http.Headers()
         h.add('Set-Cookie', val)
         self.assertEqual(h['Set-Cookie'], 'foo="\\342\\230\\203"; Path=/')
 
@@ -629,7 +628,7 @@ class AcceptTestCase(unittest.TestCase):
             'application/foo;quiet=no; bar=baz;q=0.6,'
             'text/html;q=0.9,text/plain;q=0.8,'
             'image/png,*/*;q=0.5',
-            datastructures.MIMEAccept
+            http.MIMEAccept
         )
         self.assertRaises(ValueError, lambda: a['missing'])
         self.assertEqual(a['image/png'], 1)
@@ -642,7 +641,7 @@ class AcceptTestCase(unittest.TestCase):
         a = http.parse_accept_header(
             'text/xml,application/xml,application/xhtml+xml,'
             'text/html;q=0.9,text/plain;q=0.8,'
-            'image/png', datastructures.MIMEAccept
+            'image/png', http.MIMEAccept
         )
         self.assertEqual(
             a.best_match(['text/html', 'application/xhtml+xml']),
@@ -659,7 +658,7 @@ class AcceptTestCase(unittest.TestCase):
 
     def test_parse_charset_accept(self):
         a = http.parse_accept_header(
-            'ISO-8859-1,utf-8;q=0.7,*;q=0.7', datastructures.CharsetAccept
+            'ISO-8859-1,utf-8;q=0.7,*;q=0.7', http.CharsetAccept
         )
         self.assertEqual(a['iso-8859-1'], a['iso8859-1'])
         self.assertEqual(a['iso-8859-1'], 1)
@@ -668,7 +667,7 @@ class AcceptTestCase(unittest.TestCase):
 
     def test_parse_language_accept(self):
         a = http.parse_accept_header(
-            'de-AT,de;q=0.8,en;q=0.5', datastructures.LanguageAccept
+            'de-AT,de;q=0.8,en;q=0.5', http.LanguageAccept
         )
         self.assertEqual(a.best, 'de-AT')
         self.assertIn('de_AT', a)
@@ -679,7 +678,7 @@ class AcceptTestCase(unittest.TestCase):
 
 class CacheControlTestCase(unittest.TestCase):
     def test_repr(self):
-        cc = datastructures.RequestCacheControl(
+        cc = http.RequestCacheControl(
             [("max-age", "0"), ("private", "True")],
         )
         self.assertEqual(
@@ -692,12 +691,12 @@ class CacheControlTestCase(unittest.TestCase):
         self.assertTrue(cc.no_cache)
         cc = http.parse_cache_control_header(
             'private, community="UCI"', None,
-            datastructures.ResponseCacheControl
+            http.ResponseCacheControl
         )
         self.assertTrue(cc.private)
         self.assertEqual(cc['community'], 'UCI')
 
-        c = datastructures.ResponseCacheControl()
+        c = http.ResponseCacheControl()
         self.assertIs(c.no_cache, None)
         self.assertIs(c.private, None)
         c.no_cache = True
@@ -818,7 +817,7 @@ class RegressionTestCase(unittest.TestCase):
             'foo=,application/xml,application/xhtml+xml,'
             'text/html;q=0.9,text/plain;q=0.8,'
             'image/png,*/*;q=0.5',
-            datastructures.MIMEAccept
+            http.MIMEAccept
         ).best_match(['foo/bar'])
         self.assertEqual(rv, 'foo/bar')
 

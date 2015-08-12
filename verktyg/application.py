@@ -9,8 +9,8 @@ import sys
 from urllib.parse import urlparse
 
 from werkzeug.utils import redirect
-from werkzeug.datastructures import ImmutableDict
 
+from verktyg.datastructures import ImmutableDict
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionHandler
 )

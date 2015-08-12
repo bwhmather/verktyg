@@ -24,21 +24,22 @@ from io import BytesIO
 from werkzeug.urls import url_decode
 from werkzeug.formparser import FormDataParser, default_stream_factory
 from werkzeug.utils import cached_property, environ_property
-from werkzeug.datastructures import (
-    MultiDict, CombinedMultiDict, EnvironHeaders, ImmutableMultiDict,
-    ImmutableTypeConversionDict, ImmutableList, MIMEAccept, CharsetAccept,
-    LanguageAccept, RequestCacheControl, iter_multi_items,
-)
 from werkzeug._compat import (
     wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
 )
 
+from verktyg.datastructures import (
+    MultiDict, CombinedMultiDict, ImmutableMultiDict,
+    ImmutableTypeConversionDict, ImmutableList, iter_multi_items,
+)
 from verktyg.http import (
+    MIMEAccept, CharsetAccept, LanguageAccept, RequestCacheControl,
     parse_accept_header, parse_cache_control_header, parse_etags, parse_date,
     parse_set_header, parse_authorization_header, parse_options_header,
     parse_if_range_header, parse_cookie, parse_range_header,
 )
 from verktyg.wsgi import (
+    EnvironHeaders,
     get_current_url, get_host, get_input_stream, get_content_length
 )
 
