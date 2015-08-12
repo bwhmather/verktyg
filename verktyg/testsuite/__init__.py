@@ -10,9 +10,8 @@
 """
 import unittest
 
-from verktyg.testsuite import test_datastructures
 from verktyg.testsuite import (
-    test_accept, test_application, test_dispatch,
+    test_datastructures, test_accept, test_application, test_dispatch,
     test_exceptions, test_routing, test_views, test_requests, test_responses,
     test_wsgi, test_http,
 )
