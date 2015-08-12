@@ -23,11 +23,11 @@ from io import BytesIO
 
 from werkzeug.urls import url_decode
 from werkzeug.formparser import FormDataParser, default_stream_factory
-from werkzeug.utils import cached_property, environ_property
 from werkzeug._compat import (
     wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
 )
 
+from verktyg.utils import cached_property, environ_property
 from verktyg.datastructures import (
     MultiDict, CombinedMultiDict, ImmutableMultiDict,
     ImmutableTypeConversionDict, ImmutableList, iter_multi_items,

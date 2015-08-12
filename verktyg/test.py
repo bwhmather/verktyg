@@ -29,10 +29,9 @@ from werkzeug._internal import _empty_stream, _get_environ
 from werkzeug.urls import (
     url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
 )
-from werkzeug.utils import dump_cookie
 
 from verktyg.datastructures import MultiDict, CombinedMultiDict
-from verktyg.http import Headers, FileStorage
+from verktyg.http import Headers, FileStorage, dump_cookie
 from verktyg.wsgi import get_host, get_current_url, ClosingIterator
 from verktyg.requests import BaseRequest
 

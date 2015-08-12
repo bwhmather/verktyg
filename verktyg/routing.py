@@ -98,10 +98,10 @@ import posixpath
 from pprint import pformat
 
 from werkzeug.urls import url_encode, url_quote, url_join
-from werkzeug.utils import format_string
 from werkzeug._internal import _get_environ, _encode_idna
 from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
 
+from verktyg.utils import format_string
 from verktyg.datastructures import ImmutableDict, MultiDict
 from verktyg.exceptions import HTTPException, NotFound
 

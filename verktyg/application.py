@@ -8,12 +8,12 @@
 import sys
 from urllib.parse import urlparse
 
-from werkzeug.utils import redirect
 
 from verktyg.datastructures import ImmutableDict
 from verktyg.exception_dispatch import (
     ExceptionDispatcher, ExceptionHandler
 )
+from verktyg.utils import redirect
 from verktyg.routing import URLMap, Route, RequestRedirect
 from verktyg.dispatch import Dispatcher
 from verktyg.views import expose
