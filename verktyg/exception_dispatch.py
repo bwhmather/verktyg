@@ -25,7 +25,7 @@ class ExceptionHandler(ExceptionHandlerFactory, Representation):
     `action`
         The action to perform if the handler is matched.
         Function accepting `(application, request, exception)` and returning
-        a werkzeug response object.
+        a verktyg response object.
     """
     def __init__(self, exception_class, action, **kwargs):
 
@@ -91,7 +91,7 @@ class ExceptionDispatcher(ExceptionHandlerFactory):
 
         :return:
             A callable object accepting am application object, a request, and
-            an exception and returning a werkzeug response
+            an exception and returning a verktyg response
         """
         # Use the method resolution order of the exception to rank handlers
         for cls in exception_class.mro():

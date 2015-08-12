@@ -113,8 +113,7 @@ class BaseResponse(object):
 
     Response can be any kind of iterable or string.  If it's a string it's
     considered being an iterable with one item which is the string passed.
-    Headers can be a list of tuples or a
-    :class:`~werkzeug.datastructures.Headers` object.
+    Headers can be a list of tuples or a :class:`~verktyg.http.Headers` object.
 
     Special note for `mimetype` and `content_type`:  For most mime types
     `mimetype` and `content_type` work the same, the difference affects
@@ -126,7 +125,7 @@ class BaseResponse(object):
     :param response: a string or response iterable.
     :param status: a string with a status or an integer with the status code.
     :param headers: a list of headers or a
-                    :class:`~werkzeug.datastructures.Headers` object.
+                    :class:`~verktyg.http.Headers` object.
     :param mimetype: the mimetype for the request.  See notice above.
     :param content_type: the content type for the request.  See notice above.
     :param direct_passthrough: if set to `True` :meth:`iter_encoded` is not
@@ -479,7 +478,7 @@ class BaseResponse(object):
         to zero here for certain status codes.
 
         :param environ: the WSGI environment of the request.
-        :return: returns a new :class:`~werkzeug.datastructures.Headers`
+        :return: returns a new :class:`~verktyg.http.Headers`
                  object.
         """
         headers = Headers(self.headers)
@@ -618,7 +617,7 @@ class ETagResponseMixin(object):
     """Adds extra functionality to a response object for etag and cache
     handling.  This mixin requires an object with at least a `headers`
     object that implements a dict like interface similar to
-    :class:`~werkzeug.datastructures.Headers`.
+    :class:`~verktyg.http.Headers`.
 
     If you want the :meth:`freeze` method to automatically add an etag, you
     have to mixin this method before the response base class.  The default
@@ -732,7 +731,7 @@ class ETagResponseMixin(object):
             self.headers['Content-Range'] = value.to_header()
     content_range = property(_get_content_range, _set_content_range, doc='''
         The `Content-Range` header as
-        :class:`~werkzeug.datastructures.ContentRange` object.  Even if the
+        :class:`~verktyg.http.ContentRange` object.  Even if the
         header is not set it wil provide such an object for easier
         manipulation.''')
     del _get_content_range, _set_content_range

@@ -50,7 +50,7 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
     """A handy helper function that recreates the full URL as IRI for the
     current request or parts of it.  Here an example:
 
-    >>> from werkzeug.test import create_environ
+    >>> from verktyg.test import create_environ
     >>> env = create_environ("/?param=foo", "http://localhost/script")
     >>> get_current_url(env)
     'http://localhost/script/?param=foo'

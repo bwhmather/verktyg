@@ -1272,7 +1272,7 @@ class HeaderSet(object):
 
 def parse_set_header(value, on_update=None):
     """Parse a set-like header and return a
-    :class:`~werkzeug.datastructures.HeaderSet` object:
+    :class:`~HeaderSet` object:
 
     >>> hs = parse_set_header('token, "quoted value"')
 
@@ -1293,9 +1293,9 @@ def parse_set_header(value, on_update=None):
         A set header to be parsed.
     :param on_update:
         An optional callable that is called every time a value on the
-        :class:`~werkzeug.datastructures.HeaderSet` object is changed.
+        :class:`~HeaderSet` object is changed.
     :return:
-        A:class:`~werkzeug.datastructures.HeaderSet`
+        A:class:`~HeaderSet`
     """
     if not value:
         return HeaderSet(None, on_update)
@@ -1537,15 +1537,15 @@ WWWAuthenticate.auth_property = staticmethod(auth_property)
 
 def parse_www_authenticate_header(value, on_update=None):
     """Parse an HTTP WWW-Authenticate header into a
-    :class:`~werkzeug.datastructures.WWWAuthenticate` object.
+    :class:`~WWWAuthenticate` object.
 
     :param value:
         A WWW-Authenticate header to parse.
     :param on_update:
         An optional callable that is called every time a value on the
-        :class:`~werkzeug.datastructures.WWWAuthenticate` object is changed.
+        :class:`~WWWAuthenticate` object is changed.
     :return:
-        A:class:`~werkzeug.datastructures.WWWAuthenticate` object.
+        A:class:`~WWWAuthenticate` object.
     """
     if not value:
         return WWWAuthenticate(on_update=on_update)
@@ -1588,7 +1588,7 @@ class IfRange(object):
 
 def parse_if_range_header(value):
     """Parses an if-range header which can be an etag or a date.  Returns
-    a :class:`~werkzeug.datastructures.IfRange` object.
+    a :class:`~IfRange` object.
     """
     if not value:
         return IfRange()
@@ -1653,7 +1653,7 @@ class Range(object):
 
 
 def parse_range_header(value, make_inclusive=True):
-    """Parses a range header into a :class:`~werkzeug.datastructures.Range`
+    """Parses a range header into a :class:`~Range`
     object.  If the header is missing or malformed `None` is returned.
     `ranges` is a list of ``(start, stop)`` tuples where the ranges are
     non-inclusive.
@@ -1770,14 +1770,14 @@ class ContentRange(object):
 
 def parse_content_range_header(value, on_update=None):
     """Parses a range header into a
-    :class:`~werkzeug.datastructures.ContentRange` object or `None` if
+    :class:`~ContentRange` object or `None` if
     parsing is not possible.
 
     :param value:
         A content range header to be parsed.
     :param on_update:
         An optional callable that is called every time a value on the
-        :class:`~werkzeug.datastructures.ContentRange` object is changed.
+        :class:`~ContentRange` object is changed.
     """
     if value is None:
         return None
@@ -1941,7 +1941,7 @@ def parse_etags(value):
     :param value:
         The tag header to parse
     :return:
-        An :class:`~werkzeug.datastructures.ETags` object.
+        An :class:`~ETags` object.
     """
     if not value:
         return ETags()
