@@ -54,6 +54,21 @@ class HeadersTestCase(unittest.TestCase):
         headers.add('x', 'y', z='"')
         self.assertEqual(headers['x'], r'y; z="\""')
 
+    def test_header_set_duplication_bug(self):
+        headers = self.storage_class([
+            ('Content-Type', 'text/html'),
+            ('Foo', 'bar'),
+            ('Blub', 'blah')
+        ])
+        headers['blub'] = 'hehe'
+        headers['blafasel'] = 'humm'
+        self.assertEqual(headers, self.storage_class([
+            ('Content-Type', 'text/html'),
+            ('Foo', 'bar'),
+            ('blub', 'hehe'),
+            ('blafasel', 'humm')
+        ]))
+
     def test_defaults_and_conversion(self):
         # defaults
         headers = self.storage_class([
