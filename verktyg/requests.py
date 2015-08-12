@@ -21,17 +21,9 @@
 """
 from io import BytesIO
 
-from werkzeug.http import (
-    parse_accept_header, parse_cache_control_header, parse_etags, parse_date,
-    parse_set_header, parse_authorization_header, parse_options_header,
-    parse_if_range_header, parse_cookie, parse_range_header,
-)
 from werkzeug.urls import url_decode
 from werkzeug.formparser import FormDataParser, default_stream_factory
 from werkzeug.utils import cached_property, environ_property
-from verktyg.wsgi import (
-    get_current_url, get_host, get_input_stream, get_content_length
-)
 from werkzeug.datastructures import (
     MultiDict, CombinedMultiDict, EnvironHeaders, ImmutableMultiDict,
     ImmutableTypeConversionDict, ImmutableList, MIMEAccept, CharsetAccept,
@@ -39,6 +31,15 @@ from werkzeug.datastructures import (
 )
 from werkzeug._compat import (
     wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
+)
+
+from verktyg.http import (
+    parse_accept_header, parse_cache_control_header, parse_etags, parse_date,
+    parse_set_header, parse_authorization_header, parse_options_header,
+    parse_if_range_header, parse_cookie, parse_range_header,
+)
+from verktyg.wsgi import (
+    get_current_url, get_host, get_input_stream, get_content_length
 )
 
 

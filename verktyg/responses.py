@@ -21,21 +21,22 @@
 """
 from datetime import datetime, timedelta
 
-from werkzeug.http import (
+from werkzeug.urls import iri_to_uri, url_join
+from werkzeug.utils import cached_property, header_property, get_content_type
+from werkzeug.datastructures import (
+    Headers, ResponseCacheControl, CallbackDict, ContentRange
+)
+from werkzeug._internal import _get_environ
+from werkzeug._compat import to_bytes
+
+from verktyg.http import (
     HTTP_STATUS_CODES, parse_cache_control_header,  parse_date, generate_etag,
     is_resource_modified, unquote_etag, quote_etag, parse_set_header,
     parse_www_authenticate_header, remove_entity_headers, parse_options_header,
     dump_options_header, http_date, dump_cookie, parse_content_range_header,
     dump_header,
 )
-from werkzeug.urls import iri_to_uri, url_join
-from werkzeug.utils import cached_property, header_property, get_content_type
 from verktyg.wsgi import get_current_url, ClosingIterator
-from werkzeug.datastructures import (
-    Headers, ResponseCacheControl, CallbackDict, ContentRange
-)
-from werkzeug._internal import _get_environ
-from werkzeug._compat import to_bytes
 
 
 def _run_wsgi_app(*args):
