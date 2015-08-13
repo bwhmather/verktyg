@@ -7,9 +7,6 @@ A web framework based on Werkzeug.
 from setuptools import setup, find_packages
 
 extras_require = {
-    'Templates': [
-        'jinja2',
-    ],
 }
 
 setup(
@@ -37,7 +34,7 @@ setup(
         'python-mimeparse >= 0.1.4',
     ],
     tests_require=list(set(sum(
-        (extras_require[extra] for extra in ['Templates']), []
+        (extras_require[extra] for extra in {}), []
     ))),
     extras_require=extras_require,
     packages=find_packages(),
