@@ -21,24 +21,26 @@
 """
 from io import BytesIO
 
-from werkzeug.http import (
+from werkzeug.urls import url_decode
+from werkzeug.formparser import FormDataParser, default_stream_factory
+from werkzeug._compat import (
+    wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
+)
+
+from verktyg.utils import cached_property, environ_property
+from verktyg.datastructures import (
+    MultiDict, CombinedMultiDict, ImmutableMultiDict,
+    ImmutableTypeConversionDict, ImmutableList, iter_multi_items,
+)
+from verktyg.http import (
+    MIMEAccept, CharsetAccept, LanguageAccept, RequestCacheControl,
     parse_accept_header, parse_cache_control_header, parse_etags, parse_date,
     parse_set_header, parse_authorization_header, parse_options_header,
     parse_if_range_header, parse_cookie, parse_range_header,
 )
-from werkzeug.urls import url_decode
-from werkzeug.formparser import FormDataParser, default_stream_factory
-from werkzeug.utils import cached_property, environ_property
 from verktyg.wsgi import (
+    EnvironHeaders,
     get_current_url, get_host, get_input_stream, get_content_length
-)
-from werkzeug.datastructures import (
-    MultiDict, CombinedMultiDict, EnvironHeaders, ImmutableMultiDict,
-    ImmutableTypeConversionDict, ImmutableList, MIMEAccept, CharsetAccept,
-    LanguageAccept, RequestCacheControl, iter_multi_items,
-)
-from werkzeug._compat import (
-    wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
 )
 
 
@@ -116,22 +118,22 @@ class BaseRequest(object):
     max_form_memory_size = None
 
     #: the class to use for `args` and `form`.  The default is an
-    #: :class:`~werkzeug.datastructures.ImmutableMultiDict` which supports
+    #: :class:`~verktyg.datastructures.ImmutableMultiDict` which supports
     #: multiple values per key.  alternatively it makes sense to use an
-    #: :class:`~werkzeug.datastructures.ImmutableOrderedMultiDict` which
-    #: preserves order or a :class:`~werkzeug.datastructures.ImmutableDict`
+    #: :class:`~verktyg.datastructures.ImmutableOrderedMultiDict` which
+    #: preserves order or a :class:`~verktyg.datastructures.ImmutableDict`
     #: which is the fastest but only remembers the last key.  It is also
     #: possible to use mutable structures, but this is not recommended.
     parameter_storage_class = ImmutableMultiDict
 
     #: the type to be used for list values from the incoming WSGI environment.
-    #: By default an :class:`~werkzeug.datastructures.ImmutableList` is used
+    #: By default an :class:`~verktyg.datastructures.ImmutableList` is used
     #: (for example for :attr:`access_list`).
     list_storage_class = ImmutableList
 
     #: the type to be used for dict values from the incoming WSGI environment.
     #: By default an
-    #: :class:`~werkzeug.datastructures.ImmutableTypeConversionDict` is used
+    #: :class:`~verktyg.datastructures.ImmutableTypeConversionDict` is used
     #: (for example for :attr:`cookies`).
     dict_storage_class = ImmutableTypeConversionDict
 
@@ -343,7 +345,7 @@ class BaseRequest(object):
     @cached_property
     def args(self):
         """The parsed URL parameters.  By default an
-        :class:`~werkzeug.datastructures.ImmutableMultiDict`
+        :class:`~verktyg.datastructures.ImmutableMultiDict`
         is returned from this function.  This can be changed by setting
         :attr:`parameter_storage_class` to a different type.  This might
         be necessary if the order of the form data is important.
@@ -389,7 +391,7 @@ class BaseRequest(object):
     @cached_property
     def form(self):
         """The form parameters.  By default an
-        :class:`~werkzeug.datastructures.ImmutableMultiDict`
+        :class:`~verktyg.datastructures.ImmutableMultiDict`
         is returned from this function.  This can be changed by setting
         :attr:`parameter_storage_class` to a different type.  This might
         be necessary if the order of the form data is important.
@@ -409,17 +411,17 @@ class BaseRequest(object):
 
     @cached_property
     def files(self):
-        """:class:`~werkzeug.datastructures.MultiDict` object containing
+        """:class:`~verktyg.datastructures.MultiDict` object containing
         all uploaded files.  Each key in :attr:`files` is the name from the
         ``<input type="file" name="">``.  Each value in :attr:`files` is a
-        Werkzeug :class:`~werkzeug.datastructures.FileStorage` object.
+        Werkzeug :class:`~verktyg.http.FileStorage` object.
 
         Note that :attr:`files` will only contain data if the request method
         was POST, PUT or PATCH and the ``<form>`` that posted to the request
         had ``enctype="multipart/form-data"``.  It will be empty otherwise.
 
-        See the :class:`~werkzeug.datastructures.MultiDict` /
-        :class:`~werkzeug.datastructures.FileStorage` documentation for
+        See the :class:`~verktyg.datastructures.MultiDict` /
+        :class:`~verktyg.http.FileStorage` documentation for
         more details about the used data structure.
         """
         self._load_form_data()
@@ -435,7 +437,7 @@ class BaseRequest(object):
     @cached_property
     def headers(self):
         """The headers from the WSGI environ as immutable
-        :class:`~werkzeug.datastructures.EnvironHeaders`.
+        :class:`~verktyg.wsgi.EnvironHeaders`.
         """
         return EnvironHeaders(self.environ)
 
@@ -560,21 +562,21 @@ class AcceptMixin(object):
 
     """A mixin for classes with an :attr:`~BaseRequest.environ` attribute
     to get all the HTTP accept headers as
-    :class:`~werkzeug.datastructures.Accept` objects (or subclasses
+    :class:`~verktyg.http.Accept` objects (or subclasses
     thereof).
     """
 
     @cached_property
     def accept_mimetypes(self):
         """List of mimetypes this client supports as
-        :class:`~werkzeug.datastructures.MIMEAccept` object.
+        :class:`~verktyg.http.MIMEAccept` object.
         """
         return parse_accept_header(self.environ.get('HTTP_ACCEPT'), MIMEAccept)
 
     @cached_property
     def accept_charsets(self):
         """List of charsets this client supports as
-        :class:`~werkzeug.datastructures.CharsetAccept` object.
+        :class:`~verktyg.http.CharsetAccept` object.
         """
         return parse_accept_header(self.environ.get('HTTP_ACCEPT_CHARSET'),
                                    CharsetAccept)
@@ -590,7 +592,7 @@ class AcceptMixin(object):
     @cached_property
     def accept_languages(self):
         """List of languages this client accepts as
-        :class:`~werkzeug.datastructures.LanguageAccept` object.
+        :class:`~verktyg.http.LanguageAccept` object.
         """
         return parse_accept_header(self.environ.get('HTTP_ACCEPT_LANGUAGE'),
                                    LanguageAccept)
@@ -605,7 +607,7 @@ class ETagRequestMixin(object):
 
     @cached_property
     def cache_control(self):
-        """A :class:`~werkzeug.datastructures.RequestCacheControl` object
+        """A :class:`~verktyg.http.RequestCacheControl` object
         for the incoming cache control headers.
         """
         cache_control = self.environ.get('HTTP_CACHE_CONTROL')
@@ -616,7 +618,7 @@ class ETagRequestMixin(object):
     def if_match(self):
         """An object containing all the etags in the `If-Match` header.
 
-        :rtype: :class:`~werkzeug.datastructures.ETags`
+        :rtype: :class:`~verktyg.http.ETags`
         """
         return parse_etags(self.environ.get('HTTP_IF_MATCH'))
 
@@ -624,7 +626,7 @@ class ETagRequestMixin(object):
     def if_none_match(self):
         """An object containing all the etags in the `If-None-Match` header.
 
-        :rtype: :class:`~werkzeug.datastructures.ETags`
+        :rtype: :class:`~verktyg.http.ETags`
         """
         return parse_etags(self.environ.get('HTTP_IF_NONE_MATCH'))
 
@@ -642,7 +644,7 @@ class ETagRequestMixin(object):
     def if_range(self):
         """The parsed `If-Range` header.
 
-        :rtype: :class:`~werkzeug.datastructures.IfRange`
+        :rtype: :class:`~verktyg.http.IfRange`
         """
         return parse_if_range_header(self.environ.get('HTTP_IF_RANGE'))
 
@@ -650,7 +652,7 @@ class ETagRequestMixin(object):
     def range(self):
         """The parsed `Range` header.
 
-        :rtype: :class:`~werkzeug.datastructures.Range`
+        :rtype: :class:`~verktyg.http.Range`
         """
         return parse_range_header(self.environ.get('HTTP_RANGE'))
 
@@ -673,7 +675,7 @@ class AuthorizationMixin(object):
 
     """Adds an :attr:`authorization` property that represents the parsed
     value of the `Authorization` header as
-    :class:`~werkzeug.datastructures.Authorization` object.
+    :class:`~verktyg.http.Authorization` object.
     """
 
     @cached_property

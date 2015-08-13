@@ -14,7 +14,7 @@ extras_require = {
 
 setup(
     name='verktyg',
-    version='0.8.1',
+    version='0.8.2',
     url='https://github.com/bwhmather/verktyg',
     license='BSD',
     author='Ben Mather',

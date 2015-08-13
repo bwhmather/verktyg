@@ -15,12 +15,13 @@ import pickle
 from io import BytesIO
 from datetime import datetime
 
-from werkzeug.datastructures import (
+from verktyg.datastructures import (
     MultiDict, ImmutableOrderedMultiDict, ImmutableList,
     ImmutableTypeConversionDict, CombinedMultiDict,
+)
+from verktyg.http import (
     CharsetAccept, MIMEAccept, LanguageAccept, Accept,
 )
-
 from verktyg.test import Client
 from verktyg.wsgi import LimitedStream
 from verktyg.exceptions import SecurityError

@@ -24,8 +24,12 @@ from werkzeug._compat import (
     make_literal_wrapper, to_unicode, to_bytes, wsgi_get_bytes,
 )
 from werkzeug._internal import _empty_stream, _encode_idna
-from werkzeug.http import is_resource_modified, http_date
 from werkzeug.urls import uri_to_iri, url_quote, url_parse, url_join
+
+from verktyg import http
+from verktyg.http import (
+    is_resource_modified, http_date, unicodify_header_value,
+)
 
 
 def responder(f):
@@ -46,7 +50,7 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
     """A handy helper function that recreates the full URL as IRI for the
     current request or parts of it.  Here an example:
 
-    >>> from werkzeug.test import create_environ
+    >>> from verktyg.test import create_environ
     >>> env = create_environ("/?param=foo", "http://localhost/script")
     >>> get_current_url(env)
     'http://localhost/script/?param=foo'
@@ -406,6 +410,45 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
         return None
 
     return u'/' + cur_path[len(base_path):].lstrip(u'/')
+
+
+class EnvironHeaders(http.ImmutableHeadersMixin, http.Headers):
+    """Read only version of the headers from a WSGI environment.  This
+    provides the same interface as `Headers` and is constructed from
+    a WSGI environment.
+    """
+
+    def __init__(self, environ):
+        self.environ = environ
+
+    def __eq__(self, other):
+        return self.environ is other.environ
+
+    def __getitem__(self, key, _get_mode=False):
+        # _get_mode is a no-op for this class as there is no index but
+        # used because get() calls it.
+        key = key.upper().replace('-', '_')
+        if key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
+            return unicodify_header_value(self.environ[key])
+        return unicodify_header_value(self.environ['HTTP_' + key])
+
+    def __len__(self):
+        # the iter is necessary because otherwise list calls our
+        # len which would call list again and so forth.
+        return len(list(iter(self)))
+
+    def __iter__(self):
+        for key, value in self.environ.items():
+            if key.startswith('HTTP_') and key not in \
+               ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
+                yield (key[5:].replace('_', '-').title(),
+                       unicodify_header_value(value))
+            elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
+                yield (key.replace('_', '-').title(),
+                       unicodify_header_value(value))
+
+    def copy(self):
+        raise TypeError('cannot create %r copies' % self.__class__.__name__)
 
 
 class SharedDataMiddleware(object):
