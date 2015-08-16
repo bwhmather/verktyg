@@ -6,88 +6,188 @@
 
     http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
 
-    :copyright: (c) 2014 by Ben Mather.
+    :copyright: (c) 2015 by Ben Mather.
     :license: BSD, see LICENSE for more details.
 """
-import mimeparse
+import functools
 
+from verktyg.http import (
+    parse_content_type_header, parse_language_header, parse_charset_header,
+    parse_accept_header, parse_accept_language_header,
+    parse_accept_charset_header,
+)
 from verktyg.exceptions import NotAcceptable
 
 
+@functools.total_ordering
+class Acceptability(object):
+    def __init__(
+                self, *,
+                content_type_acceptability,
+                language_acceptability,
+                charset_acceptability,
+                qs
+            ):
+        self._content_type_acceptability = content_type_acceptability
+        self._language_acceptability = language_acceptability
+        self._charset_acceptability = charset_acceptability
+        self._qs = qs
+
+    def __eq__(self, other):
+        if (other._content_type_acceptability !=
+                self._content_type_acceptability):
+            return False
+        if other._language_acceptability != self._language_acceptability:
+            return False
+        if other._charset_acceptability != self._charset_acceptability:
+            return False
+        if other._qs != self._qs:
+            return False
+        return True
+
+    def __gt__(self, other):
+        def _gt(self, other):
+            if (self is None) and (other is None):
+                return False
+            if self <= other:
+                return False
+            return True
+
+        if _gt(
+                self._content_type_acceptability,
+                other._content_type_acceptability):
+            return True
+        if _gt(
+                self._language_acceptability,
+                other._language_acceptability):
+            return True
+        if _gt(
+                self._charset_acceptability,
+                other._charset_acceptability):
+            return True
+        if _gt(
+                self._qs,
+                other._qs):
+            return True
+        return False
+
+
 def select_representation(
-        representations,
-        accept='*/*', accept_language=None, accept_charset=None):
-    max_quality = tuple()
-    best = None
+            representations,
+            accept='*/*', accept_language='*', accept_charset='*'
+        ):
+    highest_acceptability = None
+    best_representation = None
+
+    if accept is None:
+        accept = '*/*'
+    if isinstance(accept, str):
+        accept = parse_accept_header(accept)
+
+    if accept_language is None:
+        accept_language = '*'
+    if isinstance(accept_language, str):
+        accept_language = parse_accept_language_header(accept_language)
+
+    if accept_charset is None:
+        accept_charset = '*'
+    if isinstance(accept_charset, str):
+        accept_charset = parse_accept_charset_header(accept_charset)
+
     for representation in representations:
         try:
-            quality = representation.quality(accept=accept,
-                                             accept_language=accept_language,
-                                             accept_charset=accept_charset)
+            acceptability = representation.acceptability(
+                accept=accept,
+                accept_language=accept_language,
+                accept_charset=accept_charset
+            )
         except NotAcceptable:
             continue
 
-        if not isinstance(quality, tuple):
-            quality = (quality,)
+        if (highest_acceptability is None or
+                acceptability >= highest_acceptability):
+            highest_acceptability = acceptability
+            best_representation = representation
 
-        # Later bindings take precedence
-        if quality >= max_quality:
-            best = representation
-            max_quality = quality
-
-    if best is None:
+    if best_representation is None:
         raise NotAcceptable()
 
-    return best
+    return best_representation
 
 
 class Representation(object):
     def __init__(self, *, content_type=None, language=None,
                  charset=None, qs=None):
-        self.content_type = content_type
-        self.language = language
-        self.charset = charset
+        if isinstance(content_type, str):
+            content_type = parse_content_type_header(content_type)
+        self._content_type = content_type
+
+        if isinstance(language, str):
+            language = parse_language_header(language)
+        self._language = language
+
+        if isinstance(charset, str):
+            charset = parse_charset_header(charset)
+        self._charset = charset
 
         if qs is None:
-            if content_type is None:
-                self.qs = 0.001
-            else:
-                self.qs = 1.0
+            qs = 1.0
+        self._qs = max(min(float(qs), 1.0), 0.0)
 
-    def quality(self, *, accept=None,
-                accept_charset=None, accept_language=None):
+    def acceptability(
+                self, *,
+                accept=None,
+                accept_charset=None,
+                accept_language=None
+            ):
         """
-        :param accept: string in the same format as an http `Accept` header
+        :param accept:
+            String in the same format as an http `Accept` header
 
-        :param accept_language: string in the same format as an http
-            `Accept-Language` header
+        :param accept_language:
+            String in the same format as an http `Accept-Language` header
 
-        :param accept_charset: string in the same format as an http
-            `Accept-Charset` header
+        :param accept_charset:
+            String in the same format as an http `Accept-Charset` header
 
-        :return: a number or tuple of tuples representing the quality of
-            the match. By convention outer tuples should be in content type,
-            language, charset order.  Raises `NotAcceptable If the binding does
-            not match the request.
+        :return:
+            An orderable `Acceptability` object representing the quality of the
+            match.
 
+        :raises NotAcceptable: If the binding does not match the request.
         """
-        if self.content_type is None:
-            # TODO
-            return 5, self.qs
-
-        if accept is None:
-            return 0, self.qs
-
-        accept = [
-            mimeparse.parse_media_range(media_range)
-            for media_range in accept.split(',')
-        ]
-
-        fitness, quality = mimeparse.fitness_and_quality_parsed(
-            self.content_type, accept
+        content_type_acceptability = (
+            self._content_type.acceptability(accept)
+            if self._content_type is not None else
+            None
         )
 
-        if fitness == -1:
-            raise NotAcceptable()
+        language_acceptability = (
+            self._content_type.acceptability(accept)
+            if self._language is not None else
+            None
+        )
 
-        return fitness, quality * self.qs
+        charset_acceptability = (
+            self._charset.acceptability
+            if self._charset is not None else
+            None
+        )
+
+        return Acceptability(
+            content_type_acceptability=content_type_acceptability,
+            language_acceptability=language_acceptability,
+            charset_acceptability=charset_acceptability,
+            qs=self._qs,
+        )
+
+    def __repr__(self):
+        output = "<%s" % self.__class__.__name__
+        if self._content_type is not None:
+            output += " content_type=%r" % self._content_type
+        if self._language is not None:
+            output += " language=%r" % self._language
+        if self._charset is not None:
+            output += " charset=%r" % self._charset
+        output += ">"
+        return output

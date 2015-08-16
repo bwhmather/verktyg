@@ -140,14 +140,18 @@ class ApplicationTestCase(unittest.TestCase):
 
         resp = client.get('/raise_418')
         self.assertEqual(resp.status_code, 418)
-        self.assertEqual(resp.get_data(), b'default handler')
+        self.assertEqual(resp.get_data(), b'{"type": "json"}')
 
         resp = client.get(
             'raise_418', headers=[('Accept', 'application/json')]
         )
         self.assertEqual(resp.status_code, 418)
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
-        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+
+        resp = client.get(
+            'raise_418', headers=[('Accept', 'application/xml')]
+        )
+        self.assertEqual(resp.get_data(), b'default handler')
 
         # 404 error has a pretty html representation but uses default renderer
         # for json
@@ -160,7 +164,7 @@ class ApplicationTestCase(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
-        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+
 
     def test_close_request(self):
         closed = 0

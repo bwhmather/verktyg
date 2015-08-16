@@ -191,6 +191,9 @@ class _Acceptibility(object):
         return self._q
 
     def __eq__(self, other):
+        if other is None:
+            return False
+
         if self._match_quality != other._match_quality:
             return False
 
@@ -200,6 +203,9 @@ class _Acceptibility(object):
         return True
 
     def __gt__(self, other):
+        if other is None:
+            return True
+
         if self._match_quality > other._match_quality:
             return True
 
@@ -315,7 +321,7 @@ def _split_accept_string(string):
 
         q = params.pop('q', '1.0')
 
-        yield accept, q, params
+        yield accept.strip(), q, params
 
 
 def parse_accept_header(string):

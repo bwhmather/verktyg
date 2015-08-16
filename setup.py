@@ -31,7 +31,6 @@ setup(
     platforms='any',
     install_requires=[
         'werkzeug >= 0.10, < 0.11',
-        'python-mimeparse >= 0.1.4',
     ],
     tests_require=list(set(sum(
         (extras_require[extra] for extra in {}), []
