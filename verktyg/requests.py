@@ -33,10 +33,11 @@ from verktyg.datastructures import (
     ImmutableTypeConversionDict, ImmutableList, iter_multi_items,
 )
 from verktyg.http import (
-    MIMEAccept, CharsetAccept, LanguageAccept, RequestCacheControl,
-    parse_accept_header, parse_cache_control_header, parse_etags, parse_date,
-    parse_set_header, parse_authorization_header, parse_options_header,
-    parse_if_range_header, parse_cookie, parse_range_header,
+    parse_cache_control_header, parse_etags,
+    parse_date, parse_set_header, parse_authorization_header,
+    parse_options_header, parse_if_range_header, parse_cookie,
+    parse_range_header,
+    RequestCacheControl,
 )
 from verktyg.wsgi import (
     EnvironHeaders,
@@ -558,46 +559,6 @@ class BaseRequest(object):
         but it's not guaranteed that the exeuction only happens one time.''')
 
 
-class AcceptMixin(object):
-
-    """A mixin for classes with an :attr:`~BaseRequest.environ` attribute
-    to get all the HTTP accept headers as
-    :class:`~verktyg.http.Accept` objects (or subclasses
-    thereof).
-    """
-
-    @cached_property
-    def accept_mimetypes(self):
-        """List of mimetypes this client supports as
-        :class:`~verktyg.http.MIMEAccept` object.
-        """
-        return parse_accept_header(self.environ.get('HTTP_ACCEPT'), MIMEAccept)
-
-    @cached_property
-    def accept_charsets(self):
-        """List of charsets this client supports as
-        :class:`~verktyg.http.CharsetAccept` object.
-        """
-        return parse_accept_header(self.environ.get('HTTP_ACCEPT_CHARSET'),
-                                   CharsetAccept)
-
-    @cached_property
-    def accept_encodings(self):
-        """List of encodings this client accepts.  Encodings in a HTTP term
-        are compression encodings such as gzip.  For charsets have a look at
-        :attr:`accept_charset`.
-        """
-        return parse_accept_header(self.environ.get('HTTP_ACCEPT_ENCODING'))
-
-    @cached_property
-    def accept_languages(self):
-        """List of languages this client accepts as
-        :class:`~verktyg.http.LanguageAccept` object.
-        """
-        return parse_accept_header(self.environ.get('HTTP_ACCEPT_LANGUAGE'),
-                                   LanguageAccept)
-
-
 class ETagRequestMixin(object):
 
     """Add entity tag and cache descriptors to a request object or object with
@@ -782,7 +743,7 @@ class CommonRequestDescriptorsMixin(object):
 
 
 # TODO deprecate.  Superseded by request class building in ApplicationBuilder
-class Request(BaseRequest, AcceptMixin, ETagRequestMixin,
+class Request(BaseRequest, ETagRequestMixin,
               UserAgentMixin, AuthorizationMixin,
               CommonRequestDescriptorsMixin):
 

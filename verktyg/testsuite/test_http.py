@@ -691,19 +691,6 @@ class WWWAuthenticateTestCase(unittest.TestCase):
         assert not http.parse_www_authenticate_header('')
 
 
-class RegressionTestCase(unittest.TestCase):
-
-    def test_best_match_works(self):
-        # was a bug in 0.6
-        rv = http.parse_accept_header(
-            'foo=,application/xml,application/xhtml+xml,'
-            'text/html;q=0.9,text/plain;q=0.8,'
-            'image/png,*/*;q=0.5',
-            http.MIMEAccept
-        ).best_match(['foo/bar'])
-        self.assertEqual(rv, 'foo/bar')
-
-
 class FileStorageTestCase(object):
     def test_mimetype_always_lowercase(self):
         file_storage = http.FileStorage(content_type='APPLICATION/JSON')

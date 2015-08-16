@@ -19,9 +19,6 @@ from verktyg.datastructures import (
     MultiDict, ImmutableOrderedMultiDict, ImmutableList,
     ImmutableTypeConversionDict, CombinedMultiDict,
 )
-from verktyg.http import (
-    CharsetAccept, MIMEAccept, LanguageAccept, Accept,
-)
 from verktyg.test import Client
 from verktyg.wsgi import LimitedStream
 from verktyg.exceptions import SecurityError
@@ -240,31 +237,6 @@ class RequestsTestCase(unittest.TestCase):
         self.assertEqual(list(request.files.items()), [])
         self.assertEqual(list(request.form.items()), [])
         self.assertEqual(request.stream.read(), b'foo=blub+hehe')
-
-    def test_accept_mixin(self):
-        request = Request({
-            'HTTP_ACCEPT': 'text/xml,application/xml,application/xhtml+xml,'
-                           'text/html;q=0.9,text/plain;q=0.8,image/png,'
-                           '*/*;q=0.5',
-            'HTTP_ACCEPT_CHARSET': 'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
-            'HTTP_ACCEPT_ENCODING': 'gzip,deflate',
-            'HTTP_ACCEPT_LANGUAGE': 'en-us,en;q=0.5'
-        })
-        self.assertEqual(request.accept_mimetypes, MIMEAccept([
-            ('text/xml', 1), ('image/png', 1), ('application/xml', 1),
-            ('application/xhtml+xml', 1), ('text/html', 0.9),
-            ('text/plain', 0.8), ('*/*', 0.5)
-        ]))
-        self.assertEqual(request.accept_charsets, CharsetAccept([
-            ('ISO-8859-1', 1), ('utf-8', 0.7), ('*', 0.7)
-        ]))
-        self.assertEqual(request.accept_encodings, Accept([
-            ('gzip', 1), ('deflate', 1)]))
-        self.assertEqual(request.accept_languages, LanguageAccept([
-            ('en-us', 1), ('en', 0.5)]))
-
-        request = Request({'HTTP_ACCEPT': ''})
-        self.assertEqual(request.accept_mimetypes, MIMEAccept())
 
     def test_etag_request_mixin(self):
         request = Request({

@@ -13,136 +13,185 @@
 import unittest
 
 from verktyg import http
+from verktyg.exceptions import NotAcceptable
 
 
-class AcceptTestCase(unittest.TestCase):
-    def test_accept_basic(self):
-        accept = http.Accept([
-            ('tinker', 0), ('tailor', 0.333),
-            ('soldier', 0.667), ('sailor', 1),
-        ])
-        # check __getitem__ on indices
-        self.assertEqual(accept[3], ('tinker', 0))
-        self.assertEqual(accept[2], ('tailor', 0.333))
-        self.assertEqual(accept[1], ('soldier', 0.667))
-        self.assertEqual(accept[0], ('sailor', 1))
-        # check __getitem__ on string
-        self.assertEqual(accept['tinker'], 0)
-        self.assertEqual(accept['tailor'], 0.333)
-        self.assertEqual(accept['soldier'], 0.667)
-        self.assertEqual(accept['sailor'], 1)
-        self.assertEqual(accept['spy'], 0)
-        # check quality method
-        self.assertEqual(accept.quality('tinker'), 0)
-        self.assertEqual(accept.quality('tailor'), 0.333)
-        self.assertEqual(accept.quality('soldier'), 0.667)
-        self.assertEqual(accept.quality('sailor'), 1)
-        self.assertEqual(accept.quality('spy'), 0)
-        # check __contains__
-        self.assertIn('sailor', accept)
-        self.assertNotIn('spy', accept)
-        # check index method
-        self.assertEqual(accept.index('tinker'), 3)
-        self.assertEqual(accept.index('tailor'), 2)
-        self.assertEqual(accept.index('soldier'), 1)
-        self.assertEqual(accept.index('sailor'), 0)
-        self.assertRaises(ValueError, accept.index, 'spy')
-        # check find method
-        self.assertEqual(accept.find('tinker'), 3)
-        self.assertEqual(accept.find('tailor'), 2)
-        self.assertEqual(accept.find('soldier'), 1)
-        self.assertEqual(accept.find('sailor'), 0)
-        self.assertEqual(accept.find('spy'), -1)
-        # check to_header method
-        self.assertEqual(
-            accept.to_header(),
-            'sailor,soldier;q=0.667,tailor;q=0.333,tinker;q=0'
+class ContentTypeTestCase(unittest.TestCase):
+    def test_parse_accept_basic(self):
+        accept = http.parse_accept_header(
+            'text/xml'
         )
-        # check best_match method
-        self.assertEqual(
-            accept.best_match(
-                ['tinker', 'tailor', 'soldier', 'sailor'], default=None
-            ),
-            'sailor'
-        )
-        self.assertEqual(
-            accept.best_match(['tinker', 'tailor', 'soldier'], default=None),
-            'soldier'
-        )
-        self.assertEqual(
-            accept.best_match(['tinker', 'tailor'], default=None),
-            'tailor'
-        )
-        self.assertIs(accept.best_match(['tinker'], default=None), None)
-        self.assertEqual(accept.best_match(['tinker'], default='x'), 'x')
 
-    def test_accept_wildcard(self):
-        accept = http.Accept([('*', 0), ('asterisk', 1)])
-        self.assertIn('*', accept)
-        self.assertEqual(
-            accept.best_match(['asterisk', 'star'], default=None),
-            'asterisk'
+        range_ = next(iter(accept))
+        self.assertEqual('text', range_.type)
+        self.assertEqual('xml', range_.subtype)
+        self.assertEqual(1, range_.q)
+        self.assertEqual(0, len(range_.params))
+        with self.assertRaises(KeyError):
+            range_.params['q']
+
+    def test_parse_accept_params(self):
+        accept = http.parse_accept_header(
+            'application/foo;quiet=no; bar=baz;q=0.6'
         )
-        self.assertIs(accept.best_match(['star'], default=None), None)
+        range_ = next(iter(accept))
+        self.assertEqual('application', range_.type)
+        self.assertEqual('foo', range_.subtype)
+        self.assertEqual(0.6, range_.q)
 
-    def test_parse_accept(self):
-        a = http.parse_accept_header('en-us,ru;q=0.5')
-        self.assertEqual(list(a.values()), ['en-us', 'ru'])
-        self.assertEqual(a.best, 'en-us')
-        self.assertEqual(a.find('ru'), 1)
-        self.assertRaises(ValueError, a.index, 'de')
-        self.assertEqual(a.to_header(), 'en-us,ru;q=0.5')
+        self.assertEqual(2, len(range_.params))
+        self.assertEqual('no', range_.params['quiet'])
+        self.assertEqual('baz', range_.params['bar'])
+        with self.assertRaises(KeyError):
+            range_.params['no-such-param']
+        with self.assertRaises(KeyError):
+            range_.params['q']
 
-    def test_parse_mime_accept(self):
-        a = http.parse_accept_header(
-            'text/xml,application/xml,'
+    def test_parse_accept_multiple(self):
+        accept = http.parse_accept_header(
+            'text/xml,'
+            'application/xml,'
             'application/xhtml+xml,'
             'application/foo;quiet=no; bar=baz;q=0.6,'
-            'text/html;q=0.9,text/plain;q=0.8,'
-            'image/png,*/*;q=0.5',
-            http.MIMEAccept
-        )
-        self.assertRaises(ValueError, lambda: a['missing'])
-        self.assertEqual(a['image/png'], 1)
-        self.assertEqual(a['text/plain'], 0.8)
-        self.assertEqual(a['foo/bar'], 0.5)
-        self.assertEqual(a['application/foo;quiet=no; bar=baz'], 0.6)
-        self.assertEqual(a[a.find('foo/bar')], ('*/*', 0.5))
-
-    def test_accept_matches(self):
-        a = http.parse_accept_header(
-            'text/xml,application/xml,application/xhtml+xml,'
-            'text/html;q=0.9,text/plain;q=0.8,'
-            'image/png', http.MIMEAccept
-        )
-        self.assertEqual(
-            a.best_match(['text/html', 'application/xhtml+xml']),
-            'application/xhtml+xml'
-        )
-        self.assertEqual(a.best_match(['text/html']), 'text/html')
-        self.assertIs(a.best_match(['foo/bar']), None)
-        self.assertEqual(
-            a.best_match(['foo/bar', 'bar/foo'], default='foo/bar'), 'foo/bar'
-        )
-        self.assertEqual(
-            a.best_match(['application/xml', 'text/xml']), 'application/xml'
+            'text/html;q=0.9,'
+            'text/plain;q=0.8,'
+            'image/png,'
+            '*/*;q=0.5'
         )
 
-    def test_parse_charset_accept(self):
-        a = http.parse_accept_header(
-            'ISO-8859-1,utf-8;q=0.7,*;q=0.7', http.CharsetAccept
-        )
-        self.assertEqual(a['iso-8859-1'], a['iso8859-1'])
-        self.assertEqual(a['iso-8859-1'], 1)
-        self.assertEqual(a['UTF8'], 0.7)
-        self.assertEqual(a['ebcdic'], 0.7)
+        self.assertEqual(len(list(accept)), 8)
 
-    def test_parse_language_accept(self):
-        a = http.parse_accept_header(
-            'de-AT,de;q=0.8,en;q=0.5', http.LanguageAccept
+    def test_parse(self):
+        content_type = http.parse_content_type_header('text/html')
+
+        self.assertEqual(content_type.type, 'text')
+        self.assertEqual(content_type.subtype, 'html')
+
+    def test_serialize(self):
+        content_type = http.ContentType('text/html', qs=0.5)
+
+        self.assertEqual('text/html', content_type.to_header())
+
+    def test_serialize_accept(self):
+        accept = http.ContentTypeAccept([
+            ('text/html', {}),
+        ])
+
+        self.assertEqual(accept.to_header(), 'text/html')
+
+    def test_serialize_accept_q_before_params(self):
+        accept = http.ContentTypeAccept([
+            ('application/json', {'q': '0.5', 'speed': 'maximum'}),
+        ])
+
+        self.assertEqual(
+            accept.to_header(), 'application/json;q=0.5;speed=maximum'
         )
-        self.assertEqual(a.best, 'de-AT')
-        self.assertIn('de_AT', a)
-        self.assertIn('en', a)
-        self.assertEqual(a['de-at'], 1)
-        self.assertEqual(a['en'], 0.5)
+
+    def test_serialize_accept_redundant_q(self):
+        accept = http.ContentTypeAccept([
+            ('image/png', {'q': '1'}),
+        ])
+        self.assertEqual(accept.to_header(), 'image/png')
+
+    def test_serialize_accept_multiple(self):
+        accept = http.ContentTypeAccept([
+            ('application/xhtml+xml', {}),
+            ('text/plain', {'q': '0.8'}),
+            ('image/png', {}),
+            ('*/*', {'q': '0.5'}),
+        ])
+        self.assertEqual(
+            accept.to_header(),
+            (
+                'application/xhtml+xml,'
+                'text/plain;q=0.8,'
+                'image/png,'
+                '*/*;q=0.5'
+            )
+        )
+
+    def test_match_basic(self):
+        accept = http.ContentTypeAccept([
+            ('text/xml', {}),
+        ])
+
+        acceptable = http.ContentType('text/xml')
+        unacceptable_type = http.ContentType('application/xml')
+        unacceptable_subtype = http.ContentType('text/html')
+
+        self.assertRaises(NotAcceptable, unacceptable_type.matches, accept)
+        self.assertRaises(NotAcceptable, unacceptable_subtype.matches, accept)
+
+        match = acceptable.matches(accept)
+        self.assertEqual(acceptable, match.content_type)
+        self.assertTrue(match.type_matches)
+        self.assertTrue(match.subtype_matches)
+        self.assertTrue(match.exact_match)
+
+    def test_match_wildcard(self):
+        accept = http.ContentTypeAccept([
+            ('*/*', {}),
+        ])
+
+        content_type = http.ContentType('text/html')
+
+        match = content_type.matches(accept)
+        self.assertEqual(content_type, match.content_type)
+        self.assertFalse(match.type_matches)
+        self.assertFalse(match.subtype_matches)
+        self.assertFalse(match.exact_match)
+
+    def test_match_subtype_wildcard(self):
+        accept = http.ContentTypeAccept([
+            ('text/*', {}),
+        ])
+
+        unacceptable = http.ContentType('image/jpeg')
+        acceptable = http.ContentType('text/html')
+
+        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+
+        match = acceptable.matches(accept)
+        self.assertEqual(acceptable, match.content_type)
+        self.assertTrue(match.type_matches)
+        self.assertFalse(match.subtype_matches)
+        self.assertFalse(match.exact_match)
+
+    def test_match_quality(self):
+        accept = http.ContentTypeAccept([
+            ('text/html', {'q': '0.5'}),
+        ])
+
+        no_qs = http.ContentType('text/html')
+        qs = http.ContentType('text/html', qs=0.5)
+
+        self.assertEqual(0.5, no_qs.matches(accept).quality)
+        self.assertEqual(0.25, qs.matches(accept).quality)
+
+    def test_match(self):
+        accept = http.ContentTypeAccept([
+            ('text/xml', {}),
+            ('application/xml', {}),
+            ('application/xhtml+xml', {}),
+            ('application/foo', {'quiet': 'no', 'bar': 'baz', 'q': '0.6'}),
+            ('text/html', {'q': '0.9'}),
+            ('text/plain', {'q': '0.8'}),
+            ('image/png', {}),
+            ('*/*', {'q': '0.5'}),
+        ])
+
+        content_type = http.ContentType('image/png')
+        match = content_type.matches(accept)
+        self.assertEqual(match.quality, 1.0)
+        self.assertTrue(match.exact_match)
+
+        content_type = http.ContentType('text/plain')
+        match = content_type.matches(accept)
+        self.assertEqual(match.quality, 0.8)
+        self.assertTrue(match.exact_match)
+
+        content_type = http.ContentType('application/json')
+        match = content_type.matches(accept)
+        self.assertEqual(match.quality, 0.5)
+        self.assertFalse(match.exact_match)

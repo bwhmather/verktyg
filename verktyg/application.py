@@ -129,8 +129,9 @@ class ApplicationBuilder(object):
 
         if default_request_mixins:
             self.add_request_mixins(
-                requests.BaseRequest, requests.AcceptMixin,
-                requests.ETagRequestMixin, requests.UserAgentMixin,
+                requests.BaseRequest,
+                requests.ETagRequestMixin,
+                requests.UserAgentMixin,
                 requests.AuthorizationMixin,
                 requests.CommonRequestDescriptorsMixin,
             )
