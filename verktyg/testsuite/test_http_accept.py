@@ -73,15 +73,13 @@ class ContentTypeTestCase(unittest.TestCase):
         self.assertEqual('text/html', content_type.to_header())
 
     def test_serialize_accept(self):
-        accept = http.ContentTypeAccept([
-            ('text/html', {}),
-        ])
+        accept = http.ContentTypeAccept(['text/html'])
 
         self.assertEqual(accept.to_header(), 'text/html')
 
     def test_serialize_accept_q_before_params(self):
         accept = http.ContentTypeAccept([
-            ('application/json', {'q': '0.5', 'speed': 'maximum'}),
+            ('application/json', '0.5', {'speed': 'maximum'}),
         ])
 
         self.assertEqual(
@@ -89,17 +87,15 @@ class ContentTypeTestCase(unittest.TestCase):
         )
 
     def test_serialize_accept_redundant_q(self):
-        accept = http.ContentTypeAccept([
-            ('image/png', {'q': '1'}),
-        ])
+        accept = http.ContentTypeAccept([('image/png', '1')])
         self.assertEqual(accept.to_header(), 'image/png')
 
     def test_serialize_accept_multiple(self):
         accept = http.ContentTypeAccept([
-            ('application/xhtml+xml', {}),
-            ('text/plain', {'q': '0.8'}),
-            ('image/png', {}),
-            ('*/*', {'q': '0.5'}),
+            'application/xhtml+xml',
+            ('text/plain', '0.8'),
+            'image/png',
+            ('*/*', '0.5'),
         ])
         self.assertEqual(
             accept.to_header(),
@@ -112,9 +108,7 @@ class ContentTypeTestCase(unittest.TestCase):
         )
 
     def test_match_basic(self):
-        accept = http.ContentTypeAccept([
-            ('text/xml', {}),
-        ])
+        accept = http.ContentTypeAccept(['text/xml'])
 
         acceptable = http.ContentType('text/xml')
         unacceptable_type = http.ContentType('application/xml')
@@ -130,9 +124,7 @@ class ContentTypeTestCase(unittest.TestCase):
         self.assertTrue(match.exact_match)
 
     def test_match_wildcard(self):
-        accept = http.ContentTypeAccept([
-            ('*/*', {}),
-        ])
+        accept = http.ContentTypeAccept(['*/*'])
 
         content_type = http.ContentType('text/html')
 
@@ -143,9 +135,7 @@ class ContentTypeTestCase(unittest.TestCase):
         self.assertFalse(match.exact_match)
 
     def test_match_subtype_wildcard(self):
-        accept = http.ContentTypeAccept([
-            ('text/*', {}),
-        ])
+        accept = http.ContentTypeAccept(['text/*'])
 
         unacceptable = http.ContentType('image/jpeg')
         acceptable = http.ContentType('text/html')
@@ -159,9 +149,7 @@ class ContentTypeTestCase(unittest.TestCase):
         self.assertFalse(match.exact_match)
 
     def test_match_quality(self):
-        accept = http.ContentTypeAccept([
-            ('text/html', {'q': '0.5'}),
-        ])
+        accept = http.ContentTypeAccept([('text/html', '0.5')])
 
         no_qs = http.ContentType('text/html')
         qs = http.ContentType('text/html', qs=0.5)
@@ -171,14 +159,14 @@ class ContentTypeTestCase(unittest.TestCase):
 
     def test_match(self):
         accept = http.ContentTypeAccept([
-            ('text/xml', {}),
-            ('application/xml', {}),
-            ('application/xhtml+xml', {}),
-            ('application/foo', {'quiet': 'no', 'bar': 'baz', 'q': '0.6'}),
-            ('text/html', {'q': '0.9'}),
-            ('text/plain', {'q': '0.8'}),
-            ('image/png', {}),
-            ('*/*', {'q': '0.5'}),
+            'text/xml',
+            'application/xml',
+            'application/xhtml+xml',
+            ('application/foo', '0.6', {'quiet': 'no', 'bar': 'baz'}),
+            ('text/html', '0.9'),
+            ('text/plain', '0.8'),
+            'image/png',
+            ('*/*', '0.5'),
         ])
 
         content_type = http.ContentType('image/png')

@@ -90,16 +90,16 @@ class _Value(object):
 
 
 class _Range(object):
-    def __init__(self, value, *, params=None):
+    def __init__(self, value, q=1.0, params=None):
         self._validate_value(value)
         self.value = value
 
-        params = params and params.copy() or {}
-        self.q = max(min(float(params.pop('q', 1.0)), 1.0), 0.0)
+        self.q = max(min(float(q), 1.0), 0.0)
 
+        if params is None:
+            params = {}
         for param in params.items():
             self._validate_param(*param)
-
         self.params = ImmutableDict(params)
 
     def _validate_value(self, value):
@@ -125,10 +125,13 @@ class _Range(object):
 class _Accept(object):
     range_type = None
 
-    def __init__(self, ranges):
-        self._options = [
-            self.range_type(value, params=params) for value, params in ranges
-        ]
+    def __init__(self, options):
+        self._options = []
+        for option in options:
+            if isinstance(option, str):
+                option = (option,)
+
+            self._options.append(self.range_type(*option))
 
     def __iter__(self):
         return iter(self._options)
@@ -296,7 +299,9 @@ def _split_accept_string(string):
 
             params[key] = value
 
-        yield accept, params
+        q = params.pop('q', '1.0')
+
+        yield accept, q, params
 
 
 def parse_accept_header(string):
@@ -337,7 +342,8 @@ def parse_language_header(string):
 
 
 class _CharsetRange(_Range):
-    pass
+    def _validate_param(self, key, value):
+        raise ValueError("Accept-Charset header does not take parameters")
 
 
 class CharsetAccept(_Accept):
