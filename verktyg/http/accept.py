@@ -17,7 +17,7 @@ from verktyg.exceptions import NotAcceptable
 _value_re = re.compile(
     r'''
         ^
-        [a-z\-+]+ | \*
+        [a-z]+ | \*
         $
     ''', re.VERBOSE
 )
@@ -26,10 +26,16 @@ _value_re = re.compile(
 _content_type_value_re = re.compile(
     r'''
         ^
-        (?: [a-z\-]+ | \*)  # type
-        /                   # separator
-        (?: [a-z\-+]+ | \*)  # subtype
-        $
+        (?: [a-z]+ | \*)        # type
+        /                       # separator
+        (?:
+            (?:
+                (?: [a-z]+ \.)? # optional tree identifier
+                [a-z]+          # name
+                (?: \+ [a-z]+)? # optional suffix
+            ) |
+            \*                  # wildcard
+        )
     ''', re.VERBOSE
 )
 
