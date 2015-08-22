@@ -356,7 +356,7 @@ class _CharsetRange(_Range):
 
 
 class CharsetAccept(_Accept):
-    pass
+    range_type = _CharsetRange
 
 
 class CharsetMatch(_Match):
@@ -368,8 +368,7 @@ class Charset(_Value):
 
 
 def parse_accept_charset_header(string):
-    raise NotImplementedError()
-    return CharsetAccept()
+    return CharsetAccept(_split_accept_string(string))
 
 
 def parse_charset_header(string):
