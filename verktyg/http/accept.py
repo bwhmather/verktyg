@@ -13,11 +13,21 @@ import functools
 from verktyg.datastructures import ImmutableDict
 from verktyg.exceptions import NotAcceptable
 
+
+_token_re_str = r'''
+    (?:
+        [a-zA-Z0-9]+
+        (?:
+            - [a-zA-Z0-9]+
+        )*
+    )
+'''
+
 # TODO
 _value_re = re.compile(
     r'''
         ^
-        [a-z]+ | \*
+        ''' + _token_re_str + ''' | \*
         $
     ''', re.VERBOSE
 )
@@ -26,15 +36,14 @@ _value_re = re.compile(
 _content_type_value_re = re.compile(
     r'''
         ^
-        (?: [a-z]+ | \*)        # type
-        /                       # separator
+        (?: ''' + _token_re_str + ''' | \*)
+        /
         (?:
             (?:
-                (?: [a-z]+ \.)? # optional tree identifier
-                [a-z]+          # name
-                (?: \+ [a-z]+)? # optional suffix
-            ) |
-            \*                  # wildcard
+                (?:''' + _token_re_str + ''' \.)?
+                ''' + _token_re_str + '''
+                (?: \+ ''' + _token_re_str + ''')?
+            ) | \*
         )
     ''', re.VERBOSE
 )
