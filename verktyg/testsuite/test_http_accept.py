@@ -47,6 +47,14 @@ class ContentTypeTestCase(unittest.TestCase):
         with self.assertRaises(KeyError):
             range_.params['q']
 
+    def test_parse_accept_invalid_params(self):
+        # TODO
+        pass
+
+    def test_parse_accept_case(self):
+        # TODO
+        pass
+
     def test_parse_accept_multiple(self):
         accept = http.parse_accept_header(
             'text/xml,'
@@ -183,3 +191,58 @@ class ContentTypeTestCase(unittest.TestCase):
         match = content_type.matches(accept)
         self.assertEqual(match.quality, 0.5)
         self.assertFalse(match.exact_match)
+
+
+class CharsetTestCase(unittest.TestCase):
+    def test_parse_accept_basic(self):
+        accept = http.parse_accept_charset_header(
+            'iso-8859-5'
+        )
+
+        range_ = next(iter(accept))
+        self.assertEqual('iso-8859-5', range_.value)
+        self.assertEqual(1, range_.q)
+
+    def test_parse_accept_q(self):
+        accept = http.parse_accept_charset_header(
+            'ascii;q=0.5',
+        )
+
+        range_ = next(iter(accept))
+        self.assertEqual('ascii', range_.value)
+        self.assertEqual(0.5, range_.q)
+
+    def test_parse_accept_params(self):
+        with self.assertRaises(ValueError):
+            http.parse_accept_charset_header(
+                'utf-8;orange=black'
+            )
+
+    def test_parse_accept_multiple(self):
+        accept = http.parse_accept_charset_header(
+            'utf-8,'
+            'ascii;q=0.5,'
+            '*;q=0.1'
+        )
+
+        self.assertEqual(3, len(list(accept)))
+
+    def test_parse(self):
+        charset = http.parse_charset_header('utf-8')
+        self.assertEqual('utf-8', charset.value)
+
+    def test_serialize(self):
+        charset = http.Charset('iso-8859-1', qs=0.5)
+        self.assertEqual('iso-8859-1', charset.to_header())
+
+    def test_serialize_accept(self):
+        accept = http.CharsetAccept(['ascii'])
+        self.assertEqual(accept.to_header(), 'ascii')
+
+    def test_serialize_accept_with_q(self):
+        accept = http.CharsetAccept([('utf-8', '0.5')])
+        self.assertEqual(accept.to_header(), 'utf-8;q=0.5')
+
+    def test_serialize_accept_redundant_q(self):
+        accept = http.CharsetAccept([('utf-8', '1')])
+        self.assertEqual(accept.to_header(), 'utf-8')
