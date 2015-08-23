@@ -246,3 +246,70 @@ class CharsetTestCase(unittest.TestCase):
     def test_serialize_accept_redundant_q(self):
         accept = http.CharsetAccept([('utf-8', '1')])
         self.assertEqual(accept.to_header(), 'utf-8')
+
+    def test_serialize_accept_multiple(self):
+        accept = http.CharsetAccept([
+            'utf-8',
+            ('ascii', 0.5),
+            ('*', 0.1),
+        ])
+        self.assertEqual(
+            accept.to_header(),
+            (
+                'utf-8,'
+                'ascii;q=0.5,'
+                '*;q=0.1'
+            )
+        )
+
+    def test_match_basic(self):
+        accept = http.CharsetAccept(['utf-8'])
+
+        acceptable = http.Charset('utf-8')
+        unacceptable = http.Charset('latin-1')
+
+        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+
+        match = acceptable.matches(accept)
+        self.assertEqual(acceptable, match.charset)
+        self.assertTrue(match.exact_match)
+
+    def test_match_wildcard(self):
+        accept = http.CharsetAccept(['*'])
+
+        charset = http.Charset('iso-8859-8')
+
+        match = charset.matches(accept)
+        self.assertEqual(charset, match.charset)
+        self.assertFalse(match.exact_match)
+
+    def test_match_quality(self):
+        accept = http.CharsetAccept([('utf-8', '0.5')])
+
+        no_qs = http.Charset('utf-8')
+        qs = http.Charset('utf-8', qs=0.5)
+
+        self.assertEqual(0.5, no_qs.matches(accept).quality)
+        self.assertEqual(0.25, qs.matches(accept).quality)
+
+    def test_match(self):
+        accept = http.CharsetAccept([
+            'utf-8',
+            ('ascii', 0.5),
+            ('*', 0.1),
+        ])
+
+        charset = http.Charset('utf-8')
+        match = charset.matches(accept)
+        self.assertEqual(1.0, match.quality)
+        self.assertTrue(match.exact_match)
+
+        charset = http.Charset('ascii')
+        match = charset.matches(accept)
+        self.assertEqual(0.5, match.quality)
+        self.assertTrue(match.exact_match)
+
+        charset = http.Charset('latin-1')
+        match = charset.matches(accept)
+        self.assertEqual(0.1, match.quality)
+        self.assertFalse(match.exact_match)

@@ -62,15 +62,16 @@ class _Value(object):
 
     def _matches_option(self, option):
         if option.value == '*':
-            return self.match_type(
-                self, exact_match=False,
-                q=option.q, qs=self.qs
-            )
-        if self.value == option.value:
-            return self.match_type(
-                self, exact_match=True,
-                q=option.q, qs=self.qs
-            )
+            exact_match = False
+        elif self.value == option.value:
+            exact_match = True
+        else:
+            raise NotAcceptable()
+
+        return self.match_type(
+            self, exact_match=exact_match,
+            q=option.q, qs=self.qs
+        )
 
     def matches(self, accept):
         best_match = None
@@ -360,7 +361,9 @@ class CharsetAccept(_Accept):
 
 
 class CharsetMatch(_Match):
-    pass
+    @property
+    def charset(self):
+        return self._value
 
 
 class Charset(_Value):
