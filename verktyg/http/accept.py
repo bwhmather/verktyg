@@ -174,15 +174,15 @@ class _Accept(object):
 
 @functools.total_ordering
 class _Match(object):
-    def __init__(self, value, *, exact_match, q, qs=None):
+    def __init__(self, value, *, match_quality, q, qs=None):
         self._value = value
-        self._exact_match = exact_match
+        self._match_quality = match_quality
         self._q = q
         self._qs = qs
 
     @property
     def exact_match(self):
-        return self._exact_match
+        return bool(self._match_quality)
 
     @property
     def quality(self):
@@ -191,7 +191,7 @@ class _Match(object):
         return self._q
 
     def __eq__(self, other):
-        if self._exact_match != other._exact_match:
+        if self._match_quality != other._match_quality:
             return False
 
         if self.quality != other.quality:
@@ -200,7 +200,7 @@ class _Match(object):
         return True
 
     def __gt__(self, other):
-        if self._exact_match > other._exact_match:
+        if self._match_quality > other._match_quality:
             return True
 
         if self.quality > other.quality:
@@ -236,7 +236,7 @@ class ContentTypeMatch(_Match):
                 q, qs=None
             ):
         super(ContentTypeMatch, self).__init__(
-            content_type, exact_match=(
+            content_type, match_quality=(
                 type_matches, subtype_matches
             ),
             q=q, qs=qs
@@ -248,15 +248,15 @@ class ContentTypeMatch(_Match):
 
     @property
     def type_matches(self):
-        return self._exact_match[0]
+        return self._match_quality[0]
 
     @property
     def subtype_matches(self):
-        return self._exact_match[1]
+        return self._match_quality[1]
 
     @property
     def exact_match(self):
-        return self._exact_match[0] and self._exact_match[1]
+        return self._match_quality[0] and self._match_quality[1]
 
 
 class ContentType(_Value):
@@ -361,9 +361,18 @@ class CharsetAccept(_Accept):
 
 
 class CharsetMatch(_Match):
+    def __init__(self, value, *, exact_match, q, qs=None):
+        super(CharsetMatch, self).__init__(
+            value, match_quality=exact_match, q=q, qs=qs
+        )
+
     @property
     def charset(self):
         return self._value
+
+    @property
+    def exact_match(self):
+        return self._match_quality
 
 
 class Charset(_Value):
