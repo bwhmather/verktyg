@@ -304,7 +304,11 @@ def _split_accept_string(string):
 
         params = {}
         for param in str_params:
-            key, value = param.split('=', 1)
+            try:
+                key, value = param.split('=', 1)
+            except ValueError as e:
+                raise ValueError("invalid parameter: %r" % param) from e
+
             key, value = key.strip(), value.strip()
 
             params[key] = value
@@ -327,24 +331,65 @@ def parse_content_type_header(string, qs=None):
 
 
 class _LanguageRange(_Range):
-    pass
+    def _validate_param(self, key, value):
+        raise ValueError("Accept-Language header does not take parameters")
 
 
 class LanguageAccept(_Accept):
-    pass
+    range_type = _LanguageRange
 
 
 class LanguageMatch(_Match):
-    pass
+    def __init__(
+                self, content_type, *,
+                specificity, tail,
+                q, qs=None
+            ):
+        super(LanguageMatch, self).__init__(
+            content_type, match_quality=(-tail, specificity), q=q, qs=qs
+        )
+
+    @property
+    def language(self):
+        return self._value
+
+    @property
+    def specificity(self):
+        return self._match_quality[1]
+
+    @property
+    def tail(self):
+        return -self._match_quality[0]
+
+    @property
+    def exact_match(self):
+        return not self.tail
 
 
 class Language(_Value):
     match_type = LanguageMatch
 
+    def _matches_option(self, option):
+        if self.value == option.value:
+            specificity = len(list(option.value.split('-')))
+            tail = 0
+        elif self.value.startswith('%s-' % option.value):
+            specificity = len(list(option.value.split('-')))
+            tail = len(list(self.value.split('-'))) - specificity
+        elif option.value == '*':
+            specificity = 0
+            tail = len(list(self.value.split('-')))
+        else:
+            raise NotAcceptable()
+
+        return self.match_type(
+            self, specificity=specificity, tail=tail,
+            qs=self.qs, q=option.q
+        )
+
 
 def parse_accept_language_header(string):
-    raise NotImplementedError()
-    return LanguageAccept()
+    return LanguageAccept(_split_accept_string(string))
 
 
 def parse_language_header(string):

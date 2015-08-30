@@ -193,6 +193,140 @@ class ContentTypeTestCase(unittest.TestCase):
         self.assertFalse(match.exact_match)
 
 
+class LanguageTestCase(unittest.TestCase):
+    def test_parse_accept_basic(self):
+        accept = http.parse_accept_language_header('en-gb')
+
+        range_ = next(iter(accept))
+        self.assertEqual('en-gb', range_.value)
+        self.assertEqual(1, range_.q)
+
+    def test_parse_accept_params(self):
+        self.assertRaises(
+            ValueError, http.parse_accept_language_header, 'en;param=invalid'
+        )
+
+    def test_parse_accept_q(self):
+        accept = http.parse_accept_language_header('en; q=0.8')
+        range_ = next(iter(accept))
+
+        self.assertEqual(0.8, range_.q)
+
+    def test_parse_accept_multiple(self):
+        accept = http.parse_accept_language_header(
+            'da,en-gb;q=0.8,en;q=0.7,*;q=0.1'
+        )
+
+        self.assertEqual(len(list(accept)), 4)
+
+    def test_parse(self):
+        language = http.parse_language_header('en-gb')
+
+        self.assertEqual(language.value, 'en-gb')
+
+    def test_serialize(self):
+        language = http.Language('en-us', qs=0.5)
+
+        self.assertEqual('en-us', language.to_header())
+
+    def test_serialize_accept_redundant_q(self):
+        accept = http.LanguageAccept([('jp', '1')])
+        self.assertEqual(accept.to_header(), 'jp')
+
+    def test_serialize_accept_multiple(self):
+        accept = http.LanguageAccept([
+            'da', ('en-gb', 0.8), ('en', 0.7), ('*', 0.1)
+        ])
+
+        self.assertEqual(accept.to_header(), 'da,en-gb;q=0.8,en;q=0.7,*;q=0.1')
+
+    def test_match_basic(self):
+        accept = http.LanguageAccept(['en-gb'])
+
+        acceptable = http.Language('en-gb')
+        unacceptable = http.Language('fr')
+
+        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+
+        match = acceptable.matches(accept)
+        self.assertEqual(match.language, acceptable)
+        self.assertEqual(match.specificity, 2)
+        self.assertEqual(match.tail, 0)
+        self.assertTrue(match.exact_match)
+
+    def test_match_partial(self):
+        accept = http.LanguageAccept(['one-two'])
+
+        unacceptable = http.Language('one')
+        acceptable = http.Language('one-two-three')
+
+        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+
+        match = acceptable.matches(accept)
+        self.assertEqual(acceptable, match.language)
+        self.assertEqual(match.specificity, 2)
+        self.assertEqual(match.tail, 1)
+        self.assertFalse(match.exact_match)
+
+    def test_match_wildcard(self):
+        accept = http.LanguageAccept(['*'])
+
+        language = http.Language('en')
+
+        match = language.matches(accept)
+        self.assertEqual(match.language, language)
+        self.assertEqual(match.specificity, 0)
+        self.assertEqual(match.tail, 1)
+        self.assertFalse(match.exact_match)
+
+    def test_match_quality(self):
+        accept = http.LanguageAccept([('en', '0.5')])
+
+        no_qs = http.Language('en')
+        qs = http.Language('en', qs=0.5)
+
+        self.assertEqual(0.5, no_qs.matches(accept).quality)
+        self.assertEqual(0.25, qs.matches(accept).quality)
+
+    def test_match(self):
+        accept = http.LanguageAccept([
+            'fr', 'fr-be', ('en-gb', 0.8), ('en', 0.7), ('*', 0.1)
+        ])
+
+        fr = http.Language('fr')
+        fr_match = fr.matches(accept)
+        self.assertEqual(fr_match.quality, 1.0)
+        self.assertTrue(fr_match.exact_match)
+
+        fr_be = http.Language('fr-be')
+        fr_be_match = fr_be.matches(accept)
+        self.assertEqual(fr_be_match.quality, 1.0)
+        self.assertTrue(fr_be_match.exact_match)
+
+        # more specific first
+        self.assertGreater(fr_be_match, fr_match)
+
+        en_gb = http.Language('en-gb')
+        en_gb_match = en_gb.matches(accept)
+        self.assertEqual(en_gb_match.quality, 0.8)
+        self.assertTrue(en_gb_match.exact_match)
+
+        en_us = http.Language('en-us')
+        en_us_match = en_us.matches(accept)
+        self.assertEqual(en_us_match.quality, 0.7)
+        self.assertFalse(en_us_match.exact_match)
+
+        en = http.Language('en')
+        en_match = en.matches(accept)
+        self.assertEqual(en_match.quality, 0.7)
+        self.assertTrue(en_match.exact_match)
+
+        zu = http.Language('zu')
+        zu_match = zu.matches(accept)
+        self.assertEqual(zu_match.quality, 0.1)
+        self.assertFalse(zu_match.exact_match)
+
+
 class CharsetTestCase(unittest.TestCase):
     def test_parse_accept_basic(self):
         accept = http.parse_accept_charset_header(
