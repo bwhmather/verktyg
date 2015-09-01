@@ -60,7 +60,7 @@ class _Value(object):
         self.value = value
         self.qs = qs
 
-    def _matches_option(self, option):
+    def _acceptability_for_option(self, option):
         if option.value == '*':
             exact_match = False
         elif self.value == option.value:
@@ -73,12 +73,12 @@ class _Value(object):
             q=option.q, qs=self.qs
         )
 
-    def matches(self, accept):
+    def acceptability(self, accept):
         best_match = None
 
         for option in accept:
             try:
-                match = self._matches_option(option)
+                match = self._acceptability_for_option(option)
             except NotAcceptable:
                 pass
             else:
@@ -148,7 +148,7 @@ class _Accept(object):
 
     def __contains__(self, value):
         try:
-            value.matches(self)
+            value.acceptability(self)
         except NotAcceptable:
             return False
         else:
@@ -156,7 +156,7 @@ class _Accept(object):
 
     def __getitem__(self, value):
         try:
-            return value.matches(self)
+            return value.acceptability(self)
         except NotAcceptable as e:
             raise KeyError() from e
 
@@ -173,7 +173,7 @@ class _Accept(object):
 
 
 @functools.total_ordering
-class _Match(object):
+class _Acceptibility(object):
     def __init__(self, value, *, match_quality, q, qs=None):
         self._value = value
         self._match_quality = match_quality
@@ -229,13 +229,13 @@ class ContentTypeAccept(_Accept):
     range_type = _ContentTypeRange
 
 
-class ContentTypeMatch(_Match):
+class ContentTypeAcceptibility(_Acceptibility):
     def __init__(
                 self, content_type, *,
                 type_matches, subtype_matches,
                 q, qs=None
             ):
-        super(ContentTypeMatch, self).__init__(
+        super(ContentTypeAcceptibility, self).__init__(
             content_type, match_quality=(
                 type_matches, subtype_matches
             ),
@@ -260,7 +260,7 @@ class ContentTypeMatch(_Match):
 
 
 class ContentType(_Value):
-    match_type = ContentTypeMatch
+    match_type = ContentTypeAcceptibility
 
     @property
     def type(self):
@@ -272,7 +272,7 @@ class ContentType(_Value):
         _, subtype = self.value.split('/')
         return subtype
 
-    def _matches_option(self, option):
+    def _acceptability_for_option(self, option):
         if option.type == self.type:
             type_matches = True
         elif option.type == '*':
@@ -339,13 +339,13 @@ class LanguageAccept(_Accept):
     range_type = _LanguageRange
 
 
-class LanguageMatch(_Match):
+class LanguageAcceptibility(_Acceptibility):
     def __init__(
                 self, content_type, *,
                 specificity, tail,
                 q, qs=None
             ):
-        super(LanguageMatch, self).__init__(
+        super(LanguageAcceptibility, self).__init__(
             content_type, match_quality=(-tail, specificity), q=q, qs=qs
         )
 
@@ -367,9 +367,9 @@ class LanguageMatch(_Match):
 
 
 class Language(_Value):
-    match_type = LanguageMatch
+    match_type = LanguageAcceptibility
 
-    def _matches_option(self, option):
+    def _acceptability_for_option(self, option):
         if self.value == option.value:
             specificity = len(list(option.value.split('-')))
             tail = 0
@@ -405,9 +405,9 @@ class CharsetAccept(_Accept):
     range_type = _CharsetRange
 
 
-class CharsetMatch(_Match):
+class CharsetAcceptibility(_Acceptibility):
     def __init__(self, value, *, exact_match, q, qs=None):
-        super(CharsetMatch, self).__init__(
+        super(CharsetAcceptibility, self).__init__(
             value, match_quality=exact_match, q=q, qs=qs
         )
 
@@ -421,7 +421,7 @@ class CharsetMatch(_Match):
 
 
 class Charset(_Value):
-    match_type = CharsetMatch
+    match_type = CharsetAcceptibility
 
 
 def parse_accept_charset_header(string):

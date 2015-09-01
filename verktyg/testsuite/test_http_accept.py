@@ -122,10 +122,14 @@ class ContentTypeTestCase(unittest.TestCase):
         unacceptable_type = http.ContentType('application/xml')
         unacceptable_subtype = http.ContentType('text/html')
 
-        self.assertRaises(NotAcceptable, unacceptable_type.matches, accept)
-        self.assertRaises(NotAcceptable, unacceptable_subtype.matches, accept)
+        self.assertRaises(
+            NotAcceptable, unacceptable_type.acceptability, accept
+        )
+        self.assertRaises(
+            NotAcceptable, unacceptable_subtype.acceptability, accept
+        )
 
-        match = acceptable.matches(accept)
+        match = acceptable.acceptability(accept)
         self.assertEqual(acceptable, match.content_type)
         self.assertTrue(match.type_matches)
         self.assertTrue(match.subtype_matches)
@@ -136,7 +140,7 @@ class ContentTypeTestCase(unittest.TestCase):
 
         content_type = http.ContentType('text/html')
 
-        match = content_type.matches(accept)
+        match = content_type.acceptability(accept)
         self.assertEqual(content_type, match.content_type)
         self.assertFalse(match.type_matches)
         self.assertFalse(match.subtype_matches)
@@ -148,9 +152,9 @@ class ContentTypeTestCase(unittest.TestCase):
         unacceptable = http.ContentType('image/jpeg')
         acceptable = http.ContentType('text/html')
 
-        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+        self.assertRaises(NotAcceptable, unacceptable.acceptability, accept)
 
-        match = acceptable.matches(accept)
+        match = acceptable.acceptability(accept)
         self.assertEqual(acceptable, match.content_type)
         self.assertTrue(match.type_matches)
         self.assertFalse(match.subtype_matches)
@@ -162,8 +166,8 @@ class ContentTypeTestCase(unittest.TestCase):
         no_qs = http.ContentType('text/html')
         qs = http.ContentType('text/html', qs=0.5)
 
-        self.assertEqual(0.5, no_qs.matches(accept).quality)
-        self.assertEqual(0.25, qs.matches(accept).quality)
+        self.assertEqual(0.5, no_qs.acceptability(accept).quality)
+        self.assertEqual(0.25, qs.acceptability(accept).quality)
 
     def test_match(self):
         accept = http.ContentTypeAccept([
@@ -178,17 +182,17 @@ class ContentTypeTestCase(unittest.TestCase):
         ])
 
         content_type = http.ContentType('image/png')
-        match = content_type.matches(accept)
+        match = content_type.acceptability(accept)
         self.assertEqual(match.quality, 1.0)
         self.assertTrue(match.exact_match)
 
         content_type = http.ContentType('text/plain')
-        match = content_type.matches(accept)
+        match = content_type.acceptability(accept)
         self.assertEqual(match.quality, 0.8)
         self.assertTrue(match.exact_match)
 
         content_type = http.ContentType('application/json')
-        match = content_type.matches(accept)
+        match = content_type.acceptability(accept)
         self.assertEqual(match.quality, 0.5)
         self.assertFalse(match.exact_match)
 
@@ -246,9 +250,9 @@ class LanguageTestCase(unittest.TestCase):
         acceptable = http.Language('en-gb')
         unacceptable = http.Language('fr')
 
-        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+        self.assertRaises(NotAcceptable, unacceptable.acceptability, accept)
 
-        match = acceptable.matches(accept)
+        match = acceptable.acceptability(accept)
         self.assertEqual(match.language, acceptable)
         self.assertEqual(match.specificity, 2)
         self.assertEqual(match.tail, 0)
@@ -260,9 +264,9 @@ class LanguageTestCase(unittest.TestCase):
         unacceptable = http.Language('one')
         acceptable = http.Language('one-two-three')
 
-        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+        self.assertRaises(NotAcceptable, unacceptable.acceptability, accept)
 
-        match = acceptable.matches(accept)
+        match = acceptable.acceptability(accept)
         self.assertEqual(acceptable, match.language)
         self.assertEqual(match.specificity, 2)
         self.assertEqual(match.tail, 1)
@@ -273,7 +277,7 @@ class LanguageTestCase(unittest.TestCase):
 
         language = http.Language('en')
 
-        match = language.matches(accept)
+        match = language.acceptability(accept)
         self.assertEqual(match.language, language)
         self.assertEqual(match.specificity, 0)
         self.assertEqual(match.tail, 1)
@@ -285,8 +289,8 @@ class LanguageTestCase(unittest.TestCase):
         no_qs = http.Language('en')
         qs = http.Language('en', qs=0.5)
 
-        self.assertEqual(0.5, no_qs.matches(accept).quality)
-        self.assertEqual(0.25, qs.matches(accept).quality)
+        self.assertEqual(0.5, no_qs.acceptability(accept).quality)
+        self.assertEqual(0.25, qs.acceptability(accept).quality)
 
     def test_match(self):
         accept = http.LanguageAccept([
@@ -294,12 +298,12 @@ class LanguageTestCase(unittest.TestCase):
         ])
 
         fr = http.Language('fr')
-        fr_match = fr.matches(accept)
+        fr_match = fr.acceptability(accept)
         self.assertEqual(fr_match.quality, 1.0)
         self.assertTrue(fr_match.exact_match)
 
         fr_be = http.Language('fr-be')
-        fr_be_match = fr_be.matches(accept)
+        fr_be_match = fr_be.acceptability(accept)
         self.assertEqual(fr_be_match.quality, 1.0)
         self.assertTrue(fr_be_match.exact_match)
 
@@ -307,22 +311,22 @@ class LanguageTestCase(unittest.TestCase):
         self.assertGreater(fr_be_match, fr_match)
 
         en_gb = http.Language('en-gb')
-        en_gb_match = en_gb.matches(accept)
+        en_gb_match = en_gb.acceptability(accept)
         self.assertEqual(en_gb_match.quality, 0.8)
         self.assertTrue(en_gb_match.exact_match)
 
         en_us = http.Language('en-us')
-        en_us_match = en_us.matches(accept)
+        en_us_match = en_us.acceptability(accept)
         self.assertEqual(en_us_match.quality, 0.7)
         self.assertFalse(en_us_match.exact_match)
 
         en = http.Language('en')
-        en_match = en.matches(accept)
+        en_match = en.acceptability(accept)
         self.assertEqual(en_match.quality, 0.7)
         self.assertTrue(en_match.exact_match)
 
         zu = http.Language('zu')
-        zu_match = zu.matches(accept)
+        zu_match = zu.acceptability(accept)
         self.assertEqual(zu_match.quality, 0.1)
         self.assertFalse(zu_match.exact_match)
 
@@ -402,9 +406,9 @@ class CharsetTestCase(unittest.TestCase):
         acceptable = http.Charset('utf-8')
         unacceptable = http.Charset('latin-1')
 
-        self.assertRaises(NotAcceptable, unacceptable.matches, accept)
+        self.assertRaises(NotAcceptable, unacceptable.acceptability, accept)
 
-        match = acceptable.matches(accept)
+        match = acceptable.acceptability(accept)
         self.assertEqual(acceptable, match.charset)
         self.assertTrue(match.exact_match)
 
@@ -413,7 +417,7 @@ class CharsetTestCase(unittest.TestCase):
 
         charset = http.Charset('iso-8859-8')
 
-        match = charset.matches(accept)
+        match = charset.acceptability(accept)
         self.assertEqual(charset, match.charset)
         self.assertFalse(match.exact_match)
 
@@ -423,8 +427,8 @@ class CharsetTestCase(unittest.TestCase):
         no_qs = http.Charset('utf-8')
         qs = http.Charset('utf-8', qs=0.5)
 
-        self.assertEqual(0.5, no_qs.matches(accept).quality)
-        self.assertEqual(0.25, qs.matches(accept).quality)
+        self.assertEqual(0.5, no_qs.acceptability(accept).quality)
+        self.assertEqual(0.25, qs.acceptability(accept).quality)
 
     def test_match(self):
         accept = http.CharsetAccept([
@@ -434,16 +438,16 @@ class CharsetTestCase(unittest.TestCase):
         ])
 
         charset = http.Charset('utf-8')
-        match = charset.matches(accept)
+        match = charset.acceptability(accept)
         self.assertEqual(1.0, match.quality)
         self.assertTrue(match.exact_match)
 
         charset = http.Charset('ascii')
-        match = charset.matches(accept)
+        match = charset.acceptability(accept)
         self.assertEqual(0.5, match.quality)
         self.assertTrue(match.exact_match)
 
         charset = http.Charset('latin-1')
-        match = charset.matches(accept)
+        match = charset.acceptability(accept)
         self.assertEqual(0.1, match.quality)
         self.assertFalse(match.exact_match)
