@@ -9,32 +9,68 @@
 """
 import unittest
 
-from verktyg.accept import Representation
+from verktyg import http
+from verktyg.exceptions import NotAcceptable
+from verktyg.accept import Representation, select_representation
 
 
 class RepresentationTestCase(unittest.TestCase):
     def test_content_type_dispatch(self):
-        default_binding = Representation()
-        html_binding = Representation(content_type='text/html')
+        accept = http.parse_accept_header(
+            'text/xml,'
+            'application/xml,'
+            'application/xhtml+xml,'
+            'application/foo;q=0.6;quiet=no;bar=baz,'
+            'text/html;q=0.9,'
+            'text/plain;q=0.8,'
+            'image/png,'
+            '*/*;q=0.5'
+        )
+
+        default_repr = Representation()
+        png_repr = Representation(content_type='image/png')
+        plain_repr = Representation(content_type='text/plain')
+        json_repr = Representation(content_type='application/json')
+
+        default_match = default_repr.acceptability(accept=accept)
+        png_match = png_repr.acceptability(accept=accept)
+        plain_match = plain_repr.acceptability(accept=accept)
+        json_match = json_repr.acceptability(accept=accept)
+
+        self.assertLess(default_match, png_match)
+        self.assertLess(default_match, plain_match)
+        self.assertLess(default_match, json_match)
+        self.assertGreater(png_match, plain_match)
+        self.assertGreater(png_match, json_match)
+        self.assertGreater(plain_match, json_match)
+
+    def test_select_representation(self):
+        json_repr = Representation(content_type='application/json')
+        html_repr = Representation(content_type='text/html')
+        xml_repr = Representation(content_type='application/xml')
+        blank_repr = Representation()
+
+        representations = [json_repr, html_repr, xml_repr, blank_repr]
 
         self.assertEqual(
-            (5, 0.001),
-            default_binding.quality(accept='text/html')
+            json_repr, select_representation(
+                representations, accept='application/json'
+            )
         )
 
         self.assertEqual(
-            (110, 1.0),
-            html_binding.quality(accept='text/html')
+            xml_repr,
+            select_representation(
+                representations,
+                accept='application/xml;q=0.9,text/html;q=0.8'
+            )
         )
 
         self.assertEqual(
-            (110, 0.9),
-            html_binding.quality(accept='text/html;q=0.9')
-        )
-
-        self.assertEqual(
-            (0, 0.01),
-            html_binding.quality(accept='application/json, */*; q=0.01')
+            blank_repr,
+            select_representation(
+                representations, accept='image/png'
+            )
         )
 
 

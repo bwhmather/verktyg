@@ -57,12 +57,18 @@ class Binding(BindingFactory, Representation):
         yield self
 
     def __repr__(self):
-        return '<%s %s %s %s>' % (
+        output = "<%s %s" % (
             self.__class__.__name__,
-            repr(self.name),
-            repr(self.method),
-            repr(self.content_type),
+            self.method
         )
+        if self._content_type is not None:
+            output += " content_type=%r" % self._content_type
+        if self._language is not None:
+            output += " language=%r" % self._language
+        if self._charset is not None:
+            output += " content_type=%r" % self._charset
+        output += ">"
+        return output
 
 
 class Dispatcher(BindingFactory):

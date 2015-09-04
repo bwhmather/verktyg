@@ -7,14 +7,11 @@ A web framework based on Werkzeug.
 from setuptools import setup, find_packages
 
 extras_require = {
-    'Templates': [
-        'jinja2',
-    ],
 }
 
 setup(
     name='verktyg',
-    version='0.8.2',
+    version='0.8.3',
     url='https://github.com/bwhmather/verktyg',
     license='BSD',
     author='Ben Mather',
@@ -34,10 +31,9 @@ setup(
     platforms='any',
     install_requires=[
         'werkzeug >= 0.10, < 0.11',
-        'python-mimeparse >= 0.1.4',
     ],
     tests_require=list(set(sum(
-        (extras_require[extra] for extra in ['Templates']), []
+        (extras_require[extra] for extra in {}), []
     ))),
     extras_require=extras_require,
     packages=find_packages(),
