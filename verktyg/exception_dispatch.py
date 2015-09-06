@@ -52,7 +52,6 @@ class ExceptionHandler(ExceptionHandlerFactory, Representation):
         return output
 
 
-
 class ExceptionDispatcher(ExceptionHandlerFactory):
     def __init__(self, handlers=[]):
         self._handlers = {}

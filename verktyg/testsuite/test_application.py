@@ -165,7 +165,6 @@ class ApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(resp.get_data(), b'{"type": "json"}')
 
-
     def test_close_request(self):
         closed = 0
 
