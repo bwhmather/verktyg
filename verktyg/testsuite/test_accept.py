@@ -86,9 +86,3 @@ class RepresentationTestCase(unittest.TestCase):
             NotAcceptable,
             select_representation, [pdf_repr], accept='text/html'
         )
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RepresentationTestCase))
-    return suite

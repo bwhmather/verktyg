@@ -198,9 +198,3 @@ class ApplicationTestCase(unittest.TestCase):
         except NotFound:
             pass
         self.assertEqual(closed, 2)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ApplicationTestCase))
-    return suite

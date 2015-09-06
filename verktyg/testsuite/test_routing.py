@@ -917,9 +917,3 @@ class RoutingTestCase(unittest.TestCase):
             rv,
             "URLMap([<Route '/woop' -> foobar>, <Route '/wat' -> enter>])"
         )
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RoutingTestCase))
-    return suite
