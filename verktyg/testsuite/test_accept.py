@@ -73,8 +73,16 @@ class RepresentationTestCase(unittest.TestCase):
             )
         )
 
+    def test_not_acceptable(self):
+        pdf_repr = Representation(content_type='text/pdf')
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RepresentationTestCase))
-    return suite
+        self.assertRaises(
+            NotAcceptable,
+            pdf_repr.acceptability,
+            accept=http.parse_accept_header('text/html')
+        )
+
+        self.assertRaises(
+            NotAcceptable,
+            select_representation, [pdf_repr], accept='text/html'
+        )

@@ -523,9 +523,3 @@ class RequestsTestCase(unittest.TestCase):
     def test_request_method_case_sensitivity(self):
         req = Request({'REQUEST_METHOD': 'get'})
         self.assertEqual(req.method, 'GET')
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RequestsTestCase))
-    return suite

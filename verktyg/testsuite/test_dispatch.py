@@ -146,9 +146,3 @@ class DispatchTestCase(unittest.TestCase):
         self.assertEqual(
             'Nested',
             parent.lookup('nested')(None, None))
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DispatchTestCase))
-    return suite

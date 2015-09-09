@@ -474,9 +474,3 @@ class ResponsesTestCase(unittest.TestCase):
         self.assertEqual(
             resp.get_wsgi_headers(env)['Location'], 'http://localhost/test'
         )
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ResponsesTestCase))
-    return suite

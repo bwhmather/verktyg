@@ -48,9 +48,3 @@ class ViewsTestCase(unittest.TestCase):
             MethodNotAllowed,
             dispatcher.lookup, 'foo', method='PUT'
         )
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ViewsTestCase))
-    return suite
