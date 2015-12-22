@@ -98,7 +98,7 @@ import posixpath
 from pprint import pformat
 
 from werkzeug.urls import url_encode, url_quote, url_join
-from werkzeug._internal import _get_environ, _encode_idna
+from werkzeug._internal import _get_environ
 from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
 
 from verktyg.utils import format_string
@@ -1083,7 +1083,6 @@ class URLMap(object):
         no defined. If there is no `default_subdomain` you cannot use the
         subdomain feature.
         """
-        server_name = server_name.lower()
         if self.host_matching:
             if subdomain is not None:
                 raise RuntimeError('host matching enabled and a '
@@ -1092,7 +1091,9 @@ class URLMap(object):
             subdomain = self.default_subdomain
         if script_name is None:
             script_name = '/'
-        server_name = _encode_idna(server_name)
+        if server_name:
+            server_name = server_name.lower()
+            server_name = server_name.encode('idna').decode('ascii')
         return MapAdapter(self, server_name, script_name, subdomain,
                           url_scheme, path_info, query_args)
 
@@ -1188,7 +1189,7 @@ class MapAdapter(object):
     def __init__(self, router, server_name, script_name, subdomain,
                  url_scheme, path_info, query_args=None):
         self.router = router
-        self.server_name = to_unicode(server_name)
+        self.server_name = server_name
         script_name = to_unicode(script_name)
         if not script_name.endswith(u'/'):
             script_name += u'/'
