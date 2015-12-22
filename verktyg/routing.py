@@ -99,7 +99,7 @@ from pprint import pformat
 
 from werkzeug.urls import url_encode, url_quote, url_join
 from werkzeug._internal import _get_environ
-from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
+from werkzeug._compat import to_bytes, wsgi_decoding_dance
 
 from verktyg.utils import format_string
 from verktyg.datastructures import ImmutableDict, MultiDict
@@ -1190,13 +1190,13 @@ class MapAdapter(object):
                  url_scheme, path_info, query_args=None):
         self.router = router
         self.server_name = server_name
-        script_name = to_unicode(script_name)
+        script_name = script_name
         if not script_name.endswith(u'/'):
             script_name += u'/'
         self.script_name = script_name
-        self.subdomain = to_unicode(subdomain)
-        self.url_scheme = to_unicode(url_scheme)
-        self.path_info = to_unicode(path_info)
+        self.subdomain = subdomain
+        self.url_scheme = url_scheme
+        self.path_info = path_info
         self.query_args = query_args
 
     def match(self, path_info=None, return_route=False, query_args=None):
@@ -1264,8 +1264,6 @@ class MapAdapter(object):
         self.router.update()
         if path_info is None:
             path_info = self.path_info
-        else:
-            path_info = to_unicode(path_info, self.router.charset)
         if query_args is None:
             query_args = self.query_args
 
@@ -1336,13 +1334,15 @@ class MapAdapter(object):
         if self.router.host_matching:
             if domain_part is None:
                 return self.server_name
-            return to_unicode(domain_part, 'ascii')
+            return domain_part
         subdomain = domain_part
         if subdomain is None:
             subdomain = self.subdomain
-        else:
-            subdomain = to_unicode(subdomain, 'ascii')
-        return (subdomain and subdomain + u'.' or u'') + self.server_name
+
+        if subdomain:
+            return subdomain + '.' + self.server_name
+
+        return self.server_name
 
     def get_default_redirect(self, route, values, query_args):
         """A helper that returns the URL to redirect to if it finds one.
