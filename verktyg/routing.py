@@ -94,12 +94,15 @@
 import re
 import uuid
 import posixpath
+from urllib.parse import (
+    urlencode, quote as urlquote, urljoin,
+    urlunparse, ParseResult
+)
 
 from pprint import pformat
 
-from werkzeug.urls import url_encode, url_quote, url_join
-from werkzeug._internal import _get_environ, _encode_idna
-from werkzeug._compat import to_unicode, to_bytes, wsgi_decoding_dance
+from werkzeug._internal import _get_environ
+from werkzeug._compat import wsgi_decoding_dance
 
 from verktyg.utils import format_string
 from verktyg.datastructures import ImmutableDict, MultiDict
@@ -688,9 +691,7 @@ class Route(RouteFactory):
                     return
                 processed.add(data)
             else:
-                add(url_quote(
-                    to_bytes(data, self.router.charset), safe='/:|+'
-                ))
+                add(urlquote(data, encoding=self.router.charset, safe='/:|+'))
         domain_part, url = (u''.join(tmp)).split(u'|', 1)
 
         if append_unknown:
@@ -700,10 +701,10 @@ class Route(RouteFactory):
                     del query_vars[key]
 
             if query_vars:
-                url += u'?' + url_encode(query_vars,
-                                         charset=self.router.charset,
-                                         sort=self.router.sort_parameters,
-                                         key=self.router.sort_key)
+                url += u'?' + urlencode(
+                    sorted(query_vars.items(), key=self.router.sort_key),
+                    encoding=self.router.charset,
+                )
 
         return domain_part, url
 
@@ -802,7 +803,9 @@ class BaseConverter(object):
         return value
 
     def to_url(self, value):
-        return url_quote(value, charset=self.router.charset)
+        if not isinstance(value, (str, bytes)):
+            value = str(value)
+        return urlquote(value, encoding=self.router.charset, safe='/:')
 
 
 class UnicodeConverter(BaseConverter):
@@ -982,8 +985,8 @@ class URLMap(object):
                        to the list of converters. If you redefine one
                        converter this will override the original one.
     :param sort_parameters: If set to `True` the url parameters are sorted.
-                            See `url_encode` for more details.
-    :param sort_key: The sort key function for `url_encode`.
+                            See `urlencode` for more details.
+    :param sort_key: The sort key function for `urlencode`.
     :param encoding_errors: the error method to use for decoding
     :param host_matching: if set to `True` it enables the host matching
                           feature and disables the subdomain one.  If
@@ -1083,16 +1086,27 @@ class URLMap(object):
         no defined. If there is no `default_subdomain` you cannot use the
         subdomain feature.
         """
-        server_name = server_name.lower()
         if self.host_matching:
             if subdomain is not None:
                 raise RuntimeError('host matching enabled and a '
                                    'subdomain was provided')
         elif subdomain is None:
             subdomain = self.default_subdomain
+
+        if subdomain is not None:
+            subdomain = subdomain.lower()
+            subdomain = subdomain.encode('idna').decode('ascii')
+
+        if server_name is not None:
+            server_name = server_name.lower()
+            server_name = server_name.encode('idna').decode('ascii')
+
+        if subdomain and not server_name:
+            raise TypeError('subdomain specified without server name')
+
         if script_name is None:
             script_name = '/'
-        server_name = _encode_idna(server_name)
+
         return MapAdapter(self, server_name, script_name, subdomain,
                           url_scheme, path_info, query_args)
 
@@ -1188,14 +1202,14 @@ class MapAdapter(object):
     def __init__(self, router, server_name, script_name, subdomain,
                  url_scheme, path_info, query_args=None):
         self.router = router
-        self.server_name = to_unicode(server_name)
-        script_name = to_unicode(script_name)
+        self.server_name = server_name
+        script_name = script_name
         if not script_name.endswith(u'/'):
             script_name += u'/'
         self.script_name = script_name
-        self.subdomain = to_unicode(subdomain)
-        self.url_scheme = to_unicode(url_scheme)
-        self.path_info = to_unicode(path_info)
+        self.subdomain = subdomain
+        self.url_scheme = url_scheme
+        self.path_info = path_info
         self.query_args = query_args
 
     def match(self, path_info=None, return_route=False, query_args=None):
@@ -1263,8 +1277,6 @@ class MapAdapter(object):
         self.router.update()
         if path_info is None:
             path_info = self.path_info
-        else:
-            path_info = to_unicode(path_info, self.router.charset)
         if query_args is None:
             query_args = self.query_args
 
@@ -1276,11 +1288,14 @@ class MapAdapter(object):
                 rv = route.match(path)
             except RequestSlash:
                 raise RequestRedirect(self.make_redirect_url(
-                    url_quote(path_info, self.router.charset,
-                              safe='/:|+') + '/', query_args))
+                    urlquote(
+                        path_info, encoding=self.router.charset, safe='/:|+'
+                    ) + '/', query_args
+                ))
             except RequestAliasRedirect as e:
                 raise RequestRedirect(self.make_alias_redirect_url(
-                    path, route.endpoint, e.matched_values, query_args))
+                    path, route.endpoint, e.matched_values, query_args
+                ))
             if rv is None:
                 continue
 
@@ -1298,7 +1313,7 @@ class MapAdapter(object):
                                                         route.redirect_to)
                 else:
                     redirect_url = route.redirect_to(self, **rv)
-                raise RequestRedirect(str(url_join('%s://%s%s%s' % (
+                raise RequestRedirect(str(urljoin('%s://%s%s%s' % (
                     self.url_scheme,
                     self.subdomain and self.subdomain + '.' or '',
                     self.server_name,
@@ -1335,13 +1350,15 @@ class MapAdapter(object):
         if self.router.host_matching:
             if domain_part is None:
                 return self.server_name
-            return to_unicode(domain_part, 'ascii')
+            return domain_part
         subdomain = domain_part
         if subdomain is None:
             subdomain = self.subdomain
-        else:
-            subdomain = to_unicode(subdomain, 'ascii')
-        return (subdomain and subdomain + u'.' or u'') + self.server_name
+
+        if subdomain:
+            return subdomain + '.' + self.server_name
+
+        return self.server_name
 
     def get_default_redirect(self, route, values, query_args):
         """A helper that returns the URL to redirect to if it finds one.
@@ -1365,7 +1382,7 @@ class MapAdapter(object):
 
     def encode_query_args(self, query_args):
         if not isinstance(query_args, str):
-            query_args = url_encode(query_args, self.router.charset)
+            query_args = urlencode(query_args, self.router.charset)
         return query_args
 
     def make_redirect_url(self, path_info, query_args=None, domain_part=None):
@@ -1373,15 +1390,14 @@ class MapAdapter(object):
 
         :internal:
         """
-        suffix = ''
-        if query_args:
-            suffix = '?' + self.encode_query_args(query_args)
-        return str('%s://%s/%s%s' % (
-            self.url_scheme,
-            self.get_host(domain_part),
-            posixpath.join(self.script_name[:-1].lstrip('/'),
-                           path_info.lstrip('/')),
-            suffix
+        return urlunparse(ParseResult(
+            scheme=self.url_scheme or '',
+            netloc=self.get_host(domain_part),
+            path=posixpath.join(
+                self.script_name.strip('/'), path_info.lstrip('/')
+            ),
+            query=self.encode_query_args(query_args) if query_args else '',
+            params=None, fragment=None
         ))
 
     def make_alias_redirect_url(self, path, endpoint, values, query_args):
@@ -1466,10 +1482,11 @@ class MapAdapter(object):
             host_matching = self.router.host_matching
             if (host_matching and host == self.server_name) or \
                (not host_matching and domain_part == self.subdomain):
-                return str(url_join(self.script_name, './' + path.lstrip('/')))
-        return str('%s://%s%s/%s' % (
-            self.url_scheme,
-            host,
-            self.script_name[:-1],
-            path.lstrip('/')
+                return str(urljoin(self.script_name, './' + path.lstrip('/')))
+
+        return urlunparse(ParseResult(
+            scheme=self.url_scheme or '',
+            netloc=host,
+            path=posixpath.join(self.script_name, path.lstrip('/')),
+            params=None, query=None, fragment=None
         ))
