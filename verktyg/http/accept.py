@@ -27,25 +27,25 @@ _token_re_str = r'''
 _value_re = re.compile(
     r'''
         ^
-        ''' + _token_re_str + ''' | \*
+        {token} | \*
         $
-    ''', re.VERBOSE
+    '''.format(token=_token_re_str), re.VERBOSE
 )
 
 # TODO
 _content_type_value_re = re.compile(
     r'''
         ^
-        (?: ''' + _token_re_str + ''' | \*)
+        (?: {token} | \*)
         /
         (?:
             (?:
-                (?:''' + _token_re_str + ''' \.)?
-                ''' + _token_re_str + '''
-                (?: \+ ''' + _token_re_str + ''')?
+                (?:{token} \.)?
+                {token}
+                (?: \+ {token})?
             ) | \*
         )
-    ''', re.VERBOSE
+    '''.format(token=_token_re_str), re.VERBOSE
 )
 
 
