@@ -127,28 +127,6 @@ def get_content_type(mimetype, charset):
     return mimetype
 
 
-def format_string(string, context):
-    """String-template format a string:
-
-    >>> format_string('$foo and ${foo}s', dict(foo=42))
-    '42 and 42s'
-
-    This does not do any attribute lookup etc.  For more advanced string
-    formattings have a look at the `werkzeug.template` module.
-
-    :param string:
-        The format string.
-    :param context:
-        A dict with the variables to insert.
-    """
-    def lookup_arg(match):
-        x = context[match.group(1) or match.group(2)]
-        if not isinstance(x, str):
-            x = type(string)(x)
-        return x
-    return _format_re.sub(lookup_arg, string)
-
-
 def secure_filename(filename):
     """Pass it a filename and it will return a secure version of it.  This
     filename can then safely be stored on a regular file system and passed
