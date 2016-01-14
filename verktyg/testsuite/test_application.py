@@ -42,8 +42,8 @@ class ApplicationTestCase(unittest.TestCase):
             return Response('default handler', status=500)
 
         @builder.exception_handler(HTTPException)
-        def werkzeug_handler(app, req, exc_type, exc_value, exc_traceback):
-            return Response('werkzeug handler', exc_value.code)
+        def verktyg_handler(app, req, exc_type, exc_value, exc_traceback):
+            return Response('verktyg handler', exc_value.code)
 
         @builder.expose(route='/raise_execption')
         def raise_exception(app, req):
@@ -70,7 +70,7 @@ class ApplicationTestCase(unittest.TestCase):
 
         resp = client.get('/raise_teapot')
         self.assertEqual(resp.status_code, 418)
-        self.assertEqual(resp.get_data(), b'werkzeug handler')
+        self.assertEqual(resp.get_data(), b'verktyg handler')
 
     def test_middleware(self):
         builder = ApplicationBuilder()
