@@ -13,7 +13,8 @@
 """
 import re
 import os
-from html.entities import name2codepoint
+
+from html import escape
 
 from werkzeug._internal import (
     _DictAccessorProperty, _parse_signature, _missing,
@@ -189,47 +190,6 @@ def secure_filename(filename):
         filename = '_' + filename
 
     return filename
-
-
-def escape(s):
-    """Replace special characters "&", "<", ">" and (") to HTML-safe sequences.
-
-    There is a special handling for `None` which escapes to an empty string.
-
-    :param s:
-        The string to escape.
-    """
-    if s is None:
-        return ''
-    elif hasattr(s, '__html__'):
-        return str(s.__html__())
-    elif not isinstance(s, str):
-        s = str(s)
-    s = s.replace('&', '&amp;').replace('<', '&lt;') \
-        .replace('>', '&gt;').replace('"', "&quot;")
-    return s
-
-
-def unescape(s):
-    """The reverse function of `escape`.  This unescapes all the HTML
-    entities, not only the XML entities inserted by `escape`.
-
-    :param s:
-        The string to unescape.
-    """
-    def handle_match(m):
-        name = m.group(1)
-        if name in HTMLBuilder._entities:
-            return chr(HTMLBuilder._entities[name])
-        try:
-            if name[:2] in ('#x', '#X'):
-                return chr(int(name[2:], 16))
-            elif name.startswith('#'):
-                return chr(int(name[1:]))
-        except ValueError:
-            pass
-        return u''
-    return _entity_re.sub(handle_match, s)
 
 
 def redirect(location, code=302, Response=None):
