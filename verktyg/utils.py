@@ -20,10 +20,6 @@ from werkzeug._internal import (
     _DictAccessorProperty, _parse_signature, _missing,
 )
 
-_format_re = re.compile(
-    r'\$(?:(%s)|\{(%s)\})' % (('[a-zA-Z_][a-zA-Z0-9_]*',) * 2)
-)
-_entity_re = re.compile(r'&([^;]+);')
 _filename_ascii_strip_re = re.compile(r'[^A-Za-z0-9_.-]')
 _windows_device_files = {
     'CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4',
