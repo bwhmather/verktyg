@@ -414,16 +414,16 @@ class RoutingTestCase(unittest.TestCase):
 
     def test_route_templates(self):
         testcase = r.RouteTemplate([
-            r.Submount('/test/$app', [
+            r.Submount('/test/{app}', [
                 r.Route('/foo/', endpoint='handle_foo'),
                 r.Route('/bar/', endpoint='handle_bar'),
                 r.Route('/baz/', endpoint='handle_baz'),
             ]),
-            r.EndpointPrefix('${app}', [
-                r.Route('/${app}-blah', endpoint='bar'),
-                r.Route('/${app}-meh', endpoint='baz'),
+            r.EndpointPrefix('{app}', [
+                r.Route('/{app}-blah', endpoint='bar'),
+                r.Route('/{app}-meh', endpoint='baz'),
             ]),
-            r.Subdomain('$app', [
+            r.Subdomain('{app}', [
                 r.Route('/blah', endpoint='x_bar'),
                 r.Route('/meh', endpoint='x_baz'),
             ])

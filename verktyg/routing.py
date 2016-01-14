@@ -104,7 +104,6 @@ from pprint import pformat
 from werkzeug._internal import _get_environ
 from werkzeug._compat import wsgi_decoding_dance
 
-from verktyg.utils import format_string
 from verktyg.datastructures import ImmutableDict, MultiDict
 from verktyg.exceptions import HTTPException, NotFound
 
@@ -357,8 +356,8 @@ class RouteTemplate(object):
         from verktyg.routing import URLMap, Route, RouteTemplate
 
         resource = RouteTemplate([
-            Route('/$name/', endpoint='$name.list'),
-            Route('/$name/<int:id>', endpoint='$name.show')
+            Route('/{name}/', endpoint='{name}.list'),
+            Route('/{name}/<int:id>', endpoint='{name}.show')
         ])
 
         router = URLMap([resource(name='user'), resource(name='page')])
@@ -393,15 +392,15 @@ class RouteTemplateFactory(RouteFactory):
                     new_defaults = {}
                     for key, value in route.defaults.items():
                         if isinstance(value, str):
-                            value = format_string(value, self.context)
+                            value = value.format(**self.context)
                         new_defaults[key] = value
                 if route.subdomain is not None:
-                    subdomain = format_string(route.subdomain, self.context)
+                    subdomain = route.subdomain.format(**self.context)
                 new_endpoint = route.endpoint
                 if isinstance(new_endpoint, str):
-                    new_endpoint = format_string(new_endpoint, self.context)
+                    new_endpoint = new_endpoint.format(**self.context)
                 yield Route(
-                    format_string(route.route, self.context),
+                    route.route.format(**self.context),
                     new_defaults,
                     subdomain,
                     route.build_only,
