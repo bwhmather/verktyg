@@ -152,8 +152,10 @@ def get_host(environ, trusted_hosts=None):
         rv = environ['HTTP_HOST']
     else:
         rv = environ['SERVER_NAME']
-        if (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not \
-           in (('https', '443'), ('http', '80')):
+        if (
+            (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not
+            in (('https', '443'), ('http', '80'))
+        ):
             rv += ':' + environ['SERVER_PORT']
     if trusted_hosts is not None:
         if not host_is_trusted(rv, trusted_hosts):
@@ -366,8 +368,10 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
         parts = netloc.split(u'@', 1)[-1].split(u':', 1)
         if len(parts) == 2:
             netloc, port = parts
-            if (scheme == u'http' and port == u'80') or \
-               (scheme == u'https' and port == u'443'):
+            if (
+                (scheme == u'http' and port == u'80') or
+                (scheme == u'https' and port == u'443')
+            ):
                 port = None
         else:
             netloc = parts[0]
@@ -383,8 +387,9 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
                                              root_only=True)
     base_iri = uri_to_iri(environ_or_baseurl, charset, errors)
     base_scheme, base_netloc, base_path = url_parse(base_iri)[:3]
-    cur_scheme, cur_netloc, cur_path, = \
-        url_parse(url_join(base_iri, path))[:3]
+    cur_scheme, cur_netloc, cur_path, = url_parse(
+        url_join(base_iri, path)
+    )[:3]
 
     # normalize the network location
     base_netloc = _normalize_netloc(base_scheme, base_netloc)
@@ -439,8 +444,10 @@ class EnvironHeaders(http.ImmutableHeadersMixin, http.Headers):
 
     def __iter__(self):
         for key, value in self.environ.items():
-            if key.startswith('HTTP_') and key not in \
-               ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
+            if (
+                key.startswith('HTTP_') and
+                key not in ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH')
+            ):
                 yield (key[5:].replace('_', '-').title(),
                        unicodify_header_value(value))
             elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
@@ -542,8 +549,9 @@ class SharedDataMiddleware(object):
         return lambda x: (os.path.basename(filename), self._opener(filename))
 
     def get_package_loader(self, package, package_path):
-        from pkg_resources import DefaultProvider, ResourceManager, \
-            get_provider
+        from pkg_resources import (
+            DefaultProvider, ResourceManager, get_provider
+        )
         loadtime = datetime.utcnow()
         provider = get_provider(package)
         manager = ResourceManager()

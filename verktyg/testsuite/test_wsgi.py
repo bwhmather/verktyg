@@ -344,8 +344,10 @@ class WsgiTestCase(unittest.TestCase):
             ]
         )
 
-        data = 'abc\r\nThis line is broken by the buffer length.' \
+        data = (
+            'abc\r\nThis line is broken by the buffer length.'
             '\r\nFoo bar baz'
+        )
         test_stream = StringIO(data)
         lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
                                          buffer_size=24))
@@ -369,8 +371,10 @@ class WsgiTestCase(unittest.TestCase):
             ]
         )
 
-        data = b'abc\r\nThis line is broken by the buffer length.' \
+        data = (
+            b'abc\r\nThis line is broken by the buffer length.'
             b'\r\nFoo bar baz'
+        )
         test_stream = BytesIO(data)
         lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
                                          buffer_size=24))

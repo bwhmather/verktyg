@@ -650,8 +650,10 @@ class Route(RouteFactory):
                 # slash and strict slashes enabled. raise an exception that
                 # tells the router to redirect to the same url but with a
                 # trailing slash
-                if self.strict_slashes and not self.is_leaf and \
-                   not groups.pop('__suffix__'):
+                if (
+                    self.strict_slashes and not self.is_leaf and
+                    not groups.pop('__suffix__')
+                ):
                     raise RequestSlash()
                 # if we are not in strict slashes mode we have to remove
                 # a __suffix__
@@ -712,9 +714,11 @@ class Route(RouteFactory):
 
         :internal:
         """
-        return not self.build_only and self.defaults and \
-            self.endpoint == route.endpoint and self != route and \
+        return (
+            not self.build_only and self.defaults and
+            self.endpoint == route.endpoint and self != route and
             self.arguments == route.arguments
+        )
 
     def suitable_for(self, values):
         """Check if the dict of values has enough data for url generation.
@@ -759,8 +763,10 @@ class Route(RouteFactory):
 
         :internal:
         """
-        return self.alias and 1 or 0, -len(self.arguments), \
+        return (
+            self.alias and 1 or 0, -len(self.arguments),
             -len(self.defaults or ())
+        )
 
     def __eq__(self, other):
         return (
@@ -887,8 +893,10 @@ class NumberConverter(BaseConverter):
         if (self.fixed_digits and len(value) != self.fixed_digits):
             raise ValidationError()
         value = self.num_convert(value)
-        if (self.min is not None and value < self.min) or \
-           (self.max is not None and value > self.max):
+        if (
+            (self.min is not None and value < self.min) or
+            (self.max is not None and value > self.max)
+        ):
             raise ValidationError()
         return value
 
@@ -943,8 +951,10 @@ class UUIDConverter(BaseConverter):
 
     :param router: the :class:`URLMap`.
     """
-    regex = r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-' \
-            r'[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}'
+    regex = (
+        r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-'
+        r'[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}'
+    )
 
     def to_python(self, value):
         return uuid.UUID(value)
@@ -1140,8 +1150,10 @@ class URLMap(object):
                 server_name = environ['HTTP_HOST']
             else:
                 server_name = environ['SERVER_NAME']
-                if (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not \
-                   in (('https', '443'), ('http', '80')):
+                if (
+                    (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not
+                    in (('https', '443'), ('http', '80'))
+                ):
                     server_name += ':' + environ['SERVER_PORT']
         elif subdomain is None and not self.host_matching:
             server_name = server_name.lower()
@@ -1149,8 +1161,10 @@ class URLMap(object):
                 wsgi_server_name = environ.get('HTTP_HOST')
             else:
                 wsgi_server_name = environ.get('SERVER_NAME')
-                if (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not \
-                   in (('https', '443'), ('http', '80')):
+                if (
+                    (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not
+                    in (('https', '443'), ('http', '80'))
+                ):
                     wsgi_server_name += ':' + environ['SERVER_PORT']
             wsgi_server_name = wsgi_server_name.lower()
             cur_server_name = wsgi_server_name.split('.')
@@ -1372,8 +1386,10 @@ class MapAdapter(object):
             # with the highest priority up for building.
             if r is route:
                 break
-            if r.provides_defaults_for(route) and \
-               r.suitable_for(values):
+            if (
+                r.provides_defaults_for(route) and
+                r.suitable_for(values)
+            ):
                 values.update(r.defaults)
                 domain_part, path = r.build(values)
                 return self.make_redirect_url(
@@ -1405,8 +1421,9 @@ class MapAdapter(object):
                          force_external=True)
         if query_args:
             url += '?' + self.encode_query_args(query_args)
-        assert url != path, 'detected invalid alias setting.  No canonical ' \
-            'URL found'
+        assert url != path, (
+            'detected invalid alias setting.  No canonical URL found'
+        )
         return url
 
     def build(self, endpoint, values=None, force_external=False,
@@ -1479,8 +1496,10 @@ class MapAdapter(object):
         # shortcut this.
         if not force_external:
             host_matching = self.router.host_matching
-            if (host_matching and host == self.server_name) or \
-               (not host_matching and domain_part == self.subdomain):
+            if (
+                (host_matching and host == self.server_name) or
+                (not host_matching and domain_part == self.subdomain)
+            ):
                 return str(urljoin(self.script_name, './' + path.lstrip('/')))
 
         return urlunparse(ParseResult(

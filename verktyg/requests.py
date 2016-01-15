@@ -709,8 +709,9 @@ class CommonRequestDescriptorsMixin(object):
 
     def _parse_content_type(self):
         if not hasattr(self, '_parsed_content_type'):
-            self._parsed_content_type = \
-                parse_options_header(self.environ.get('CONTENT_TYPE', ''))
+            self._parsed_content_type = parse_options_header(
+                self.environ.get('CONTENT_TYPE', '')
+            )
 
     @property
     def mimetype(self):

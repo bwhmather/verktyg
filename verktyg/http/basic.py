@@ -174,8 +174,10 @@ class Headers(object):
         raise exceptions.BadRequestKeyError(key)
 
     def __eq__(self, other):
-        return other.__class__ is self.__class__ and \
+        return (
+            other.__class__ is self.__class__ and
             set(other._list) == set(self._list)
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -710,8 +712,10 @@ def parse_date(value):
                     year += 2000
                 elif year >= 69 and year <= 99:
                     year += 1900
-                return datetime(*((year,) + t[1:7])) - \
+                return (
+                    datetime(*((year,) + t[1:7])) -
                     timedelta(seconds=t[-1] or 0)
+                )
             except (ValueError, OverflowError):
                 return None
 
@@ -854,8 +858,7 @@ class FileStorage(object):
 
     def _parse_content_type(self):
         if not hasattr(self, '_parsed_content_type'):
-            self._parsed_content_type = \
-                parse_options_header(self.content_type)
+            self._parsed_content_type = parse_options_header(self.content_type)
 
     @property
     def content_type(self):

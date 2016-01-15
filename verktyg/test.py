@@ -80,10 +80,10 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
                 filename = getattr(value, 'filename',
                                    getattr(value, 'name', None))
                 content_type = getattr(value, 'content_type', None)
+                if content_type is None and filename:
+                    content_type = mimetypes.guess_type(filename)[0]
                 if content_type is None:
-                    content_type = filename and \
-                        mimetypes.guess_type(filename)[0] or \
-                        'application/octet-stream'
+                    content_type = 'application/octet-stream'
                 if filename is not None:
                     write('; filename="%s"\r\n' % filename)
                 else:
@@ -223,8 +223,9 @@ class FileMultiDict(MultiDict):
                     filename = file
                 file = open(file, 'rb')
             if filename and content_type is None:
-                content_type = mimetypes.guess_type(filename)[0] or \
-                    'application/octet-stream'
+                content_type = mimetypes.guess_type(filename)[0]
+            if content_type is None:
+                content_type = 'application/octet-stream'
             value = FileStorage(file, filename, name, content_type)
 
         self.add(name, value)
@@ -353,8 +354,10 @@ class EnvironBuilder(object):
                     self.content_length = len(data)
             else:
                 for key, value in _iter_data(data):
-                    if isinstance(value, (tuple, dict)) or \
-                       hasattr(value, 'read'):
+                    if (
+                        isinstance(value, (tuple, dict)) or
+                        hasattr(value, 'read')
+                    ):
                         self._add_file_from_data(key, value)
                     else:
                         self.form.setlistdefault(key).append(value)
@@ -548,8 +551,9 @@ class EnvironBuilder(object):
             content_length = end_pos - start_pos
         elif content_type == 'multipart/form-data':
             values = CombinedMultiDict([self.form, self.files])
-            input_stream, content_length, boundary = \
+            input_stream, content_length, boundary = (
                 stream_encode_multipart(values, charset=self.charset)
+            )
             content_type += '; boundary="%s"' % boundary
         elif content_type == 'application/x-www-form-urlencoded':
             values = url_encode(self.form, charset=self.charset)
@@ -768,8 +772,10 @@ class Client(object):
         redirect_chain = []
         while 1:
             status_code = int(response[1].split(None, 1)[0])
-            if status_code not in (301, 302, 303, 305, 307) \
-               or not follow_redirects:
+            if (
+                status_code not in (301, 302, 303, 305, 307) or
+                not follow_redirects
+            ):
                 break
             new_location = response[2]['location']
 

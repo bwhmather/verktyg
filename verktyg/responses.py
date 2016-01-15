@@ -516,8 +516,10 @@ class BaseResponse(object):
                 headers['Location'] = location
 
         # make sure the content location is a URL
-        if content_location is not None and \
-           isinstance(content_location, str):
+        if (
+            content_location is not None and
+            isinstance(content_location, str)
+        ):
             headers['Content-Location'] = iri_to_uri(content_location)
 
         # remove entity headers and set content length to zero if needed.
@@ -534,8 +536,10 @@ class BaseResponse(object):
         # flattening the iterator or encoding of unicode strings in
         # the response.  We however should not do that if we have a 304
         # response.
-        if self.automatically_set_content_length and \
-           self.is_sequence and content_length is None and status != 304:
+        if (
+            self.automatically_set_content_length and
+            self.is_sequence and content_length is None and status != 304
+        ):
             try:
                 content_length = sum(len(to_bytes(x, 'ascii'))
                                      for x in self.response)
@@ -561,8 +565,10 @@ class BaseResponse(object):
         :return: a response iterable.
         """
         status = self.status_code
-        if environ['REQUEST_METHOD'] == 'HEAD' or \
-           100 <= status < 200 or status in (204, 304):
+        if (
+            environ['REQUEST_METHOD'] == 'HEAD' or
+            100 <= status < 200 or status in (204, 304)
+        ):
             iterable = ()
         elif self.direct_passthrough:
             if __debug__:
@@ -666,8 +672,10 @@ class ETagResponseMixin(object):
             # wsgiref.
             if 'date' not in self.headers:
                 self.headers['Date'] = http_date()
-            if self.automatically_set_content_length and \
-                    'content-length' not in self.headers:
+            if (
+                self.automatically_set_content_length and
+                'content-length' not in self.headers
+            ):
                 length = self.calculate_content_length()
                 if length is not None:
                     self.headers['Content-Length'] = length
@@ -808,8 +816,9 @@ class CommonResponseDescriptorsMixin(object):
 
     def _get_mimetype_params(self):
         def on_update(d):
-            self.headers['Content-Type'] = \
-                dump_options_header(self.mimetype, d)
+            self.headers['Content-Type'] = dump_options_header(
+                self.mimetype, d
+            )
         d = parse_options_header(self.headers.get('content-type', ''))[1]
         return CallbackDict(d, on_update)
 
@@ -933,8 +942,11 @@ class CommonResponseDescriptorsMixin(object):
         associated with the resource. An Allow header field MUST be
         present in a 405 (Method Not Allowed) response.''')
 
-    del _set_property, _get_mimetype, _set_mimetype, _get_retry_after, \
-        _set_retry_after
+    del (
+        _set_property,
+        _get_mimetype, _set_mimetype,
+        _get_retry_after, _set_retry_after
+    )
 
 
 class WWWAuthenticateMixin(object):
