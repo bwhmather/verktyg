@@ -31,14 +31,6 @@ from verktyg.http.basic import (
     is_hop_by_hop_header,
     is_byte_range_valid,
 )
-from verktyg.http.accept import (
-    ContentType, ContentTypeAccept,
-    parse_content_type_header, parse_accept_header,
-    Language, LanguageAccept,
-    parse_language_header, parse_accept_language_header,
-    Charset, CharsetAccept,
-    parse_charset_header, parse_accept_charset_header,
-)
 from verktyg.http.cache_control import (
     IfRange,
     Range,
