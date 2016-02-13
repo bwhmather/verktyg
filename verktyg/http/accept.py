@@ -173,7 +173,7 @@ class _Accept(object):
 
 
 @functools.total_ordering
-class _Acceptibility(object):
+class _Acceptability(object):
     def __init__(self, value, *, match_quality, q, qs=None):
         self._value = value
         self._match_quality = match_quality
@@ -235,13 +235,13 @@ class ContentTypeAccept(_Accept):
     range_type = _ContentTypeRange
 
 
-class ContentTypeAcceptibility(_Acceptibility):
+class ContentTypeAcceptability(_Acceptability):
     def __init__(
                 self, content_type, *,
                 type_matches, subtype_matches,
                 q, qs=None
             ):
-        super(ContentTypeAcceptibility, self).__init__(
+        super(ContentTypeAcceptability, self).__init__(
             content_type, match_quality=(
                 type_matches, subtype_matches
             ),
@@ -266,7 +266,7 @@ class ContentTypeAcceptibility(_Acceptibility):
 
 
 class ContentType(_Value):
-    match_type = ContentTypeAcceptibility
+    match_type = ContentTypeAcceptability
 
     @property
     def type(self):
@@ -345,13 +345,13 @@ class LanguageAccept(_Accept):
     range_type = _LanguageRange
 
 
-class LanguageAcceptibility(_Acceptibility):
+class LanguageAcceptability(_Acceptability):
     def __init__(
                 self, content_type, *,
                 specificity, tail,
                 q, qs=None
             ):
-        super(LanguageAcceptibility, self).__init__(
+        super(LanguageAcceptability, self).__init__(
             content_type, match_quality=(-tail, specificity), q=q, qs=qs
         )
 
@@ -373,7 +373,7 @@ class LanguageAcceptibility(_Acceptibility):
 
 
 class Language(_Value):
-    match_type = LanguageAcceptibility
+    match_type = LanguageAcceptability
 
     def _acceptability_for_option(self, option):
         if self.value == option.value:
@@ -411,9 +411,9 @@ class CharsetAccept(_Accept):
     range_type = _CharsetRange
 
 
-class CharsetAcceptibility(_Acceptibility):
+class CharsetAcceptability(_Acceptability):
     def __init__(self, value, *, exact_match, q, qs=None):
-        super(CharsetAcceptibility, self).__init__(
+        super(CharsetAcceptability, self).__init__(
             value, match_quality=exact_match, q=q, qs=qs
         )
 
@@ -427,7 +427,7 @@ class CharsetAcceptibility(_Acceptibility):
 
 
 class Charset(_Value):
-    match_type = CharsetAcceptibility
+    match_type = CharsetAcceptability
 
 
 def parse_accept_charset_header(string):
