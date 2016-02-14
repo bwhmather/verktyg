@@ -13,7 +13,6 @@ from itertools import chain
 from time import time
 from datetime import timedelta
 
-from werkzeug._compat import to_unicode, to_bytes, iter_bytes
 from werkzeug._internal import _encode_idna
 from werkzeug.urls import iri_to_uri
 
@@ -29,13 +28,13 @@ _legal_cookie_chars = (
     string.ascii_letters + string.digits + u"!#$%&'*+-.^_`|~:").encode('ascii')
 
 _cookie_quoting_map = {
-    b',': b'\\054',
-    b';': b'\\073',
-    b'"': b'\\"',
-    b'\\': b'\\\\',
+    b','[0]: b'\\054',
+    b';'[0]: b'\\073',
+    b'"'[0]: b'\\"',
+    b'\\'[0]: b'\\\\',
 }
 for _i in chain(range(32), range(127, 256)):
-    _cookie_quoting_map[_i.to_bytes(1, 'big')] = (
+    _cookie_quoting_map[_i] = (
         '\\%03o' % _i
     ).encode('latin1')
 
@@ -55,14 +54,13 @@ _cookie_re = re.compile(b"""(?x)
 def _cookie_quote(b):
     buf = bytearray()
     all_legal = True
-    _lookup = _cookie_quoting_map.get
-    _push = buf.extend
 
-    for char in iter_bytes(b):
+    for char in b:
         if char not in _legal_cookie_chars:
             all_legal = False
-            char = _lookup(char, char)
-        _push(char)
+            buf.extend(_cookie_quoting_map.get(char, [char]))
+        else:
+            buf.append(char)
 
     if all_legal:
         return bytes(buf)
@@ -192,8 +190,8 @@ def parse_cookie(header, charset='utf-8', errors='replace', cls=None):
 
     def _parse_pairs():
         for key, val in _cookie_parse_impl(header):
-            key = to_unicode(key, charset, errors, allow_none_charset=True)
-            val = to_unicode(val, charset, errors, allow_none_charset=True)
+            key = key.decode(charset)
+            val = val.decode(charset)
             yield key, val
 
     return cls(_parse_pairs())
@@ -206,12 +204,8 @@ def dump_cookie(key, value='', max_age=None, expires=None, path='/',
     The parameters are the same as in the cookie Morsel object in the
     Python standard library but it accepts unicode data, too.
 
-    On Python 3 the return value of this function will be a unicode
-    string, on Python 2 it will be a native string.  In both cases the
-    return value is usually restricted to ascii as the vast majority of
-    values are properly escaped, but that is no guarantee.  If a unicode
-    string is returned it's tunneled through latin1 as required by
-    PEP 3333.
+    The return value of this function will be a unicode string tunneled through
+    latin1 as required by PEP 3333.
 
     The return value is not ASCII safe if the key contains unicode
     characters.  This is technically against the specification but
@@ -242,8 +236,8 @@ def dump_cookie(key, value='', max_age=None, expires=None, path='/',
     :param sync_expires:
         Automatically set expires if max_age is defined but expires not.
     """
-    key = to_bytes(key, charset)
-    value = to_bytes(value, charset)
+    key = key.encode(charset)
+    value = value.encode(charset)
 
     if path is not None:
         path = iri_to_uri(path, charset)
@@ -254,7 +248,7 @@ def dump_cookie(key, value='', max_age=None, expires=None, path='/',
         if not isinstance(expires, str):
             expires = cookie_date(expires)
     elif max_age is not None and sync_expires:
-        expires = to_bytes(cookie_date(time() + max_age))
+        expires = cookie_date(time() + max_age).encode('ascii')
 
     buf = [key + b'=' + _cookie_quote(value)]
 
@@ -277,15 +271,14 @@ def dump_cookie(key, value='', max_age=None, expires=None, path='/',
 
         tmp = bytearray(k)
         if not isinstance(v, (bytes, bytearray)):
-            v = to_bytes(str(v), charset)
+            v = str(v).encode(charset)
         if q:
             v = _cookie_quote(v)
         tmp += b'=' + v
         buf.append(bytes(tmp))
 
     # The return value will be an incorrectly encoded latin1 header on
-    # Python 3 for consistency with the headers object and a bytestring
-    # on Python 2 because that's how the API makes more sense.
+    # for consistency with the headers object
     rv = b'; '.join(buf)
     rv = rv.decode('latin1')
     return rv
