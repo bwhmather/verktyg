@@ -883,11 +883,15 @@ def run_wsgi_app(app, environ, buffered=False):
     If passed an invalid WSGI application the behavior of this function is
     undefined.  Never pass non-conforming WSGI applications to this function.
 
-    :param app: the application to execute.
-    :param buffered: set to `True` to enforce buffering.
-    :return: tuple in the form ``(app_iter, status, headers)``
+    :param app:
+        The application to execute.
+    :param environ:
+        The wsgi environment in which to execute the application.
+    :param buffered:
+        Set to `True` to enforce buffering.
+    :return:
+        Tuple on the form ``(app_iter, status, headers)``
     """
-    environ = _get_environ(environ)
     response = []
     buffer = []
 
