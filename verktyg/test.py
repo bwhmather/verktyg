@@ -23,7 +23,7 @@ from urllib.request import Request
 from http.cookiejar import CookieJar
 
 from werkzeug._compat import (
-    to_bytes, reraise, wsgi_encoding_dance, make_literal_wrapper,
+    to_bytes, wsgi_encoding_dance
 )
 from werkzeug._internal import _empty_stream, _get_environ
 from werkzeug.urls import (
@@ -236,8 +236,8 @@ class EnvironBuilder(object):
     for testing purposes.  It can be used to quickly create WSGI environments
     or request objects from arbitrary data.
 
-    The signature of this class is also used in some other places as of
-    Werkzeug 0.5 (:func:`create_environ`, :meth:`BaseResponse.from_values`,
+    The signature of this class is also used in some other places
+    (:func:`create_environ`, :meth:`BaseResponse.from_values`,
     :meth:`Client.open`).  Because of this most of the functionality is
     available through the constructor alone.
 
@@ -258,39 +258,48 @@ class EnvironBuilder(object):
         -   a tuple.  The :meth:`~FileMultiDict.add_file` method is called
             with the tuple items as positional arguments.
 
-    .. versionadded:: 0.6
-       `path` and `base_url` can now be unicode strings that are encoded using
-       the :func:`iri_to_uri` function.
-
-    :param path: the path of the request.  In the WSGI environment this will
-                 end up as `PATH_INFO`.  If the `query_string` is not defined
-                 and there is a question mark in the `path` everything after
-                 it is used as query string.
-    :param base_url: the base URL is a URL that is used to extract the WSGI
-                     URL scheme, host (server name + server port) and the
-                     script root (`SCRIPT_NAME`).
-    :param query_string: an optional string or dict with URL parameters.
-    :param method: the HTTP method to use, defaults to `GET`.
-    :param input_stream: an optional input stream.  Do not specify this and
-                         `data`.  As soon as an input stream is set you can't
-                         modify :attr:`args` and :attr:`files` unless you
-                         set the :attr:`input_stream` to `None` again.
-    :param content_type: The content type for the request.  As of 0.5 you
-                         don't have to provide this when specifying files
-                         and form data via `data`.
-    :param content_length: The content length for the request.  You don't
-                           have to specify this when providing data via
-                           `data`.
-    :param errors_stream: an optional error stream that is used for
-                          `wsgi.errors`.  Defaults to :data:`stderr`.
-    :param multithread: controls `wsgi.multithread`.  Defaults to `False`.
-    :param multiprocess: controls `wsgi.multiprocess`.  Defaults to `False`.
-    :param run_once: controls `wsgi.run_once`.  Defaults to `False`.
-    :param headers: an optional list or :class:`Headers` object of headers.
-    :param data: a string or dict of form data.  See explanation above.
-    :param environ_base: an optional dict of environment defaults.
-    :param environ_overrides: an optional dict of environment overrides.
-    :param charset: the charset used to encode unicode data.
+    :param path:
+        The path of the request.  In the WSGI environment this will end up as
+        `PATH_INFO`.  If the `query_string` is not defined and there is a
+        question mark in the `path` everything after it is used as query
+        string.  `path` is expected to be in iri form
+    :param base_url:
+        The base URL is a URL that is used to extract the WSGI URL scheme, host
+        (server name + server port) and the script root (`SCRIPT_NAME`).
+        `base_url` is expected to be in iri form.
+    :param query_string:
+        An optional string or dict with URL parameters.
+    :param method:
+        The HTTP method to use, defaults to `GET`.
+    :param input_stream:
+        An optional input stream.  Do not specify this and `data`.  As soon as
+        an input stream is set you can't modify :attr:`args` and :attr:`files`
+        unless you set the :attr:`input_stream` to `None` again.
+    :param content_type:
+        The content type for the request.  You don't have to provide this when
+        specifying files and form data via `data`.
+    :param content_length:
+        The content length for the request.  You don't have to specify this
+        when providing data via `data`.
+    :param errors_stream:
+        An optional error stream that is used for `wsgi.errors`.  Defaults to
+        :data:`stderr`.
+    :param multithread:
+        Controls `wsgi.multithread`.  Defaults to `False`.
+    :param multiprocess:
+        Controls `wsgi.multiprocess`.  Defaults to `False`.
+    :param run_once:
+        Controls `wsgi.run_once`.  Defaults to `False`.
+    :param headers:
+        An optional list or :class:`Headers` object of headers.
+    :param data:
+        A string or dict of form data.  See explanation above.
+    :param environ_base:
+        An optional dict of environment defaults.
+    :param environ_overrides:
+        An optional dict of environment overrides.
+    :param charset:
+        The charset used to encode unicode data.
     """
 
     #: the server protocol to use.  defaults to HTTP/1.1
@@ -307,9 +316,8 @@ class EnvironBuilder(object):
                  content_length=None, errors_stream=None, multithread=False,
                  multiprocess=False, run_once=False, headers=None, data=None,
                  environ_base=None, environ_overrides=None, charset='utf-8'):
-        path_s = make_literal_wrapper(path)
-        if query_string is None and path_s('?') in path:
-            path, query_string = path.split(path_s('?'), 1)
+        if query_string is None and '?' in path:
+            path, query_string = path.split('?', 1)
         self.charset = charset
         self.path = iri_to_uri(path)
         if base_url is not None:
@@ -885,7 +893,10 @@ def run_wsgi_app(app, environ, buffered=False):
 
     def start_response(status, headers, exc_info=None):
         if exc_info is not None:
-            reraise(*exc_info)
+            exc_type, exc_value, exc_traceback = exc_info
+            if exc_value.__traceback__ is not exc_traceback:
+                raise exc_value.with_traceback()
+            raise exc_value
         response[:] = [status, headers]
         return buffer.append
 
