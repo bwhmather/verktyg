@@ -22,9 +22,7 @@ from urllib.request import Request
 
 from http.cookiejar import CookieJar
 
-from werkzeug._compat import (
-    to_bytes, wsgi_encoding_dance
-)
+from werkzeug._compat import wsgi_encoding_dance
 from werkzeug._internal import _empty_stream, _get_environ
 from werkzeug.urls import (
     url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
@@ -44,26 +42,28 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
     """
     if boundary is None:
         boundary = '---------------WerkzeugFormPart_%s%s' % (time(), random())
-    _closure = [BytesIO(), 0, False]
+    stream = BytesIO()
+    total_length = 0
+    on_disk = False
 
     if use_tempfile:
         def write_binary(string):
-            stream, total_length, on_disk = _closure
+            nonlocal stream, total_length, on_disk
             if on_disk:
                 stream.write(string)
             else:
                 length = len(string)
-                if length + _closure[1] <= threshold:
+                if length + total_length <= threshold:
                     stream.write(string)
                 else:
                     new_stream = TemporaryFile('wb+')
                     new_stream.write(stream.getvalue())
                     new_stream.write(string)
-                    _closure[0] = new_stream
-                    _closure[2] = True
-                _closure[1] = total_length + length
+                    stream = new_stream
+                    on_disk = True
+                total_length = total_length + length
     else:
-        write_binary = _closure[0].write
+        write_binary = stream.write
 
     def write(string):
         write_binary(string.encode(charset))
@@ -95,18 +95,18 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
                         break
                     write_binary(chunk)
             else:
-                if not isinstance(value, str):
-                    value = str(value)
+                if isinstance(value, str):
+                    write(value)
                 else:
-                    value = to_bytes(value, charset)
+                    write_binary(value)
                 write('\r\n\r\n')
                 write_binary(value)
             write('\r\n')
     write('--%s--\r\n' % boundary)
 
-    length = int(_closure[0].tell())
-    _closure[0].seek(0)
-    return _closure[0], length, boundary
+    length = int(stream.tell())
+    stream.seek(0)
+    return stream, length, boundary
 
 
 def encode_multipart(values, boundary=None, charset='utf-8'):
