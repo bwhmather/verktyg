@@ -20,8 +20,8 @@
     :license: BSD, see LICENSE for more details.
 """
 from io import BytesIO
+from urllib.parse import parse_qsl
 
-from werkzeug.urls import url_decode
 from werkzeug.formparser import FormDataParser, default_stream_factory
 from werkzeug._compat import (
     wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
@@ -351,9 +351,10 @@ class BaseRequest(object):
         :attr:`parameter_storage_class` to a different type.  This might
         be necessary if the order of the form data is important.
         """
-        return url_decode(wsgi_get_bytes(self.environ.get('QUERY_STRING', '')),
-                          self.url_charset, errors=self.encoding_errors,
-                          cls=self.parameter_storage_class)
+        return self.parameter_storage_class(parse_qsl(
+            wsgi_get_bytes(self.environ.get('QUERY_STRING', '')),
+            encoding=self.url_charset, errors=self.encoding_errors,
+        ))
 
     def get_data(self, cache=True, as_text=False, parse_form_data=False):
         """This reads the buffered incoming data from the client into one
