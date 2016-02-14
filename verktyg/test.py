@@ -23,7 +23,7 @@ from urllib.request import Request
 from http.cookiejar import CookieJar
 
 from werkzeug._compat import wsgi_encoding_dance
-from werkzeug._internal import _empty_stream, _get_environ
+from werkzeug._internal import _get_environ
 from werkzeug.urls import (
     url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
 )
@@ -569,7 +569,7 @@ class EnvironBuilder(object):
             content_length = len(values)
             input_stream = BytesIO(values)
         else:
-            input_stream = _empty_stream
+            input_stream = BytesIO()
 
         result = {}
         if self.environ_base:
