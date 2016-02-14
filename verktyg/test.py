@@ -23,7 +23,6 @@ from urllib.request import Request
 from http.cookiejar import CookieJar
 
 from werkzeug._compat import wsgi_encoding_dance
-from werkzeug._internal import _get_environ
 from werkzeug.urls import (
     url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
 )
