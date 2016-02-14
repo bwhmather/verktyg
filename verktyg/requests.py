@@ -351,9 +351,12 @@ class BaseRequest(object):
         :attr:`parameter_storage_class` to a different type.  This might
         be necessary if the order of the form data is important.
         """
+        qs = wsgi_decoding_dance(
+            self.environ.get('QUERY_STRING', ''),
+            charset=self.url_charset, errors=self.encoding_errors,
+        )
         return self.parameter_storage_class(parse_qsl(
-            wsgi_get_bytes(self.environ.get('QUERY_STRING', '')),
-            encoding=self.url_charset, errors=self.encoding_errors,
+            qs, encoding=self.url_charset, errors=self.encoding_errors,
         ))
 
     def get_data(self, cache=True, as_text=False, parse_form_data=False):
