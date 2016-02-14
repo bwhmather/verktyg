@@ -19,12 +19,13 @@ from zlib import adler32
 from time import time, mktime
 from datetime import datetime
 from functools import partial, update_wrapper
+from urllib.parse import urlsplit, quote as urlquote, urljoin
 
 from werkzeug._compat import (
     make_literal_wrapper, to_unicode, to_bytes, wsgi_get_bytes,
 )
 from werkzeug._internal import _empty_stream, _encode_idna
-from werkzeug.urls import uri_to_iri, url_quote, url_parse, url_join
+from werkzeug.urls import uri_to_iri
 
 from verktyg import http
 from verktyg.http import (
@@ -85,10 +86,10 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
     cat = tmp.append
     if host_only:
         return uri_to_iri(''.join(tmp) + '/')
-    cat(url_quote(wsgi_get_bytes(environ.get('SCRIPT_NAME', ''))).rstrip('/'))
+    cat(urlquote(wsgi_get_bytes(environ.get('SCRIPT_NAME', ''))).rstrip('/'))
     cat('/')
     if not root_only:
-        cat(url_quote(
+        cat(urlquote(
             wsgi_get_bytes(environ.get('PATH_INFO', '')).lstrip(b'/')
         ))
         if not strip_querystring:
@@ -222,7 +223,7 @@ def get_query_string(environ):
     # QUERY_STRING really should be ascii safe but some browsers
     # will send us some unicode stuff (I am looking at you IE).
     # In that case we want to urllib quote it badly.
-    return url_quote(qs, safe=':&%=+$!*\'(),')
+    return urlquote(qs, safe=':&%=+$!*\'(),')
 
 
 def get_path_info(environ, charset='utf-8', errors='replace'):
@@ -386,9 +387,9 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
         environ_or_baseurl = get_current_url(environ_or_baseurl,
                                              root_only=True)
     base_iri = uri_to_iri(environ_or_baseurl, charset, errors)
-    base_scheme, base_netloc, base_path = url_parse(base_iri)[:3]
-    cur_scheme, cur_netloc, cur_path, = url_parse(
-        url_join(base_iri, path)
+    base_scheme, base_netloc, base_path = urlsplit(base_iri)[:3]
+    cur_scheme, cur_netloc, cur_path, = urlsplit(
+        urljoin(base_iri, path)
     )[:3]
 
     # normalize the network location

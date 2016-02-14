@@ -17,15 +17,14 @@ from random import random
 from itertools import chain
 from tempfile import TemporaryFile
 from io import BytesIO
+from urllib.parse import urlencode, urlunsplit, urlsplit, unquote as urlunquote
 
 from urllib.request import Request
 
 from http.cookiejar import CookieJar
 
 from werkzeug._compat import wsgi_encoding_dance
-from werkzeug.urls import (
-    url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
-)
+from werkzeug.urls import url_fix, iri_to_uri
 
 from verktyg.datastructures import MultiDict, CombinedMultiDict
 from verktyg.http import Headers, FileStorage, dump_cookie
@@ -377,8 +376,9 @@ class EnvironBuilder(object):
             self.files.add_file(key, value)
 
     def _get_base_url(self):
-        return url_unparse((self.url_scheme, self.host,
-                            self.script_root, '', '')).rstrip('/') + '/'
+        return urlunsplit(
+            (self.url_scheme, self.host, self.script_root, '', '')
+        ).rstrip('/') + '/'
 
     def _set_base_url(self, value):
         if value is None:
@@ -386,7 +386,7 @@ class EnvironBuilder(object):
             netloc = 'localhost'
             script_root = ''
         else:
-            scheme, netloc, script_root, qs, anchor = url_parse(value)
+            scheme, netloc, script_root, qs, anchor = urlsplit(value)
             if qs or anchor:
                 raise ValueError('base url must not contain a query string '
                                  'or fragment')
@@ -477,7 +477,7 @@ class EnvironBuilder(object):
     def _get_query_string(self):
         if self._query_string is None:
             if self._args is not None:
-                return url_encode(self._args, charset=self.charset)
+                return urlencode(self._args, encoding=self.charset)
             return ''
         return self._query_string
 
@@ -563,7 +563,7 @@ class EnvironBuilder(object):
             )
             content_type += '; boundary="%s"' % boundary
         elif content_type == 'application/x-www-form-urlencoded':
-            values = url_encode(self.form, charset=self.charset)
+            values = urlencode(self.form, encoding=self.charset)
             values = values.encode('ascii')
             content_length = len(values)
             input_stream = BytesIO(values)
@@ -576,7 +576,7 @@ class EnvironBuilder(object):
 
         def _path_encode(x):
             return wsgi_encoding_dance(
-                url_unquote(x, self.charset), self.charset
+                urlunquote(x, self.charset), self.charset
             )
 
         qs = wsgi_encoding_dance(self.query_string)
@@ -699,8 +699,8 @@ class Client(object):
         """Resolves a single redirect and triggers the request again
         directly on this redirect client.
         """
-        scheme, netloc, script_root, qs, anchor = url_parse(new_location)
-        base_url = url_unparse((scheme, netloc, '', '', '')).rstrip('/') + '/'
+        scheme, netloc, script_root, qs, anchor = urlsplit(new_location)
+        base_url = urlunsplit((scheme, netloc, '', '', '')).rstrip('/') + '/'
 
         cur_server_name = netloc.split(':', 1)[0].split('.')
         real_server_name = get_host(environ).rsplit(':', 1)[0].split('.')

@@ -20,8 +20,9 @@
     :license: BSD, see LICENSE for more details.
 """
 from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
-from werkzeug.urls import iri_to_uri, url_join
+from werkzeug.urls import iri_to_uri
 from werkzeug._internal import _get_environ
 from werkzeug._compat import to_bytes
 
@@ -511,7 +512,7 @@ class BaseResponse(object):
                 current_url = get_current_url(environ, root_only=True)
                 if isinstance(current_url, str):
                     current_url = iri_to_uri(current_url)
-                location = url_join(current_url, location)
+                location = urljoin(current_url, location)
             if location != old_location:
                 headers['Location'] = location
 
