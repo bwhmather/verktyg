@@ -15,7 +15,6 @@ from urllib.request import parse_http_list as _parse_list_header
 from datetime import datetime, timedelta
 
 from werkzeug._internal import _missing, _empty_stream
-from werkzeug._compat import make_literal_wrapper
 
 from verktyg.datastructures import is_immutable
 from verktyg import exceptions
@@ -836,16 +835,17 @@ class FileStorage(object):
         # special filenames with angular brackets.
         if filename is None:
             filename = getattr(stream, 'name', None)
-            s = make_literal_wrapper(filename)
-            if filename and filename[0] == s('<') and filename[-1] == s('>'):
-                filename = None
 
-            # On Python 3 we want to make sure the filename is always unicode.
-            # This might not be if the name attribute is bytes due to the
-            # file being opened from the bytes API.
+            # We want to make sure the filename is always unicode.  This might
+            # not be if the name attribute is bytes due to the file being
+            # opened from the bytes API.
             if isinstance(filename, bytes):
-                filename = filename.decode(sys.getfilesystemencoding(),
-                                           'replace')
+                filename = filename.decode(
+                    sys.getfilesystemencoding(), 'replace'
+                )
+
+            if filename and filename[0] == '<' and filename[-1] == '>':
+                filename = None
 
         self.filename = filename
         if headers is None:
