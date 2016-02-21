@@ -23,12 +23,12 @@ from urllib.request import Request
 
 from http.cookiejar import CookieJar
 
-from werkzeug._compat import wsgi_encoding_dance
-
 from verktyg.urls import url_fix, iri_to_uri
 from verktyg.datastructures import MultiDict, CombinedMultiDict
 from verktyg.http import Headers, FileStorage, dump_cookie
-from verktyg.wsgi import get_host, get_current_url, ClosingIterator
+from verktyg.wsgi import (
+    get_host, get_current_url, ClosingIterator, wsgi_encoding_dance,
+)
 from verktyg.requests import BaseRequest
 
 

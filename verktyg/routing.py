@@ -102,9 +102,9 @@ from urllib.parse import (
 from pprint import pformat
 
 from werkzeug._internal import _get_environ
-from werkzeug._compat import wsgi_decoding_dance
 
 from verktyg.datastructures import ImmutableDict, MultiDict
+from verktyg.wsgi import wsgi_decoding_dance
 from verktyg.exceptions import HTTPException, NotFound
 
 

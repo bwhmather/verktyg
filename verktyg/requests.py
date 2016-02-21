@@ -23,7 +23,6 @@ from io import BytesIO
 from urllib.parse import parse_qsl
 
 from werkzeug.formparser import FormDataParser, default_stream_factory
-from werkzeug._compat import wsgi_decoding_dance
 
 from verktyg.utils import cached_property, environ_property
 from verktyg.datastructures import (
@@ -38,7 +37,7 @@ from verktyg.http import (
     RequestCacheControl,
 )
 from verktyg.wsgi import (
-    EnvironHeaders,
+    EnvironHeaders, wsgi_decoding_dance,
     get_current_url, get_host, get_input_stream, get_content_length
 )
 
