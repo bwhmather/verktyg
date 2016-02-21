@@ -9,8 +9,6 @@
 """
 import unittest
 
-from werkzeug._compat import text_type
-
 from verktyg import exceptions
 
 
@@ -52,8 +50,4 @@ class ExceptionsTestCase(unittest.TestCase):
     def test_exception_repr(self):
         exc = exceptions.NotFound()
         self.assertEqual(str(exc), '404: Not Found')
-        self.assertEqual(repr(exc), "<NotFound '404: Not Found'>")
-
-        exc = exceptions.NotFound('Not There')
-        self.assertEqual(text_type(exc), '404: Not Found')
         self.assertEqual(repr(exc), "<NotFound '404: Not Found'>")
