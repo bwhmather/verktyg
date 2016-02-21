@@ -11,6 +11,7 @@
 """
 import re
 import os
+from io import BytesIO
 import sys
 import posixpath
 import mimetypes
@@ -24,7 +25,7 @@ from urllib.parse import quote as urlquote
 from werkzeug._compat import (
     make_literal_wrapper, wsgi_get_bytes,
 )
-from werkzeug._internal import _empty_stream, _encode_idna
+from werkzeug._internal import _encode_idna
 
 from verktyg.urls import uri_to_iri
 from verktyg import http
@@ -202,7 +203,7 @@ def get_input_stream(environ, safe_fallback=True):
     # The non-safe fallback is not recommended but might be useful in
     # some situations.
     if content_length is None:
-        return safe_fallback and _empty_stream or stream
+        return safe_fallback and BytesIO() or stream
 
     # Otherwise limit the stream to the content length
     return LimitedStream(stream, content_length)

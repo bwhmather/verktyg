@@ -9,12 +9,13 @@
 """
 import re
 import sys
+from io import BytesIO
 from time import gmtime
 from email.utils import parsedate_tz
 from urllib.request import parse_http_list as _parse_list_header
 from datetime import datetime, timedelta
 
-from werkzeug._internal import _missing, _empty_stream
+from werkzeug._internal import _missing
 
 from verktyg.datastructures import is_immutable
 from verktyg import exceptions
@@ -827,7 +828,7 @@ class FileStorage(object):
                  content_type=None, content_length=None,
                  headers=None):
         self.name = name
-        self.stream = stream or _empty_stream
+        self.stream = stream or BytesIO()
 
         # if no filename is provided we can attempt to get the filename
         # from the stream object passed.  There we have to be careful to
