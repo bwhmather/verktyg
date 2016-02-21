@@ -23,9 +23,7 @@ from io import BytesIO
 from urllib.parse import parse_qsl
 
 from werkzeug.formparser import FormDataParser, default_stream_factory
-from werkzeug._compat import (
-    wsgi_decoding_dance, wsgi_get_bytes, to_unicode, to_native
-)
+from werkzeug._compat import wsgi_decoding_dance
 
 from verktyg.utils import cached_property, environ_property
 from verktyg.datastructures import (
@@ -93,10 +91,6 @@ class BaseRequest(object):
     data by accident.  A shallow request is not populated to the WSGI
     environment.
     """
-
-    #: the charset for the request, defaults to utf-8
-    charset = 'utf-8'
-
     #: the error handling procedure for errors, defaults to 'replace'
     encoding_errors = 'replace'
 
@@ -170,7 +164,7 @@ class BaseRequest(object):
         # in a debug session we don't want the repr to blow up.
         args = []
         try:
-            args.append("'%s'" % to_native(self.url, self.url_charset))
+            args.append("'%s'" % self.url)
             args.append('[%s]' % self.method)
         except Exception:
             args.append('(invalid WSGI environ)')
@@ -188,13 +182,6 @@ class BaseRequest(object):
         """
         return self.environ.get('verktyg.application')
 
-    @property
-    def url_charset(self):
-        """The charset that is assumed for URLs.  Defaults to the value
-        of :attr:`charset`.
-        """
-        return self.charset
-
     @classmethod
     def from_values(cls, *args, **kwargs):
         """Create a new request object based on the values provided.  If
@@ -206,12 +193,10 @@ class BaseRequest(object):
         support for cookies etc.
 
         This accepts the same options as the
-        :class:`~werkzeug.test.EnvironBuilder`.
+        :class:`~verktyg.test.EnvironBuilder`.
         :return: request object
         """
-        from werkzeug.test import EnvironBuilder
-        charset = kwargs.pop('charset', cls.charset)
-        kwargs['charset'] = charset
+        from verktyg.test import EnvironBuilder
         builder = EnvironBuilder(*args, **kwargs)
         try:
             return builder.get_request(cls)
@@ -251,15 +236,16 @@ class BaseRequest(object):
         return bool(self.environ.get('CONTENT_TYPE'))
 
     def make_form_data_parser(self):
-        """Creates the form data parser.  Instanciates the
+        """Creates the form data parser.  Instantiates the
         :attr:`form_data_parser_class` with some parameters.
         """
-        return self.form_data_parser_class(self._get_file_stream,
-                                           self.charset,
-                                           self.encoding_errors,
-                                           self.max_form_memory_size,
-                                           self.max_content_length,
-                                           self.parameter_storage_class)
+        return self.form_data_parser_class(
+            self._get_file_stream,
+            errors=self.encoding_errors,
+            max_form_memory_size=self.max_form_memory_size,
+            max_content_length=self.max_content_length,
+            cls=self.parameter_storage_class
+        )
 
     def _load_form_data(self):
         """Method used internally to retrieve submitted data.  After calling
@@ -353,10 +339,10 @@ class BaseRequest(object):
         """
         qs = wsgi_decoding_dance(
             self.environ.get('QUERY_STRING', ''),
-            charset=self.url_charset, errors=self.encoding_errors,
+            errors=self.encoding_errors,
         )
         return self.parameter_storage_class(parse_qsl(
-            qs, encoding=self.url_charset, errors=self.encoding_errors,
+            qs, errors=self.encoding_errors,
         ))
 
     def get_data(self, cache=True, as_text=False, parse_form_data=False):
@@ -390,7 +376,8 @@ class BaseRequest(object):
             if cache:
                 self._cached_data = rv
         if as_text:
-            rv = rv.decode(self.charset, self.encoding_errors)
+            # TODO charset
+            rv = rv.decode('utf-8', self.encoding_errors)
         return rv
 
     @cached_property
@@ -435,9 +422,10 @@ class BaseRequest(object):
     @cached_property
     def cookies(self):
         """Read only access to the retrieved cookie values as dictionary."""
-        return parse_cookie(self.environ, self.charset,
-                            self.encoding_errors,
-                            cls=self.dict_storage_class)
+        return parse_cookie(
+            self.environ, errors=self.encoding_errors,
+            cls=self.dict_storage_class
+        )
 
     @cached_property
     def headers(self):
@@ -452,22 +440,23 @@ class BaseRequest(object):
         info in the WSGI environment but will always include a leading slash,
         even if the URL root is accessed.
         """
-        raw_path = wsgi_decoding_dance(self.environ.get('PATH_INFO') or '',
-                                       self.charset, self.encoding_errors)
+        raw_path = wsgi_decoding_dance(
+            self.environ.get('PATH_INFO') or '', errors=self.encoding_errors
+        )
         return '/' + raw_path.lstrip('/')
 
     @cached_property
     def full_path(self):
         """Requested path as unicode, including the query string."""
-        return self.path + u'?' + to_unicode(
-            self.query_string, self.url_charset
-        )
+        return self.path + u'?' + self.query_string
 
     @cached_property
     def script_root(self):
         """The root path of the script without the trailing slash."""
-        raw_path = wsgi_decoding_dance(self.environ.get('SCRIPT_NAME') or '',
-                                       self.charset, self.encoding_errors)
+        raw_path = wsgi_decoding_dance(
+            self.environ.get('SCRIPT_NAME') or '',
+            errors=self.encoding_errors
+        )
         return raw_path.rstrip('/')
 
     @cached_property
@@ -510,9 +499,12 @@ class BaseRequest(object):
         """
         return get_host(self.environ, trusted_hosts=self.trusted_hosts)
 
-    query_string = environ_property(
-        'QUERY_STRING', '', read_only=True,
-        load_func=wsgi_get_bytes, doc='The URL parameters as raw bytestring.')
+    @cached_property
+    def query_string(self):
+        return wsgi_decoding_dance(
+            self.environ.get('QUERY_STRING') or '', errors=self.encoding_errors
+        )
+
     method = environ_property(
         'REQUEST_METHOD', 'GET', read_only=True,
         load_func=lambda x: x.upper(),

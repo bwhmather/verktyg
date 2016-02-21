@@ -132,7 +132,7 @@ class RequestsTestCase(unittest.TestCase):
 
     def test_query_string_is_bytes(self):
         req = Request.from_values(u'/?foo=%2f')
-        self.assertEqual(req.query_string, b'foo=%2f')
+        self.assertEqual(req.query_string, 'foo=%2f')
 
     def test_request_repr(self):
         req = Request.from_values('/foobar')
@@ -456,11 +456,6 @@ class RequestsTestCase(unittest.TestCase):
 
         self.assertTrue(foo.closed)
 
-    def test_url_charset_reflection(self):
-        req = Request.from_values()
-        req.charset = 'utf-7'
-        self.assertEqual(req.url_charset, 'utf-7')
-
     def test_other_method_payload(self):
         data = b'Hello World'
         req = Request.from_values(
@@ -512,13 +507,6 @@ class RequestsTestCase(unittest.TestCase):
         MyRequest.list_storage_class = tuple
         req = MyRequest.from_values()
         self.assertIs(type(req.access_route), tuple)
-
-    def test_modified_url_encoding(self):
-        class ModifiedRequest(Request):
-            url_charset = 'euc-kr'
-
-        req = ModifiedRequest.from_values(u'/?foo=정상처리'.encode('euc-kr'))
-        self.assertEqual(req.args['foo'], u'정상처리')
 
     def test_request_method_case_sensitivity(self):
         req = Request({'REQUEST_METHOD': 'get'})
