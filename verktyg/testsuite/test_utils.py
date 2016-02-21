@@ -163,51 +163,6 @@ class UtilsTestCase(unittest.TestCase):
         a.date = datetime(2008, 1, 22, 10, 0, 0, 0)
         self.assertEqual(a.environ['date'], 'Tue, 22 Jan 2008 10:00:00 GMT')
 
-    def test_validate_arguments(self):
-        def take_none():
-            pass
-
-        def take_two(a, b):
-            pass
-
-        def take_two_one_default(a, b=0):
-            pass
-
-        self.assertEqual(
-            utils.validate_arguments(take_two, (1, 2,), {}),
-            ((1, 2), {})
-        )
-        self.assertEqual(
-            utils.validate_arguments(take_two, (1,), {'b': 2}),
-            ((1, 2), {})
-        )
-        self.assertEqual(
-            utils.validate_arguments(take_two_one_default, (1,), {}),
-            ((1, 0), {})
-        )
-        self.assertEqual(
-            utils.validate_arguments(take_two_one_default, (1, 2), {}),
-            ((1, 2), {})
-        )
-
-        self.assertRaises(
-            utils.ArgumentValidationError,
-            utils.validate_arguments, take_two, (), {}
-        )
-
-        self.assertEqual(
-            utils.validate_arguments(take_none, (1, 2,), {'c': 3}),
-            ((), {})
-        )
-        self.assertRaises(
-            utils.ArgumentValidationError,
-            utils.validate_arguments, take_none, (1,), {}, drop_extra=False
-        )
-        self.assertRaises(
-            utils.ArgumentValidationError,
-            utils.validate_arguments, take_none, (), {'a': 1}, drop_extra=False
-        )
-
     def test_append_slash_redirect(self):
         def app(env, sr):
             return utils.append_slash_redirect(env)(env, sr)
