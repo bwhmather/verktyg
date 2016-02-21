@@ -14,8 +14,8 @@ from time import time
 from datetime import timedelta
 
 from werkzeug._internal import _encode_idna
-from werkzeug.urls import iri_to_uri
 
+from verktyg.urls import iri_to_uri
 from verktyg import datastructures
 from verktyg.http.basic import _dump_date
 
@@ -240,7 +240,7 @@ def dump_cookie(key, value='', max_age=None, expires=None, path='/',
     value = value.encode(charset)
 
     if path is not None:
-        path = iri_to_uri(path, charset)
+        path = iri_to_uri(path)
     domain = _make_cookie_domain(domain)
     if isinstance(max_age, timedelta):
         max_age = (max_age.days * 60 * 60 * 24) + max_age.seconds

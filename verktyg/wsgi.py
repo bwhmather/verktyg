@@ -25,8 +25,8 @@ from werkzeug._compat import (
     make_literal_wrapper, to_unicode, to_bytes, wsgi_get_bytes,
 )
 from werkzeug._internal import _empty_stream, _encode_idna
-from werkzeug.urls import uri_to_iri
 
+from verktyg.urls import uri_to_iri
 from verktyg import http
 from verktyg.http import (
     is_resource_modified, http_date, unicodify_header_value,
@@ -68,10 +68,10 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
 
     Note that the string returned might contain unicode characters as the
     representation is an IRI not an URI.  If you need an ASCII only
-    representation you can use the :func:`~werkzeug.urls.iri_to_uri`
+    representation you can use the :func:`~verktyg.urls.iri_to_uri`
     function:
 
-    >>> from werkzeug.urls import iri_to_uri
+    >>> from verktyg.urls import iri_to_uri
     >>> iri_to_uri(get_current_url(env))
     'http://localhost/script/?param=foo'
 
@@ -329,8 +329,10 @@ def peek_path_info(environ, charset='utf-8', errors='replace'):
                           charset, errors, allow_none_charset=True)
 
 
-def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
-                      errors='replace', collapse_http_schemes=True):
+def extract_path_info(
+            environ_or_baseurl, path_or_url,
+            errors='replace', collapse_http_schemes=True
+        ):
     """Extracts the path info from the given URL (or WSGI environment) and
     path.  The path info returned is a unicode string, not a bytestring
     suitable for a WSGI environment.  The URLs might also be IRIs.
@@ -351,19 +353,18 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
 
     Instead of providing a base URL you can also pass a WSGI environment.
 
-    :param environ_or_baseurl: a WSGI environment dict, a base URL or
-                               base IRI.  This is the root of the
-                               application.
-    :param path_or_url: an absolute path from the server root, a
-                        relative path (in which case it's the path info)
-                        or a full URL.  Also accepts IRIs and unicode
-                        parameters.
-    :param charset: the charset for byte data in URLs
-    :param errors: the error handling on decode
-    :param collapse_http_schemes: if set to `False` the algorithm does
-                                  not assume that http and https on the
-                                  same server point to the same
-                                  resource.
+    :param environ_or_baseurl:
+        A WSGI environment dict, a base URL or base IRI.  This is the root of
+        the application.
+    :param path_or_url:
+        An absolute path from the server root, a relative path (in which case
+        it's the path info) or a full URL.  Also accepts IRIs and unicode
+        parameters.
+    :param errors:
+        The error handling on decode.
+    :param collapse_http_schemes:
+        If set to `False` the algorithm does not assume that http and https on
+        the same server point to the same resource.
     """
     def _normalize_netloc(scheme, netloc):
         parts = netloc.split(u'@', 1)[-1].split(u':', 1)
@@ -382,11 +383,11 @@ def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
         return netloc
 
     # make sure whatever we are working on is a IRI and parse it
-    path = uri_to_iri(path_or_url, charset, errors)
+    path = uri_to_iri(path_or_url, errors=errors)
     if isinstance(environ_or_baseurl, dict):
         environ_or_baseurl = get_current_url(environ_or_baseurl,
                                              root_only=True)
-    base_iri = uri_to_iri(environ_or_baseurl, charset, errors)
+    base_iri = uri_to_iri(environ_or_baseurl, errors=errors)
     base_scheme, base_netloc, base_path = urlsplit(base_iri)[:3]
     cur_scheme, cur_netloc, cur_path, = urlsplit(
         urljoin(base_iri, path)

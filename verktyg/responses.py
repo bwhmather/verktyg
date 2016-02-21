@@ -22,10 +22,10 @@
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
-from werkzeug.urls import iri_to_uri
 from werkzeug._internal import _get_environ
 from werkzeug._compat import to_bytes
 
+from verktyg.urls import iri_to_uri
 from verktyg.utils import cached_property, header_property, get_content_type
 from verktyg.datastructures import CallbackDict
 from verktyg.http import (
@@ -506,7 +506,7 @@ class BaseResponse(object):
             if isinstance(location, str):
                 # Safe conversion is necessary here as we might redirect
                 # to a broken URI scheme (for instance itms-services).
-                location = iri_to_uri(location, safe_conversion=True)
+                location = iri_to_uri(location)
 
             if self.autocorrect_location_header:
                 current_url = get_current_url(environ, root_only=True)

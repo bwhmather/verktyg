@@ -24,8 +24,8 @@ from urllib.request import Request
 from http.cookiejar import CookieJar
 
 from werkzeug._compat import wsgi_encoding_dance
-from werkzeug.urls import url_fix, iri_to_uri
 
+from verktyg.urls import url_fix, iri_to_uri
 from verktyg.datastructures import MultiDict, CombinedMultiDict
 from verktyg.http import Headers, FileStorage, dump_cookie
 from verktyg.wsgi import get_host, get_current_url, ClosingIterator
@@ -319,7 +319,7 @@ class EnvironBuilder(object):
         self.charset = charset
         self.path = iri_to_uri(path)
         if base_url is not None:
-            base_url = url_fix(iri_to_uri(base_url, charset), charset)
+            base_url = url_fix(base_url)
         self.base_url = base_url
         if isinstance(query_string, (bytes, str)):
             self.query_string = query_string
