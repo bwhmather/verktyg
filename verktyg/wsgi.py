@@ -22,7 +22,7 @@ from functools import partial, update_wrapper
 from urllib.parse import urlsplit, quote as urlquote, urljoin
 
 from werkzeug._compat import (
-    make_literal_wrapper, to_unicode, to_bytes, wsgi_get_bytes,
+    make_literal_wrapper, to_unicode, wsgi_get_bytes,
 )
 from werkzeug._internal import _empty_stream, _encode_idna
 
@@ -890,7 +890,6 @@ def make_chunk_iter(stream, separator, limit=None, buffer_size=10 * 1024):
         _split = re.compile(r'(%s)' % re.escape(separator)).split
         _join = ''.join
     else:
-        separator = to_bytes(separator)
         _split = re.compile(b'(' + re.escape(separator) + b')').split
         _join = b''.join
 

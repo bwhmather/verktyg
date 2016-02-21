@@ -420,15 +420,16 @@ class WsgiTestCase(unittest.TestCase):
 
     def test_make_chunk_iter_bytes(self):
         data = [b'abcdefXghi', b'jklXmnopqrstuvwxyzX', b'ABCDEFGHIJK']
-        rv = list(wsgi.make_chunk_iter(data, 'X'))
+        rv = list(wsgi.make_chunk_iter(data, b'X'))
         self.assertEqual(
             rv, [b'abcdef', b'ghijkl', b'mnopqrstuvwxyz', b'ABCDEFGHIJK']
         )
 
         data = b'abcdefXghijklXmnopqrstuvwxyzXABCDEFGHIJK'
         test_stream = BytesIO(data)
-        rv = list(wsgi.make_chunk_iter(test_stream, 'X', limit=len(data),
-                                       buffer_size=4))
+        rv = list(wsgi.make_chunk_iter(
+            test_stream, b'X', limit=len(data), buffer_size=4)
+        )
         self.assertEqual(
             rv, [b'abcdef', b'ghijkl', b'mnopqrstuvwxyz', b'ABCDEFGHIJK']
         )
