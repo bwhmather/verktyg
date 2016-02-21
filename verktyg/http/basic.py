@@ -9,13 +9,13 @@
 """
 import re
 import sys
+from io import BytesIO
 from time import gmtime
 from email.utils import parsedate_tz
 from urllib.request import parse_http_list as _parse_list_header
 from datetime import datetime, timedelta
 
-from werkzeug._internal import _missing, _empty_stream
-from werkzeug._compat import make_literal_wrapper
+from werkzeug._internal import _missing
 
 from verktyg.datastructures import is_immutable
 from verktyg import exceptions
@@ -174,8 +174,10 @@ class Headers(object):
         raise exceptions.BadRequestKeyError(key)
 
     def __eq__(self, other):
-        return other.__class__ is self.__class__ and \
+        return (
+            other.__class__ is self.__class__ and
             set(other._list) == set(self._list)
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -710,8 +712,10 @@ def parse_date(value):
                     year += 2000
                 elif year >= 69 and year <= 99:
                     year += 1900
-                return datetime(*((year,) + t[1:7])) - \
+                return (
+                    datetime(*((year,) + t[1:7])) -
                     timedelta(seconds=t[-1] or 0)
+                )
             except (ValueError, OverflowError):
                 return None
 
@@ -824,7 +828,7 @@ class FileStorage(object):
                  content_type=None, content_length=None,
                  headers=None):
         self.name = name
-        self.stream = stream or _empty_stream
+        self.stream = stream or BytesIO()
 
         # if no filename is provided we can attempt to get the filename
         # from the stream object passed.  There we have to be careful to
@@ -832,16 +836,17 @@ class FileStorage(object):
         # special filenames with angular brackets.
         if filename is None:
             filename = getattr(stream, 'name', None)
-            s = make_literal_wrapper(filename)
-            if filename and filename[0] == s('<') and filename[-1] == s('>'):
-                filename = None
 
-            # On Python 3 we want to make sure the filename is always unicode.
-            # This might not be if the name attribute is bytes due to the
-            # file being opened from the bytes API.
+            # We want to make sure the filename is always unicode.  This might
+            # not be if the name attribute is bytes due to the file being
+            # opened from the bytes API.
             if isinstance(filename, bytes):
-                filename = filename.decode(sys.getfilesystemencoding(),
-                                           'replace')
+                filename = filename.decode(
+                    sys.getfilesystemencoding(), 'replace'
+                )
+
+            if filename and filename[0] == '<' and filename[-1] == '>':
+                filename = None
 
         self.filename = filename
         if headers is None:
@@ -854,8 +859,7 @@ class FileStorage(object):
 
     def _parse_content_type(self):
         if not hasattr(self, '_parsed_content_type'):
-            self._parsed_content_type = \
-                parse_options_header(self.content_type)
+            self._parsed_content_type = parse_options_header(self.content_type)
 
     @property
     def content_type(self):

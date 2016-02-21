@@ -5,12 +5,13 @@
     This module implements WSGI related helpers.
 
     :copyright:
-        (c) 2015 Ben Mather, based on Werkzeug, see AUTHORS for more details.
+        (c) 2016 Ben Mather, based on Werkzeug, see AUTHORS for more details.
     :license:
         BSD, see LICENSE for more details.
 """
 import re
 import os
+from io import BytesIO
 import sys
 import posixpath
 import mimetypes
@@ -18,31 +19,29 @@ from itertools import chain
 from zlib import adler32
 from time import time, mktime
 from datetime import datetime
-from functools import partial, update_wrapper
+from functools import partial
+from urllib.parse import quote as urlquote
 
 from werkzeug._compat import (
-    make_literal_wrapper, to_unicode, to_bytes, wsgi_get_bytes,
+    make_literal_wrapper, wsgi_get_bytes,
 )
-from werkzeug._internal import _empty_stream, _encode_idna
-from werkzeug.urls import uri_to_iri, url_quote, url_parse, url_join
+from werkzeug._internal import _encode_idna
 
+from verktyg.urls import uri_to_iri
 from verktyg import http
 from verktyg.http import (
     is_resource_modified, http_date, unicodify_header_value,
 )
 
 
-def responder(f):
-    """Marks a function as responder.  Decorate a function with it and it
-    will automatically call the return value as WSGI application.
+def wsgi_decoding_dance(s, charset='utf-8', errors='replace'):
+    return s.encode('latin1').decode(charset, errors)
 
-    Example::
 
-        @responder
-        def application(environ, start_response):
-            return Response('Hello World!')
-    """
-    return update_wrapper(lambda *a: f(*a)(*a[-2:]), f)
+def wsgi_encoding_dance(s, charset='utf-8', errors='replace'):
+    if isinstance(s, str):
+        s = s.encode(charset)
+    return s.decode('latin1', errors)
 
 
 def get_current_url(environ, root_only=False, strip_querystring=False,
@@ -67,10 +66,10 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
 
     Note that the string returned might contain unicode characters as the
     representation is an IRI not an URI.  If you need an ASCII only
-    representation you can use the :func:`~werkzeug.urls.iri_to_uri`
+    representation you can use the :func:`~verktyg.urls.iri_to_uri`
     function:
 
-    >>> from werkzeug.urls import iri_to_uri
+    >>> from verktyg.urls import iri_to_uri
     >>> iri_to_uri(get_current_url(env))
     'http://localhost/script/?param=foo'
 
@@ -85,10 +84,10 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
     cat = tmp.append
     if host_only:
         return uri_to_iri(''.join(tmp) + '/')
-    cat(url_quote(wsgi_get_bytes(environ.get('SCRIPT_NAME', ''))).rstrip('/'))
+    cat(urlquote(wsgi_get_bytes(environ.get('SCRIPT_NAME', ''))).rstrip('/'))
     cat('/')
     if not root_only:
-        cat(url_quote(
+        cat(urlquote(
             wsgi_get_bytes(environ.get('PATH_INFO', '')).lstrip(b'/')
         ))
         if not strip_querystring:
@@ -152,8 +151,10 @@ def get_host(environ, trusted_hosts=None):
         rv = environ['HTTP_HOST']
     else:
         rv = environ['SERVER_NAME']
-        if (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not \
-           in (('https', '443'), ('http', '80')):
+        if (
+            (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not
+            in (('https', '443'), ('http', '80'))
+        ):
             rv += ':' + environ['SERVER_PORT']
     if trusted_hosts is not None:
         if not host_is_trusted(rv, trusted_hosts):
@@ -202,7 +203,7 @@ def get_input_stream(environ, safe_fallback=True):
     # The non-safe fallback is not recommended but might be useful in
     # some situations.
     if content_length is None:
-        return safe_fallback and _empty_stream or stream
+        return safe_fallback and BytesIO() or stream
 
     # Otherwise limit the stream to the content length
     return LimitedStream(stream, content_length)
@@ -220,7 +221,7 @@ def get_query_string(environ):
     # QUERY_STRING really should be ascii safe but some browsers
     # will send us some unicode stuff (I am looking at you IE).
     # In that case we want to urllib quote it badly.
-    return url_quote(qs, safe=':&%=+$!*\'(),')
+    return urlquote(qs, safe=':&%=+$!*\'(),')
 
 
 def get_path_info(environ, charset='utf-8', errors='replace'):
@@ -257,161 +258,6 @@ def get_script_name(environ, charset='utf-8', errors='replace'):
     return path.decode(charset, errors)
 
 
-def pop_path_info(environ, charset='utf-8', errors='replace'):
-    """Removes and returns the next segment of `PATH_INFO`, pushing it onto
-    `SCRIPT_NAME`.  Returns `None` if there is nothing left on `PATH_INFO`.
-
-    If the `charset` is set to `None` a bytestring is returned.
-
-    If there are empty segments (``'/foo//bar``) these are ignored but
-    properly pushed to the `SCRIPT_NAME`:
-
-    >>> env = {'SCRIPT_NAME': '/foo', 'PATH_INFO': '/a/b'}
-    >>> pop_path_info(env)
-    'a'
-    >>> env['SCRIPT_NAME']
-    '/foo/a'
-    >>> pop_path_info(env)
-    'b'
-    >>> env['SCRIPT_NAME']
-    '/foo/a/b'
-
-    :param environ: the WSGI environment that is modified.
-    """
-    path = environ.get('PATH_INFO')
-    if not path:
-        return None
-
-    script_name = environ.get('SCRIPT_NAME', '')
-
-    # shift multiple leading slashes over
-    old_path = path
-    path = path.lstrip('/')
-    if path != old_path:
-        script_name += '/' * (len(old_path) - len(path))
-
-    if '/' not in path:
-        environ['PATH_INFO'] = ''
-        environ['SCRIPT_NAME'] = script_name + path
-        rv = wsgi_get_bytes(path)
-    else:
-        segment, path = path.split('/', 1)
-        environ['PATH_INFO'] = '/' + path
-        environ['SCRIPT_NAME'] = script_name + segment
-        rv = wsgi_get_bytes(segment)
-
-    if charset is None:
-        return rv
-    return rv.decode(charset, errors)
-
-
-def peek_path_info(environ, charset='utf-8', errors='replace'):
-    """Returns the next segment on the `PATH_INFO` or `None` if there
-    is none.  Works like :func:`pop_path_info` without modifying the
-    environment:
-
-    >>> env = {'SCRIPT_NAME': '/foo', 'PATH_INFO': '/a/b'}
-    >>> peek_path_info(env)
-    'a'
-    >>> peek_path_info(env)
-    'a'
-
-    If the `charset` is set to `None` a bytestring is returned.
-
-    :param environ: the WSGI environment that is checked.
-    """
-    segments = environ.get('PATH_INFO', '').lstrip('/').split('/', 1)
-    if segments:
-        return to_unicode(wsgi_get_bytes(segments[0]),
-                          charset, errors, allow_none_charset=True)
-
-
-def extract_path_info(environ_or_baseurl, path_or_url, charset='utf-8',
-                      errors='replace', collapse_http_schemes=True):
-    """Extracts the path info from the given URL (or WSGI environment) and
-    path.  The path info returned is a unicode string, not a bytestring
-    suitable for a WSGI environment.  The URLs might also be IRIs.
-
-    If the path info could not be determined, `None` is returned.
-
-    Some examples:
-
-    >>> extract_path_info('http://example.com/app', '/app/hello')
-    u'/hello'
-    >>> extract_path_info('http://example.com/app',
-    ...                   'https://example.com/app/hello')
-    u'/hello'
-    >>> extract_path_info('http://example.com/app',
-    ...                   'https://example.com/app/hello',
-    ...                   collapse_http_schemes=False) is None
-    True
-
-    Instead of providing a base URL you can also pass a WSGI environment.
-
-    :param environ_or_baseurl: a WSGI environment dict, a base URL or
-                               base IRI.  This is the root of the
-                               application.
-    :param path_or_url: an absolute path from the server root, a
-                        relative path (in which case it's the path info)
-                        or a full URL.  Also accepts IRIs and unicode
-                        parameters.
-    :param charset: the charset for byte data in URLs
-    :param errors: the error handling on decode
-    :param collapse_http_schemes: if set to `False` the algorithm does
-                                  not assume that http and https on the
-                                  same server point to the same
-                                  resource.
-    """
-    def _normalize_netloc(scheme, netloc):
-        parts = netloc.split(u'@', 1)[-1].split(u':', 1)
-        if len(parts) == 2:
-            netloc, port = parts
-            if (scheme == u'http' and port == u'80') or \
-               (scheme == u'https' and port == u'443'):
-                port = None
-        else:
-            netloc = parts[0]
-            port = None
-        if port is not None:
-            netloc += u':' + port
-        return netloc
-
-    # make sure whatever we are working on is a IRI and parse it
-    path = uri_to_iri(path_or_url, charset, errors)
-    if isinstance(environ_or_baseurl, dict):
-        environ_or_baseurl = get_current_url(environ_or_baseurl,
-                                             root_only=True)
-    base_iri = uri_to_iri(environ_or_baseurl, charset, errors)
-    base_scheme, base_netloc, base_path = url_parse(base_iri)[:3]
-    cur_scheme, cur_netloc, cur_path, = \
-        url_parse(url_join(base_iri, path))[:3]
-
-    # normalize the network location
-    base_netloc = _normalize_netloc(base_scheme, base_netloc)
-    cur_netloc = _normalize_netloc(cur_scheme, cur_netloc)
-
-    # is that IRI even on a known HTTP scheme?
-    if collapse_http_schemes:
-        for scheme in base_scheme, cur_scheme:
-            if scheme not in (u'http', u'https'):
-                return None
-    else:
-        if not (base_scheme in (u'http', u'https') and
-                base_scheme == cur_scheme):
-            return None
-
-    # are the netlocs compatible?
-    if base_netloc != cur_netloc:
-        return None
-
-    # are we below the application path?
-    base_path = base_path.rstrip(u'/')
-    if not cur_path.startswith(base_path):
-        return None
-
-    return u'/' + cur_path[len(base_path):].lstrip(u'/')
-
-
 class EnvironHeaders(http.ImmutableHeadersMixin, http.Headers):
     """Read only version of the headers from a WSGI environment.  This
     provides the same interface as `Headers` and is constructed from
@@ -439,8 +285,10 @@ class EnvironHeaders(http.ImmutableHeadersMixin, http.Headers):
 
     def __iter__(self):
         for key, value in self.environ.items():
-            if key.startswith('HTTP_') and key not in \
-               ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH'):
+            if (
+                key.startswith('HTTP_') and
+                key not in ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH')
+            ):
                 yield (key[5:].replace('_', '-').title(),
                        unicodify_header_value(value))
             elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
@@ -542,8 +390,9 @@ class SharedDataMiddleware(object):
         return lambda x: (os.path.basename(filename), self._opener(filename))
 
     def get_package_loader(self, package, package_path):
-        from pkg_resources import DefaultProvider, ResourceManager, \
-            get_provider
+        from pkg_resources import (
+            DefaultProvider, ResourceManager, get_provider
+        )
         loadtime = datetime.utcnow()
         provider = get_provider(package)
         manager = ResourceManager()
@@ -880,7 +729,6 @@ def make_chunk_iter(stream, separator, limit=None, buffer_size=10 * 1024):
         _split = re.compile(r'(%s)' % re.escape(separator)).split
         _join = ''.join
     else:
-        separator = to_bytes(separator)
         _split = re.compile(b'(' + re.escape(separator) + b')').split
         _join = b''.join
 

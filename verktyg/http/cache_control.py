@@ -159,8 +159,8 @@ class ContentRange(object):
     """
 
     def __init__(self, units, start, stop, length=None, on_update=None):
-        assert is_byte_range_valid(start, stop, length), \
-            'Bad range provided'
+        if not is_byte_range_valid(start, stop, length):
+            raise ValueError('Bad range provided')
         self.on_update = on_update
         self.set(start, stop, length, units)
 
@@ -186,8 +186,8 @@ class ContentRange(object):
 
     def set(self, start, stop, length=None, units='bytes'):
         """Simple method to update the ranges."""
-        assert is_byte_range_valid(start, stop, length), \
-            'Bad range provided'
+        if not is_byte_range_valid(start, stop, length):
+            raise ValueError('Bad range provided')
         self._units = units
         self._start = start
         self._stop = stop

@@ -17,22 +17,18 @@ from random import random
 from itertools import chain
 from tempfile import TemporaryFile
 from io import BytesIO
+from urllib.parse import urlencode, urlunsplit, urlsplit, unquote as urlunquote
 
 from urllib.request import Request
 
 from http.cookiejar import CookieJar
 
-from werkzeug._compat import (
-    to_bytes, reraise, wsgi_encoding_dance, make_literal_wrapper,
-)
-from werkzeug._internal import _empty_stream, _get_environ
-from werkzeug.urls import (
-    url_encode, url_fix, iri_to_uri, url_unquote, url_unparse, url_parse,
-)
-
+from verktyg.urls import url_fix, iri_to_uri
 from verktyg.datastructures import MultiDict, CombinedMultiDict
 from verktyg.http import Headers, FileStorage, dump_cookie
-from verktyg.wsgi import get_host, get_current_url, ClosingIterator
+from verktyg.wsgi import (
+    get_host, get_current_url, ClosingIterator, wsgi_encoding_dance,
+)
 from verktyg.requests import BaseRequest
 
 
@@ -44,26 +40,28 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
     """
     if boundary is None:
         boundary = '---------------WerkzeugFormPart_%s%s' % (time(), random())
-    _closure = [BytesIO(), 0, False]
+    stream = BytesIO()
+    total_length = 0
+    on_disk = False
 
     if use_tempfile:
         def write_binary(string):
-            stream, total_length, on_disk = _closure
+            nonlocal stream, total_length, on_disk
             if on_disk:
                 stream.write(string)
             else:
                 length = len(string)
-                if length + _closure[1] <= threshold:
+                if length + total_length <= threshold:
                     stream.write(string)
                 else:
                     new_stream = TemporaryFile('wb+')
                     new_stream.write(stream.getvalue())
                     new_stream.write(string)
-                    _closure[0] = new_stream
-                    _closure[2] = True
-                _closure[1] = total_length + length
+                    stream = new_stream
+                    on_disk = True
+                total_length = total_length + length
     else:
-        write_binary = _closure[0].write
+        write_binary = stream.write
 
     def write(string):
         write_binary(string.encode(charset))
@@ -80,10 +78,10 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
                 filename = getattr(value, 'filename',
                                    getattr(value, 'name', None))
                 content_type = getattr(value, 'content_type', None)
+                if content_type is None and filename:
+                    content_type = mimetypes.guess_type(filename)[0]
                 if content_type is None:
-                    content_type = filename and \
-                        mimetypes.guess_type(filename)[0] or \
-                        'application/octet-stream'
+                    content_type = 'application/octet-stream'
                 if filename is not None:
                     write('; filename="%s"\r\n' % filename)
                 else:
@@ -95,18 +93,18 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
                         break
                     write_binary(chunk)
             else:
-                if not isinstance(value, str):
-                    value = str(value)
+                if isinstance(value, str):
+                    write(value)
                 else:
-                    value = to_bytes(value, charset)
+                    write_binary(value)
                 write('\r\n\r\n')
                 write_binary(value)
             write('\r\n')
     write('--%s--\r\n' % boundary)
 
-    length = int(_closure[0].tell())
-    _closure[0].seek(0)
-    return _closure[0], length, boundary
+    length = int(stream.tell())
+    stream.seek(0)
+    return stream, length, boundary
 
 
 def encode_multipart(values, boundary=None, charset='utf-8'):
@@ -223,8 +221,9 @@ class FileMultiDict(MultiDict):
                     filename = file
                 file = open(file, 'rb')
             if filename and content_type is None:
-                content_type = mimetypes.guess_type(filename)[0] or \
-                    'application/octet-stream'
+                content_type = mimetypes.guess_type(filename)[0]
+            if content_type is None:
+                content_type = 'application/octet-stream'
             value = FileStorage(file, filename, name, content_type)
 
         self.add(name, value)
@@ -235,8 +234,8 @@ class EnvironBuilder(object):
     for testing purposes.  It can be used to quickly create WSGI environments
     or request objects from arbitrary data.
 
-    The signature of this class is also used in some other places as of
-    Werkzeug 0.5 (:func:`create_environ`, :meth:`BaseResponse.from_values`,
+    The signature of this class is also used in some other places
+    (:func:`create_environ`, :meth:`BaseResponse.from_values`,
     :meth:`Client.open`).  Because of this most of the functionality is
     available through the constructor alone.
 
@@ -257,39 +256,48 @@ class EnvironBuilder(object):
         -   a tuple.  The :meth:`~FileMultiDict.add_file` method is called
             with the tuple items as positional arguments.
 
-    .. versionadded:: 0.6
-       `path` and `base_url` can now be unicode strings that are encoded using
-       the :func:`iri_to_uri` function.
-
-    :param path: the path of the request.  In the WSGI environment this will
-                 end up as `PATH_INFO`.  If the `query_string` is not defined
-                 and there is a question mark in the `path` everything after
-                 it is used as query string.
-    :param base_url: the base URL is a URL that is used to extract the WSGI
-                     URL scheme, host (server name + server port) and the
-                     script root (`SCRIPT_NAME`).
-    :param query_string: an optional string or dict with URL parameters.
-    :param method: the HTTP method to use, defaults to `GET`.
-    :param input_stream: an optional input stream.  Do not specify this and
-                         `data`.  As soon as an input stream is set you can't
-                         modify :attr:`args` and :attr:`files` unless you
-                         set the :attr:`input_stream` to `None` again.
-    :param content_type: The content type for the request.  As of 0.5 you
-                         don't have to provide this when specifying files
-                         and form data via `data`.
-    :param content_length: The content length for the request.  You don't
-                           have to specify this when providing data via
-                           `data`.
-    :param errors_stream: an optional error stream that is used for
-                          `wsgi.errors`.  Defaults to :data:`stderr`.
-    :param multithread: controls `wsgi.multithread`.  Defaults to `False`.
-    :param multiprocess: controls `wsgi.multiprocess`.  Defaults to `False`.
-    :param run_once: controls `wsgi.run_once`.  Defaults to `False`.
-    :param headers: an optional list or :class:`Headers` object of headers.
-    :param data: a string or dict of form data.  See explanation above.
-    :param environ_base: an optional dict of environment defaults.
-    :param environ_overrides: an optional dict of environment overrides.
-    :param charset: the charset used to encode unicode data.
+    :param path:
+        The path of the request.  In the WSGI environment this will end up as
+        `PATH_INFO`.  If the `query_string` is not defined and there is a
+        question mark in the `path` everything after it is used as query
+        string.  `path` is expected to be in iri form
+    :param base_url:
+        The base URL is a URL that is used to extract the WSGI URL scheme, host
+        (server name + server port) and the script root (`SCRIPT_NAME`).
+        `base_url` is expected to be in iri form.
+    :param query_string:
+        An optional string or dict with URL parameters.
+    :param method:
+        The HTTP method to use, defaults to `GET`.
+    :param input_stream:
+        An optional input stream.  Do not specify this and `data`.  As soon as
+        an input stream is set you can't modify :attr:`args` and :attr:`files`
+        unless you set the :attr:`input_stream` to `None` again.
+    :param content_type:
+        The content type for the request.  You don't have to provide this when
+        specifying files and form data via `data`.
+    :param content_length:
+        The content length for the request.  You don't have to specify this
+        when providing data via `data`.
+    :param errors_stream:
+        An optional error stream that is used for `wsgi.errors`.  Defaults to
+        :data:`stderr`.
+    :param multithread:
+        Controls `wsgi.multithread`.  Defaults to `False`.
+    :param multiprocess:
+        Controls `wsgi.multiprocess`.  Defaults to `False`.
+    :param run_once:
+        Controls `wsgi.run_once`.  Defaults to `False`.
+    :param headers:
+        An optional list or :class:`Headers` object of headers.
+    :param data:
+        A string or dict of form data.  See explanation above.
+    :param environ_base:
+        An optional dict of environment defaults.
+    :param environ_overrides:
+        An optional dict of environment overrides.
+    :param charset:
+        The charset used to encode unicode data.
     """
 
     #: the server protocol to use.  defaults to HTTP/1.1
@@ -306,13 +314,12 @@ class EnvironBuilder(object):
                  content_length=None, errors_stream=None, multithread=False,
                  multiprocess=False, run_once=False, headers=None, data=None,
                  environ_base=None, environ_overrides=None, charset='utf-8'):
-        path_s = make_literal_wrapper(path)
-        if query_string is None and path_s('?') in path:
-            path, query_string = path.split(path_s('?'), 1)
+        if query_string is None and '?' in path:
+            path, query_string = path.split('?', 1)
         self.charset = charset
         self.path = iri_to_uri(path)
         if base_url is not None:
-            base_url = url_fix(iri_to_uri(base_url, charset), charset)
+            base_url = url_fix(base_url)
         self.base_url = base_url
         if isinstance(query_string, (bytes, str)):
             self.query_string = query_string
@@ -353,8 +360,10 @@ class EnvironBuilder(object):
                     self.content_length = len(data)
             else:
                 for key, value in _iter_data(data):
-                    if isinstance(value, (tuple, dict)) or \
-                       hasattr(value, 'read'):
+                    if (
+                        isinstance(value, (tuple, dict)) or
+                        hasattr(value, 'read')
+                    ):
                         self._add_file_from_data(key, value)
                     else:
                         self.form.setlistdefault(key).append(value)
@@ -367,8 +376,9 @@ class EnvironBuilder(object):
             self.files.add_file(key, value)
 
     def _get_base_url(self):
-        return url_unparse((self.url_scheme, self.host,
-                            self.script_root, '', '')).rstrip('/') + '/'
+        return urlunsplit(
+            (self.url_scheme, self.host, self.script_root, '', '')
+        ).rstrip('/') + '/'
 
     def _set_base_url(self, value):
         if value is None:
@@ -376,7 +386,7 @@ class EnvironBuilder(object):
             netloc = 'localhost'
             script_root = ''
         else:
-            scheme, netloc, script_root, qs, anchor = url_parse(value)
+            scheme, netloc, script_root, qs, anchor = urlsplit(value)
             if qs or anchor:
                 raise ValueError('base url must not contain a query string '
                                  'or fragment')
@@ -467,7 +477,7 @@ class EnvironBuilder(object):
     def _get_query_string(self):
         if self._query_string is None:
             if self._args is not None:
-                return url_encode(self._args, charset=self.charset)
+                return urlencode(self._args, encoding=self.charset)
             return ''
         return self._query_string
 
@@ -548,16 +558,17 @@ class EnvironBuilder(object):
             content_length = end_pos - start_pos
         elif content_type == 'multipart/form-data':
             values = CombinedMultiDict([self.form, self.files])
-            input_stream, content_length, boundary = \
+            input_stream, content_length, boundary = (
                 stream_encode_multipart(values, charset=self.charset)
+            )
             content_type += '; boundary="%s"' % boundary
         elif content_type == 'application/x-www-form-urlencoded':
-            values = url_encode(self.form, charset=self.charset)
+            values = urlencode(self.form, encoding=self.charset)
             values = values.encode('ascii')
             content_length = len(values)
             input_stream = BytesIO(values)
         else:
-            input_stream = _empty_stream
+            input_stream = BytesIO()
 
         result = {}
         if self.environ_base:
@@ -565,7 +576,7 @@ class EnvironBuilder(object):
 
         def _path_encode(x):
             return wsgi_encoding_dance(
-                url_unquote(x, self.charset), self.charset
+                urlunquote(x, self.charset), self.charset
             )
 
         qs = wsgi_encoding_dance(self.query_string)
@@ -688,8 +699,8 @@ class Client(object):
         """Resolves a single redirect and triggers the request again
         directly on this redirect client.
         """
-        scheme, netloc, script_root, qs, anchor = url_parse(new_location)
-        base_url = url_unparse((scheme, netloc, '', '', '')).rstrip('/') + '/'
+        scheme, netloc, script_root, qs, anchor = urlsplit(new_location)
+        base_url = urlunsplit((scheme, netloc, '', '', '')).rstrip('/') + '/'
 
         cur_server_name = netloc.split(':', 1)[0].split('.')
         real_server_name = get_host(environ).rsplit(':', 1)[0].split('.')
@@ -768,8 +779,10 @@ class Client(object):
         redirect_chain = []
         while 1:
             status_code = int(response[1].split(None, 1)[0])
-            if status_code not in (301, 302, 303, 305, 307) \
-               or not follow_redirects:
+            if (
+                status_code not in (301, 302, 303, 305, 307) or
+                not follow_redirects
+            ):
                 break
             new_location = response[2]['location']
 
@@ -869,17 +882,24 @@ def run_wsgi_app(app, environ, buffered=False):
     If passed an invalid WSGI application the behavior of this function is
     undefined.  Never pass non-conforming WSGI applications to this function.
 
-    :param app: the application to execute.
-    :param buffered: set to `True` to enforce buffering.
-    :return: tuple in the form ``(app_iter, status, headers)``
+    :param app:
+        The application to execute.
+    :param environ:
+        The wsgi environment in which to execute the application.
+    :param buffered:
+        Set to `True` to enforce buffering.
+    :return:
+        Tuple on the form ``(app_iter, status, headers)``
     """
-    environ = _get_environ(environ)
     response = []
     buffer = []
 
     def start_response(status, headers, exc_info=None):
         if exc_info is not None:
-            reraise(*exc_info)
+            exc_type, exc_value, exc_traceback = exc_info
+            if exc_value.__traceback__ is not exc_traceback:
+                raise exc_value.with_traceback()
+            raise exc_value
         response[:] = [status, headers]
         return buffer.append
 

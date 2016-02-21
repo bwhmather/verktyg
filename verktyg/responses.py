@@ -20,11 +20,11 @@
     :license: BSD, see LICENSE for more details.
 """
 from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
-from werkzeug.urls import iri_to_uri, url_join
 from werkzeug._internal import _get_environ
-from werkzeug._compat import to_bytes
 
+from verktyg.urls import iri_to_uri
 from verktyg.utils import cached_property, header_property, get_content_type
 from verktyg.datastructures import CallbackDict
 from verktyg.http import (
@@ -505,19 +505,21 @@ class BaseResponse(object):
             if isinstance(location, str):
                 # Safe conversion is necessary here as we might redirect
                 # to a broken URI scheme (for instance itms-services).
-                location = iri_to_uri(location, safe_conversion=True)
+                location = iri_to_uri(location)
 
             if self.autocorrect_location_header:
                 current_url = get_current_url(environ, root_only=True)
                 if isinstance(current_url, str):
                     current_url = iri_to_uri(current_url)
-                location = url_join(current_url, location)
+                location = urljoin(current_url, location)
             if location != old_location:
                 headers['Location'] = location
 
         # make sure the content location is a URL
-        if content_location is not None and \
-           isinstance(content_location, str):
+        if (
+            content_location is not None and
+            isinstance(content_location, str)
+        ):
             headers['Content-Location'] = iri_to_uri(content_location)
 
         # remove entity headers and set content length to zero if needed.
@@ -534,17 +536,12 @@ class BaseResponse(object):
         # flattening the iterator or encoding of unicode strings in
         # the response.  We however should not do that if we have a 304
         # response.
-        if self.automatically_set_content_length and \
-           self.is_sequence and content_length is None and status != 304:
-            try:
-                content_length = sum(len(to_bytes(x, 'ascii'))
-                                     for x in self.response)
-            except UnicodeError:
-                # aha, something non-bytestringy in there, too bad, we
-                # can't safely figure out the length of the response.
-                pass
-            else:
-                headers['Content-Length'] = str(content_length)
+        if (
+            self.automatically_set_content_length and
+            self.is_sequence and content_length is None and status != 304
+        ):
+            content_length = sum(len(x) for x in self.response)
+            headers['Content-Length'] = str(content_length)
 
         return headers
 
@@ -561,8 +558,10 @@ class BaseResponse(object):
         :return: a response iterable.
         """
         status = self.status_code
-        if environ['REQUEST_METHOD'] == 'HEAD' or \
-           100 <= status < 200 or status in (204, 304):
+        if (
+            environ['REQUEST_METHOD'] == 'HEAD' or
+            100 <= status < 200 or status in (204, 304)
+        ):
             iterable = ()
         elif self.direct_passthrough:
             if __debug__:
@@ -666,8 +665,10 @@ class ETagResponseMixin(object):
             # wsgiref.
             if 'date' not in self.headers:
                 self.headers['Date'] = http_date()
-            if self.automatically_set_content_length and \
-                    'content-length' not in self.headers:
+            if (
+                self.automatically_set_content_length and
+                'content-length' not in self.headers
+            ):
                 length = self.calculate_content_length()
                 if length is not None:
                     self.headers['Content-Length'] = length
@@ -808,8 +809,9 @@ class CommonResponseDescriptorsMixin(object):
 
     def _get_mimetype_params(self):
         def on_update(d):
-            self.headers['Content-Type'] = \
-                dump_options_header(self.mimetype, d)
+            self.headers['Content-Type'] = dump_options_header(
+                self.mimetype, d
+            )
         d = parse_options_header(self.headers.get('content-type', ''))[1]
         return CallbackDict(d, on_update)
 
@@ -933,8 +935,11 @@ class CommonResponseDescriptorsMixin(object):
         associated with the resource. An Allow header field MUST be
         present in a 405 (Method Not Allowed) response.''')
 
-    del _set_property, _get_mimetype, _set_mimetype, _get_retry_after, \
-        _set_retry_after
+    del (
+        _set_property,
+        _get_mimetype, _set_mimetype,
+        _get_retry_after, _set_retry_after
+    )
 
 
 class WWWAuthenticateMixin(object):

@@ -11,11 +11,16 @@
 """
 import functools
 
-from verktyg.http import (
-    parse_content_type_header, parse_language_header, parse_charset_header,
-    parse_accept_header, parse_accept_language_header,
-    parse_accept_charset_header,
+from verktyg.accept.content_type import (
+    parse_content_type_header, parse_accept_header
 )
+from verktyg.accept.language import (
+    parse_language_header, parse_accept_language_header,
+)
+from verktyg.accept.charset import (
+    parse_charset_header, parse_accept_charset_header,
+)
+
 from verktyg.exceptions import NotAcceptable
 
 

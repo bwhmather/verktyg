@@ -9,14 +9,15 @@
 """
 import unittest
 
-from verktyg import http
 from verktyg.exceptions import NotAcceptable
-from verktyg.accept import Representation, select_representation
+from verktyg.accept import (
+    Representation, select_representation, parse_accept_header,
+)
 
 
 class RepresentationTestCase(unittest.TestCase):
     def test_content_type_dispatch(self):
-        accept = http.parse_accept_header(
+        accept = parse_accept_header(
             'text/xml,'
             'application/xml,'
             'application/xhtml+xml,'
@@ -79,7 +80,7 @@ class RepresentationTestCase(unittest.TestCase):
         self.assertRaises(
             NotAcceptable,
             pdf_repr.acceptability,
-            accept=http.parse_accept_header('text/html')
+            accept=parse_accept_header('text/html')
         )
 
         self.assertRaises(

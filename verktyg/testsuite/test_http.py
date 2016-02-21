@@ -13,10 +13,10 @@ import unittest
 
 from datetime import datetime
 
-from werkzeug._compat import wsgi_encoding_dance
+from verktyg.wsgi import wsgi_encoding_dance
+from verktyg.test import create_environ
 
 from verktyg import http
-from verktyg.test import create_environ
 
 
 class HeadersTestCase(unittest.TestCase):

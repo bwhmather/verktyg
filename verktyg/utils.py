@@ -13,16 +13,13 @@
 """
 import re
 import os
-from html.entities import name2codepoint
+
+from html import escape
 
 from werkzeug._internal import (
     _DictAccessorProperty, _parse_signature, _missing,
 )
 
-_format_re = re.compile(
-    r'\$(?:(%s)|\{(%s)\})' % (('[a-zA-Z_][a-zA-Z0-9_]*',) * 2)
-)
-_entity_re = re.compile(r'&([^;]+);')
 _filename_ascii_strip_re = re.compile(r'[^A-Za-z0-9_.-]')
 _windows_device_files = {
     'CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4',
@@ -105,114 +102,6 @@ class header_property(_DictAccessorProperty):
         return obj.headers
 
 
-class HTMLBuilder(object):
-    """Helper object for HTML generation.
-
-    Per default there are two instances of that class.  The `html` one, and
-    the `xhtml` one for those two dialects.  The class uses keyword parameters
-    and positional parameters to generate small snippets of HTML.
-
-    Keyword parameters are converted to XML/SGML attributes, positional
-    arguments are used as children.  Because Python accepts positional
-    arguments before keyword arguments it's a good idea to use a list with the
-    star-syntax for some children:
-
-    >>> html.p(
-    ...     class_='foo', *[
-    ...         html.a('foo', href='foo.html'),
-    ...         ' ',
-    ...         html.a('bar', href='bar.html'),
-    ...     ]
-    ... )
-    u'<p class="foo"><a href="foo.html">foo</a> <a href="bar.html">bar</a></p>'
-
-    This class works around some browser limitations and can not be used for
-    arbitrary SGML/XML generation.  For that purpose lxml and similar
-    libraries exist.
-
-    Calling the builder escapes the string passed:
-
-    >>> html.p(html("<foo>"))
-    u'<p>&lt;foo&gt;</p>'
-    """
-
-    _entity_re = re.compile(r'&([^;]+);')
-    _entities = name2codepoint.copy()
-    _entities['apos'] = 39
-    _empty_elements = set([
-        'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
-        'hr', 'img', 'input', 'keygen', 'isindex', 'link', 'meta', 'param',
-        'source', 'wbr'
-    ])
-    _boolean_attributes = set([
-        'selected', 'checked', 'compact', 'declare', 'defer', 'disabled',
-        'ismap', 'multiple', 'nohref', 'noresize', 'noshade', 'nowrap'
-    ])
-    _plaintext_elements = set(['textarea'])
-    _c_like_cdata = set(['script', 'style'])
-
-    def __init__(self, dialect):
-        self._dialect = dialect
-
-    def __call__(self, s):
-        return escape(s)
-
-    def __getattr__(self, tag):
-        if tag[:2] == '__':
-            raise AttributeError(tag)
-
-        def proxy(*children, **arguments):
-            buffer = '<' + tag
-            for key, value in arguments.items():
-                if value is None:
-                    continue
-                if key[-1] == '_':
-                    key = key[:-1]
-                if key in self._boolean_attributes:
-                    if not value:
-                        continue
-                    if self._dialect == 'xhtml':
-                        value = '="' + key + '"'
-                    else:
-                        value = ''
-                else:
-                    value = '="' + escape(value) + '"'
-                buffer += ' ' + key + value
-            if not children and tag in self._empty_elements:
-                if self._dialect == 'xhtml':
-                    buffer += ' />'
-                else:
-                    buffer += '>'
-                return buffer
-            buffer += '>'
-
-            children_as_string = ''.join([
-                str(x) for x in children
-                if x is not None
-            ])
-
-            if children_as_string:
-                if tag in self._plaintext_elements:
-                    children_as_string = escape(children_as_string)
-                elif tag in self._c_like_cdata and self._dialect == 'xhtml':
-                    children_as_string = (
-                        '/*<![CDATA[*/' + children_as_string + '/*]]>*/'
-                    )
-            buffer += children_as_string + '</' + tag + '>'
-            return buffer
-        return proxy
-
-    def __repr__(self):
-        return '<%s for %r>' % (
-            self.__class__.__name__,
-            self._dialect
-        )
-
-
-html = HTMLBuilder('html')
-xhtml = HTMLBuilder('xhtml')
-
-
 def get_content_type(mimetype, charset):
     """Returns the full content type string with charset for a mimetype.
 
@@ -226,34 +115,13 @@ def get_content_type(mimetype, charset):
     :return:
         The content type.
     """
-    if mimetype.startswith('text/') or \
-       mimetype == 'application/xml' or \
-       (mimetype.startswith('application/') and
-            mimetype.endswith('+xml')):
+    if (
+        mimetype.startswith('text/') or
+        mimetype == 'application/xml' or
+        (mimetype.startswith('application/') and mimetype.endswith('+xml'))
+    ):
         mimetype += '; charset=' + charset
     return mimetype
-
-
-def format_string(string, context):
-    """String-template format a string:
-
-    >>> format_string('$foo and ${foo}s', dict(foo=42))
-    '42 and 42s'
-
-    This does not do any attribute lookup etc.  For more advanced string
-    formattings have a look at the `werkzeug.template` module.
-
-    :param string:
-        The format string.
-    :param context:
-        A dict with the variables to insert.
-    """
-    def lookup_arg(match):
-        x = context[match.group(1) or match.group(2)]
-        if not isinstance(x, str):
-            x = type(string)(x)
-        return x
-    return _format_re.sub(lookup_arg, string)
 
 
 def secure_filename(filename):
@@ -292,52 +160,13 @@ def secure_filename(filename):
     # on nt a couple of special files are present in each folder.  We
     # have to ensure that the target file is not such a filename.  In
     # this case we prepend an underline
-    if os.name == 'nt' and filename and \
-       filename.split('.')[0].upper() in _windows_device_files:
+    if (
+        os.name == 'nt' and filename and
+        filename.split('.')[0].upper() in _windows_device_files
+    ):
         filename = '_' + filename
 
     return filename
-
-
-def escape(s):
-    """Replace special characters "&", "<", ">" and (") to HTML-safe sequences.
-
-    There is a special handling for `None` which escapes to an empty string.
-
-    :param s:
-        The string to escape.
-    """
-    if s is None:
-        return ''
-    elif hasattr(s, '__html__'):
-        return str(s.__html__())
-    elif not isinstance(s, str):
-        s = str(s)
-    s = s.replace('&', '&amp;').replace('<', '&lt;') \
-        .replace('>', '&gt;').replace('"', "&quot;")
-    return s
-
-
-def unescape(s):
-    """The reverse function of `escape`.  This unescapes all the HTML
-    entities, not only the XML entities inserted by `escape`.
-
-    :param s:
-        The string to unescape.
-    """
-    def handle_match(m):
-        name = m.group(1)
-        if name in HTMLBuilder._entities:
-            return chr(HTMLBuilder._entities[name])
-        try:
-            if name[:2] in ('#x', '#X'):
-                return chr(int(name[2:], 16))
-            elif name.startswith('#'):
-                return chr(int(name[1:]))
-        except ValueError:
-            pass
-        return u''
-    return _entity_re.sub(handle_match, s)
 
 
 def redirect(location, code=302, Response=None):
@@ -362,8 +191,8 @@ def redirect(location, code=302, Response=None):
     if isinstance(location, str):
         # Safe conversion is necessary here as we might redirect
         # to a broken URI scheme (for instance itms-services).
-        from werkzeug.urls import iri_to_uri
-        location = iri_to_uri(location, safe_conversion=True)
+        from verktyg.urls import iri_to_uri
+        location = iri_to_uri(location)
     response = Response(
         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n'
         '<title>Redirecting...</title>\n'
