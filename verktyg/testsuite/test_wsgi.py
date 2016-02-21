@@ -16,8 +16,6 @@ from io import StringIO, BytesIO
 from tempfile import TemporaryDirectory
 from contextlib import closing
 
-from werkzeug._compat import to_bytes
-
 from verktyg.test import create_environ, run_wsgi_app
 from verktyg.exceptions import BadRequest, ClientDisconnected
 from verktyg import wsgi
@@ -73,7 +71,7 @@ class WsgiTestCase(unittest.TestCase):
 
         def dummy_application(environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/plain')])
-            yield to_bytes(environ['SCRIPT_NAME'])
+            yield environ['SCRIPT_NAME'].encode('ascii')
 
         app = wsgi.DispatcherMiddleware(null_application, {
             '/test1': dummy_application,
@@ -90,7 +88,9 @@ class WsgiTestCase(unittest.TestCase):
                 environ = create_environ(p)
                 app_iter, status, headers = run_wsgi_app(app, environ)
                 self.assertEqual(status, '200 OK')
-                self.assertEqual(b''.join(app_iter).strip(), to_bytes(name))
+                self.assertEqual(
+                    b''.join(app_iter).strip(), name.encode('ascii')
+                )
 
         app_iter, status, headers = run_wsgi_app(
             app, create_environ('/missing'))
