@@ -11,12 +11,10 @@
 """
 import unittest
 
-from datetime import datetime
 import inspect
 
 from verktyg.responses import BaseResponse
 from verktyg.test import Client
-from verktyg.http import parse_date, http_date
 from verktyg import utils
 
 
@@ -123,45 +121,6 @@ class UtilsTestCase(unittest.TestCase):
             if attr.name == '_prop':
                 break
         self.assertEqual(attr.kind, 'property')
-
-    def test_environ_property(self):
-        class A(object):
-            environ = {'string': 'abc', 'number': '42'}
-
-            string = utils.environ_property(
-                'string'
-            )
-            missing = utils.environ_property(
-                'missing', 'spam'
-            )
-            read_only = utils.environ_property(
-                'number'
-            )
-            number = utils.environ_property(
-                'number', load_func=int
-            )
-            broken_number = utils.environ_property(
-                'broken_number', load_func=int
-            )
-            date = utils.environ_property(
-                'date', None, parse_date, http_date, read_only=False
-            )
-            foo = utils.environ_property(
-                'foo'
-            )
-
-        a = A()
-        self.assertEqual(a.string, 'abc')
-        self.assertEqual(a.missing, 'spam')
-
-        def test_assign():
-            a.read_only = 'something'
-        self.assertRaises(AttributeError, test_assign)
-        self.assertEqual(a.number, 42)
-        self.assertIs(a.broken_number, None)
-        self.assertIs(a.date, None)
-        a.date = datetime(2008, 1, 22, 10, 0, 0, 0)
-        self.assertEqual(a.environ['date'], 'Tue, 22 Jan 2008 10:00:00 GMT')
 
     def test_append_slash_redirect(self):
         def app(env, sr):

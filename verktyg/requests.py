@@ -24,7 +24,7 @@ from urllib.parse import parse_qsl
 
 from werkzeug.formparser import FormDataParser, default_stream_factory
 
-from verktyg.utils import cached_property, environ_property
+from verktyg.utils import cached_property
 from verktyg.datastructures import (
     MultiDict, CombinedMultiDict, ImmutableMultiDict,
     ImmutableTypeConversionDict, ImmutableList, iter_multi_items,
@@ -321,12 +321,14 @@ class BaseRequest(object):
         _assert_not_shallow(self)
         return get_input_stream(self.environ)
 
-    input_stream = environ_property('wsgi.input', """
-    The WSGI input stream.
+    @cached_property
+    def input_stream(self):
+        """The WSGI input stream.
 
-    In general it's a bad idea to use this one because you can easily read past
-    the boundary.  Use the :attr:`stream` instead.
-    """)
+        In general it's a bad idea to use this one because you can easily read
+        past the boundary.  Use the :attr:`stream` instead.
+        """
+        return self.environ.get('wsgi.input')
 
     @cached_property
     def args(self):
@@ -504,10 +506,11 @@ class BaseRequest(object):
             self.environ.get('QUERY_STRING') or '', errors=self.encoding_errors
         )
 
-    method = environ_property(
-        'REQUEST_METHOD', 'GET', read_only=True,
-        load_func=lambda x: x.upper(),
-        doc="The transmission method. (For example ``'GET'`` or ``'POST'``).")
+    @cached_property
+    def method(self):
+        """The transmission method. (For example ``'GET'`` or ``'POST'``).
+        """
+        return self.environ.get('REQUEST_METHOD', 'GET').upper()
 
     @cached_property
     def access_route(self):
@@ -526,32 +529,58 @@ class BaseRequest(object):
         """The remote address of the client."""
         return self.environ.get('REMOTE_ADDR')
 
-    remote_user = environ_property('REMOTE_USER', doc='''
-        If the server supports user authentication, and the script is
+    @cached_property
+    def remote_user(self):
+        """If the server supports user authentication, and the script is
         protected, this attribute contains the username the user has
-        authenticated as.''')
+        authenticated as.
+        """
+        return self.environ.get('REMOTE_USER')
 
-    scheme = environ_property('wsgi.url_scheme', doc='''
-        URL scheme (http or https).''')
+    @cached_property
+    def scheme(self):
+        """URL scheme (http or https).
+        """
+        return self.environ.get('wsgi.url_scheme')
 
-    is_xhr = property(lambda x: x.environ.get('HTTP_X_REQUESTED_WITH', '')
-                      .lower() == 'xmlhttprequest', doc='''
-        True if the request was triggered via a JavaScript XMLHttpRequest.
+    @property
+    def is_xhr(self):
+        """True if the request was triggered via a JavaScript XMLHttpRequest.
+
         This only works with libraries that support the `X-Requested-With`
         header and set it to "XMLHttpRequest".  Libraries that do that are
-        prototype, jQuery and Mochikit and probably some more.''')
-    is_secure = property(lambda x: x.environ['wsgi.url_scheme'] == 'https',
-                         doc='`True` if the request is secure.')
-    is_multithread = environ_property('wsgi.multithread', doc='''
-        boolean that is `True` if the application is served by
-        a multithreaded WSGI server.''')
-    is_multiprocess = environ_property('wsgi.multiprocess', doc='''
-        boolean that is `True` if the application is served by
-        a WSGI server that spawns multiple processes.''')
-    is_run_once = environ_property('wsgi.run_once', doc='''
-        boolean that is `True` if the application will be executed only
-        once in a process lifetime.  This is the case for CGI for example,
-        but it's not guaranteed that the exeuction only happens one time.''')
+        prototype, jQuery and Mochikit and probably some more.
+        """
+        requested_with = self.environ.get('HTTP_X_REQUESTED_WITH', '').lower()
+        return requested_with.lower() == 'xmlhttprequest'
+
+    @property
+    def is_secure(self):
+        """`True` if the request is made over an encrypted connection
+        """
+        self.environ['wsgi.url_scheme'] == 'https',
+
+    @property
+    def is_multithread(self):
+        """`True` if the application is served by a multithreaded WSGI server.
+        """
+        return self.environ.get('wsgi.multithread')
+
+    @property
+    def is_multiprocess(self):
+        """`True` if the application is served by a multiprocess WSGI server.
+        """
+        return self.environ.get('wsgi.multiprocess')
+
+    @property
+    def is_run_once(self):
+        """`True` if the application will be executed only once in a process
+        lifetime.
+
+        This is the case for CGI for example, but it's not guaranteed that the
+        execution only happens one time.
+        """
+        return self.environ.get('wsgi.run_once')
 
 
 class ETagRequestMixin(object):
@@ -660,11 +689,14 @@ class CommonRequestDescriptorsMixin(object):
     HTTP headers with automatic type conversion.
     """
 
-    content_type = environ_property('CONTENT_TYPE', doc='''
-        The Content-Type entity-header field indicates the media type of
+    @property
+    def content_type(self):
+        """The Content-Type entity-header field indicates the media type of
         the entity-body sent to the recipient or, in the case of the HEAD
         method, the media type that would have been sent had the request
-        been a GET.''')
+        been a GET.
+        """
+        return self.environ.get('CONTENT_TYPE')
 
     @cached_property
     def content_length(self):
@@ -675,32 +707,53 @@ class CommonRequestDescriptorsMixin(object):
         """
         return get_content_length(self.environ)
 
-    content_encoding = environ_property('HTTP_CONTENT_ENCODING', doc='''
-        The Content-Encoding entity-header field is used as a modifier to the
-        media-type.  When present, its value indicates what additional content
-        codings have been applied to the entity-body, and thus what decoding
-        mechanisms must be applied in order to obtain the media-type
-        referenced by the Content-Type header field.''')
-    content_md5 = environ_property('HTTP_CONTENT_MD5', doc='''
-         The Content-MD5 entity-header field, as defined in RFC 1864, is an
-         MD5 digest of the entity-body for the purpose of providing an
-         end-to-end message integrity check (MIC) of the entity-body.  (Note:
-         a MIC is good for detecting accidental modification of the
-         entity-body in transit, but is not proof against malicious attacks.)
-         ''')
-    referrer = environ_property('HTTP_REFERER', doc='''
-        The Referer[sic] request-header field allows the client to specify,
+    @property
+    def content_encoding(self):
+        """The Content-Encoding entity-header field is used as a modifier to
+        the media-type.  When present, its value indicates what additional
+        content codings have been applied to the entity-body, and thus what
+        decoding mechanisms must be applied in order to obtain the media-type
+        referenced by the Content-Type header field.
+        """
+        return self.environ.get('HTTP_CONTENT_ENCODING')
+
+    @property
+    def content_md5(self):
+        """The Content-MD5 entity-header field, as defined in RFC 1864, is an
+        MD5 digest of the entity-body for the purpose of providing an
+        end-to-end message integrity check (MIC) of the entity-body.  (Note:
+        a MIC is good for detecting accidental modification of the
+        entity-body in transit, but is not proof against malicious attacks.)
+        """
+        return self.environ.get('HTTP_CONTENT_MD5')
+
+    @property
+    def referrer(self):
+        """The Referer[sic] request-header field allows the client to specify,
         for the server's benefit, the address (URI) of the resource from which
         the Request-URI was obtained (the "referrer", although the header
-        field is misspelled).''')
-    date = environ_property('HTTP_DATE', None, parse_date, doc='''
-        The Date general-header field represents the date and time at which
+        field is misspelled).
+        """
+        return self.environ.get('HTTP_REFERER')
+
+    @property
+    def date(self):
+        """The Date general-header field represents the date and time at which
         the message was originated, having the same semantics as orig-date
-        in RFC 822.''')
-    max_forwards = environ_property('HTTP_MAX_FORWARDS', None, int, doc='''
-         The Max-Forwards request-header field provides a mechanism with the
-         TRACE and OPTIONS methods to limit the number of proxies or gateways
-         that can forward the request to the next inbound server.''')
+        in RFC 822.
+        """
+        return parse_date(self.environ.get('HTTP_DATE'))
+
+    @property
+    def max_forwards(self):
+        """The Max-Forwards request-header field provides a mechanism with the
+        TRACE and OPTIONS methods to limit the number of proxies or gateways
+        that can forward the request to the next inbound server.
+        """
+        try:
+            return int(self.environ.get('HTTP_MAX_FORWARDS'))
+        except ValueError:
+            return None
 
     def _parse_content_type(self):
         if not hasattr(self, '_parsed_content_type'):
