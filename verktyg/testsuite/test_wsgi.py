@@ -18,8 +18,7 @@ from contextlib import closing
 
 from werkzeug._compat import to_bytes
 
-from verktyg.test import Client, create_environ, run_wsgi_app
-from verktyg.responses import BaseResponse
+from verktyg.test import create_environ, run_wsgi_app
 from verktyg.exceptions import BadRequest, ClientDisconnected
 from verktyg import wsgi
 
@@ -132,46 +131,6 @@ class WsgiTestCase(unittest.TestCase):
             BadRequest, wsgi.get_host, env, trusted_hosts=['example.com']
         )
 
-    def test_responder(self):
-        def foo(environ, start_response):
-            return BaseResponse(b'Test')
-        client = Client(wsgi.responder(foo), BaseResponse)
-        response = client.get('/')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_data(), b'Test')
-
-    def test_pop_path_info(self):
-        original_env = {'SCRIPT_NAME': '/foo', 'PATH_INFO': '/a/b///c'}
-
-        # regular path info popping
-        def assert_tuple(script_name, path_info):
-            self.assertEqual(env.get('SCRIPT_NAME'), script_name)
-            self.assertEqual(env.get('PATH_INFO'), path_info)
-        env = original_env.copy()
-
-        def pop():
-            return wsgi.pop_path_info(env)
-
-        assert_tuple('/foo', '/a/b///c')
-        self.assertEqual(pop(), 'a')
-        assert_tuple('/foo/a', '/b///c')
-        self.assertEqual(pop(), 'b')
-        assert_tuple('/foo/a/b', '///c')
-        self.assertEqual(pop(), 'c')
-        assert_tuple('/foo/a/b///c', '')
-        self.assertIsNone(pop())
-
-    def test_peek_path_info(self):
-        env = {
-            'SCRIPT_NAME': '/foo',
-            'PATH_INFO': '/aaa/b///c'
-        }
-
-        self.assertEqual(wsgi.peek_path_info(env), 'aaa')
-        self.assertEqual(wsgi.peek_path_info(env), 'aaa')
-        self.assertEqual(wsgi.peek_path_info(env, charset=None), b'aaa')
-        self.assertEqual(wsgi.peek_path_info(env, charset=None), b'aaa')
-
     def test_path_info_and_script_name_fetching(self):
         env = create_environ('/\N{SNOWMAN}', 'http://example.com/\N{COMET}/')
         self.assertEqual(
@@ -275,37 +234,6 @@ class WsgiTestCase(unittest.TestCase):
         io.close()
         stream = wsgi.LimitedStream(io, 255)
         self.assertRaises(ClientDisconnected, stream.read)
-
-    def test_path_info_extraction(self):
-        x = wsgi.extract_path_info('http://example.com/app', '/app/hello')
-        self.assertEqual(x, '/hello')
-        x = wsgi.extract_path_info(
-            'http://example.com/app', 'https://example.com/app/hello'
-        )
-        self.assertEqual(x, '/hello')
-        x = wsgi.extract_path_info(
-            'http://example.com/app/', 'https://example.com/app/hello'
-        )
-        self.assertEqual(x, '/hello')
-        x = wsgi.extract_path_info('http://example.com/app/',
-                                   'https://example.com/app')
-        self.assertEqual(x, '/')
-        x = wsgi.extract_path_info('http://☃.net/', '/fööbär')
-        self.assertEqual(x, '/fööbär')
-        x = wsgi.extract_path_info('http://☃.net/x', 'http://☃.net/x/fööbär')
-        self.assertEqual(x, '/fööbär')
-
-        env = create_environ('/fööbär', 'http://☃.net/x/')
-        x = wsgi.extract_path_info(env, 'http://☃.net/x/fööbär')
-        self.assertEqual(x, '/fööbär')
-
-        x = wsgi.extract_path_info('http://example.com/app/',
-                                   'https://example.com/a/hello')
-        self.assertIsNone(x)
-        x = wsgi.extract_path_info('http://example.com/app/',
-                                   'https://example.com/app/hello',
-                                   collapse_http_schemes=False)
-        self.assertIsNone(x)
 
     def test_get_host_fallback(self):
         self.assertEqual(
