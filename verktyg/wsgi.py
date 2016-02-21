@@ -33,6 +33,16 @@ from verktyg.http import (
 )
 
 
+def wsgi_decoding_dance(s, charset='utf-8', errors='replace'):
+    return s.encode('latin1').decode(charset, errors)
+
+
+def wsgi_encoding_dance(s, charset='utf-8', errors='replace'):
+    if isinstance(s, str):
+        s = s.encode(charset)
+    return s.decode('latin1', errors)
+
+
 def get_current_url(environ, root_only=False, strip_querystring=False,
                     host_only=False, trusted_hosts=None):
     """A handy helper function that recreates the full URL as IRI for the
