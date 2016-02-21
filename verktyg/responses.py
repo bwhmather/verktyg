@@ -23,7 +23,6 @@ from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
 from werkzeug._internal import _get_environ
-from werkzeug._compat import to_bytes
 
 from verktyg.urls import iri_to_uri
 from verktyg.utils import cached_property, header_property, get_content_type
@@ -541,15 +540,8 @@ class BaseResponse(object):
             self.automatically_set_content_length and
             self.is_sequence and content_length is None and status != 304
         ):
-            try:
-                content_length = sum(len(to_bytes(x, 'ascii'))
-                                     for x in self.response)
-            except UnicodeError:
-                # aha, something non-bytestringy in there, too bad, we
-                # can't safely figure out the length of the response.
-                pass
-            else:
-                headers['Content-Length'] = str(content_length)
+            content_length = sum(len(x) for x in self.response)
+            headers['Content-Length'] = str(content_length)
 
         return headers
 
