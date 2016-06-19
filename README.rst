@@ -3,31 +3,32 @@
 
 |build-status| |coverage|
 
-Verktyg is a web framework built on `werkzeug`_.
+Verktyg is a magic free python web framework focused on making it easy to build large APIs.
 
-It separates mapping of routes to endpoints and endpoints to handlers and provides a mechanism for dispatching on request content-type and method.
+It started out as a replacement routing layer for `werkzeug`_ but has slowly developed into a full fork.
 
-It also includes an optional application base class.
-This wraps the routing system and provides a binding mechanism to allow extension.
-The request and server context are kept explicit and separate.
+Unlike `werkzeug_`, it separates mapping of routes to endpoints and endpoints to handlers and provides a mechanism for dispatching on request content-type and method.
 
-Focus is on building api's where support for multiple content types is likely to be important, and where it doesn't make sense to use a form builder and therefore share code between ``GET`` and other methods.
-For building html websites flask is probably a better choice.
+For form based websites, where the coupling of ``GET`` and ``POST`` handlers makes more sense, `werkzeug`_ and `flask`_ will probably always be the better choice.
 
 
 Components
 ----------
 
+Verktyg separates the mapping from routes to endpoints from the mapping from the mapping from endpoints to handlers.
+
+This allows handlers to be defined without having to be aware of where they are bound, which means that APIs can be described centrally but have their implementation split out into separate modules.
+
 Router
 ~~~~~~
 Based on werkzeug routing but with method dispatch removed.
 
-Maps from urls to endpoint identifiers
+Maps from urls to endpoint identifiers.
 
 
 Dispatcher
 ~~~~~~~~~~
-Chooses handler based on endpoint, request accept headers, and request, method.
+Chooses a handler for a request based on the endpoint chosen by the router, the request method, and the request accept headers.
 
 
 Application
@@ -57,8 +58,8 @@ Tries to illustrate separate route configuration and implementation.
         return Response('Hello world')
 
 
-    def bind(app):
-        app.add_views(views)
+    def bind(builder):
+        builder.add_views(views)
 
 
 .. code:: python
@@ -72,7 +73,7 @@ Tries to illustrate separate route configuration and implementation.
     from verktyg import Application
 
 
-    def create_app(config=os.environ, debug=None, proxy=None):
+    def create_app(config=os.environ, debug=None):
         if debug is None:
             debug = config.get('DEBUG', False)
 
@@ -81,27 +82,41 @@ Tries to illustrate separate route configuration and implementation.
         else:
             logging.basicConfig()
 
-        app = Application(debug=debug)
-        app.config = config
+        builder = ApplicationBuilder(debug=debug)
 
-        app.add_routes(
+        builder.add_routes(
             Route('/', endpoint='index'),
         )
 
+        import verktyg_sqlalchemy
+        verktyg_sqlalchemy.bind(
+            builder, database_url=config['APP_DB_URL'],
+        )
+
         import hello
-        hello.bind(app)
+        hello.bind(builder)
+
+        app = builder(config.get('APP_PUBLIC_URL', ''))
+        app.debug = debug
 
         return app
 
 
-    def run_dev_server():
+    def _server_main():
+        import verktyg_server.argparse
+
+        parser = argparse.ArgumentParser(description="Run the example app")
+        verktyg.server.argparse.add_arguments(parser)
+        args = parser.parse_args()
+
         app = create_app(debug=True)
-        from werkzeug.serving import run_simple
-        run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
+
+        server = verktyg_server.argparse.make_server(args)
+        return server
 
 
     if __name__ == '__main__':
-        run_dev_server()
+        _server_main()
 
 
 Bugs
