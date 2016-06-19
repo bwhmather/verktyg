@@ -243,8 +243,7 @@ class MethodNotAllowed(HTTPException):
     description = 'The method is not allowed for the requested URL.'
 
     def __init__(self, valid_methods=None, description=None):
-        """Takes an optional list of valid http methods
-        starting with werkzeug 0.3 the list will be mandatory."""
+        """Takes an optional set of valid http methods"""
         HTTPException.__init__(self, description)
         self.valid_methods = valid_methods
 
