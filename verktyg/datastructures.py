@@ -13,10 +13,10 @@ import re
 from copy import deepcopy
 from itertools import repeat
 
-from werkzeug._internal import _missing
 from verktyg import exceptions
 
 
+_missing = object()
 _locale_delim_re = re.compile(r'[_-]')
 
 

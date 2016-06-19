@@ -15,11 +15,11 @@ from email.utils import parsedate_tz
 from urllib.request import parse_http_list as _parse_list_header
 from datetime import datetime, timedelta
 
-from werkzeug._internal import _missing
-
 from verktyg.datastructures import is_immutable
 from verktyg import exceptions
 
+
+_missing = object()
 
 _cookie_charset = 'latin1'
 # for explanation of "media-range", etc. see Sections 5.3.{1,2} of RFC 7231
