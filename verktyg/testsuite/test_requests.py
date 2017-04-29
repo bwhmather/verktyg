@@ -266,17 +266,17 @@ class RequestsTestCase(unittest.TestCase):
         user_agents = [
             ((
                 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X; en-US; '
-                'rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
+                'rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11'
             ), 'firefox', 'macos', '2.0.0.11', 'en-US'),
             ((
                 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; de-DE) '
-                'Opera 8.54',
+                'Opera 8.54'
             ), 'opera', 'windows', '8.54', 'de-DE'),
             # ('Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420'
             # ' (KHTML, like Gecko) Version/3.0 Mobile/1A543a Safari/419.3',
             # 'safari', 'iphone', '3.0', 'en'),
             ((
-                'Bot Googlebot/2.1 (http://www.googlebot.com/bot.html)',
+                'Bot Googlebot/2.1 (http://www.googlebot.com/bot.html)'
             ), 'google', None, '2.1', None),
             ((
                 'Mozilla/5.0 (X11; CrOS armv7l 3701.81.0) AppleWebKit/537.31 '
@@ -294,14 +294,15 @@ class RequestsTestCase(unittest.TestCase):
             ), 'safari', 'symbian', '533.4', None),
         ]
         for ua, browser, platform, version, lang in user_agents:
-            request = Request({'HTTP_USER_AGENT': ua})
-            self.assertEqual(request.user_agent.browser, browser)
-            self.assertEqual(request.user_agent.platform, platform)
-            self.assertEqual(request.user_agent.version, version)
-            self.assertEqual(request.user_agent.language, lang)
-            self.assertTrue(bool(request.user_agent))
-            self.assertEqual(request.user_agent.to_header(), ua)
-            self.assertEqual(str(request.user_agent), ua)
+            with self.subTest(browser):
+                request = Request({'HTTP_USER_AGENT': ua})
+                self.assertEqual(request.user_agent.browser, browser)
+                self.assertEqual(request.user_agent.platform, platform)
+                self.assertEqual(request.user_agent.version, version)
+                self.assertEqual(request.user_agent.language, lang)
+                self.assertTrue(bool(request.user_agent))
+                self.assertEqual(request.user_agent.to_header(), ua)
+                self.assertEqual(str(request.user_agent), ua)
 
         request = Request({'HTTP_USER_AGENT': 'foo'})
         self.assertFalse(request.user_agent)

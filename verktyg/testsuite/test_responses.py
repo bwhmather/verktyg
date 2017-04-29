@@ -224,11 +224,9 @@ class ResponsesTestCase(unittest.TestCase):
         )
 
         actual = set((resp.headers['WWW-Authenticate'] + ',').split())
-        expected = {
-            'Digest nonce="NONCE",',
-            'realm="REALM",',
-            'qop="auth, auth-int",',
-        }
+        expected = set((
+            'Digest nonce="NONCE", realm="REALM", qop="auth, auth-int",'
+        ).split())
         self.assertEqual(actual, expected)
 
         resp.www_authenticate.set_digest('REALM', 'NONCE', qop=("auth",))
