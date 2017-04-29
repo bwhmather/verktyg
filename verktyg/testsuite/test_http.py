@@ -73,9 +73,9 @@ class HeadersTestCase(unittest.TestCase):
         # defaults
         headers = self.storage_class([
             ('Content-Type', 'text/plain'),
-            ('X-Foo',        'bar'),
-            ('X-Bar',        '1'),
-            ('X-Bar',        '2')
+            ('X-Foo', u'bar'),
+            ('X-Bar', u'1'),
+            ('X-Bar', u'2')
         ])
         self.assertEqual(headers.getlist('x-bar'), ['1', '2'])
         self.assertEqual(headers.get('x-Bar'), '1')
@@ -363,11 +363,11 @@ class HTTPUtilityTestCase(unittest.TestCase):
                 )
             ),
             {
-                'CP':           u'null*',
-                'PHPSESSID':    u'0a539d42abc001cdc762809248d4beed',
-                'a':            u'42',
-                'dismiss-top':  u'6',
-                'b':            u'\";'
+                'CP': u'null*',
+                'PHPSESSID': u'0a539d42abc001cdc762809248d4beed',
+                'a': u'42',
+                'dismiss-top': u'6',
+                'b': u'\";'
             }
         )
         rv = http.dump_cookie(

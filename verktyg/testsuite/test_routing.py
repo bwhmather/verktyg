@@ -73,8 +73,9 @@ class RoutingTestCase(unittest.TestCase):
         else:  # pragma: no cover
             self.fail('Expected request redirect')
 
-        adapter = map.bind_to_environ(create_environ('/bar?foo=bar',
-                                                     'http://example.org/'))
+        adapter = map.bind_to_environ(create_environ(
+            '/bar?foo=bar', 'http://example.org/',
+        ))
         try:
             adapter.match()
         except r.RequestRedirect as e:
@@ -299,13 +300,13 @@ class RoutingTestCase(unittest.TestCase):
 
     def test_http_host_before_server_name(self):
         env = {
-            'HTTP_HOST':            'wiki.example.com',
-            'SERVER_NAME':          'web0.example.com',
-            'SERVER_PORT':          '80',
-            'SCRIPT_NAME':          '',
-            'PATH_INFO':            '',
-            'REQUEST_METHOD':       'GET',
-            'wsgi.url_scheme':      'http'
+            'HTTP_HOST': 'wiki.example.com',
+            'SERVER_NAME': 'web0.example.com',
+            'SERVER_PORT': '80',
+            'SCRIPT_NAME': '',
+            'PATH_INFO': '',
+            'REQUEST_METHOD': 'GET',
+            'wsgi.url_scheme': 'http'
         }
         map = r.URLMap([r.Route('/', endpoint='index', subdomain='wiki')])
         adapter = map.bind_to_environ(env, server_name='example.com')
@@ -334,8 +335,10 @@ class RoutingTestCase(unittest.TestCase):
         )
         adapter = map.bind('localhost', '/')
         self.assertEqual(
-            adapter.build('index', {'x': 20, 'y': 10, 'z': 30},
-                          force_external=True),
+            adapter.build(
+                'index', {'x': 20, 'y': 10, 'z': 30},
+                force_external=True,
+            ),
             'http://localhost/?y=10&x=20&z=30'
         )
 
@@ -436,8 +439,10 @@ class RoutingTestCase(unittest.TestCase):
             testcase(app='test4'),
         ])
 
-        out = sorted([(x.route, x.subdomain, x.endpoint)
-                      for x in url_map.iter_routes()])
+        out = sorted([
+            (x.route, x.subdomain, x.endpoint)
+            for x in url_map.iter_routes()
+        ])
 
         self.assertEqual(out, [
             ('/blah', 'test1', 'x_bar'),
@@ -617,8 +622,10 @@ class RoutingTestCase(unittest.TestCase):
             'http://example.org/bar/0.815?bif=1.0'
         )
         self.assertEqual(
-            adapter.build('barf', {'bazf': 0.815, 'bif': 1.0},
-                          append_unknown=False),
+            adapter.build(
+                'barf', {'bazf': 0.815, 'bif': 1.0},
+                append_unknown=False,
+            ),
             'http://example.org/bar/0.815'
         )
 
@@ -682,11 +689,14 @@ class RoutingTestCase(unittest.TestCase):
             r.Route('/', endpoint='index'),
             r.Route('/index.html', endpoint='index', alias=True),
             r.Route('/users/', defaults={'page': 1}, endpoint='users'),
-            r.Route('/users/index.html', defaults={'page': 1}, alias=True,
-                    endpoint='users'),
+            r.Route(
+                '/users/index.html', defaults={'page': 1},
+                alias=True, endpoint='users',
+            ),
             r.Route('/users/page/<int:page>', endpoint='users'),
-            r.Route('/users/page-<int:page>.html', alias=True,
-                    endpoint='users'),
+            r.Route(
+                '/users/page-<int:page>.html', alias=True, endpoint='users',
+            ),
         ])
         a = m.bind('example.com')
 
@@ -702,8 +712,9 @@ class RoutingTestCase(unittest.TestCase):
         ensure_redirect('/users/index.html', '/users/')
         ensure_redirect('/users/page-2.html', '/users/page/2')
         ensure_redirect('/users/page-1.html', '/users/')
-        ensure_redirect('/users/page-1.html', '/users/?foo=bar',
-                        {'foo': 'bar'})
+        ensure_redirect(
+            '/users/page-1.html', '/users/?foo=bar', {'foo': 'bar'},
+        )
 
         self.assertEqual(a.build('index'), '/')
         self.assertEqual(a.build('users', {'page': 1}), '/users/')

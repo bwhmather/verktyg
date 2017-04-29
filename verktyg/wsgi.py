@@ -44,8 +44,10 @@ def wsgi_encoding_dance(s, charset='utf-8', errors='replace'):
     return s.decode('latin1', errors)
 
 
-def get_current_url(environ, root_only=False, strip_querystring=False,
-                    host_only=False, trusted_hosts=None):
+def get_current_url(
+    environ, root_only=False, strip_querystring=False,
+    host_only=False, trusted_hosts=None,
+):
     """A handy helper function that recreates the full URL as IRI for the
     current request or parts of it.  Here an example:
 
@@ -289,11 +291,15 @@ class EnvironHeaders(http.ImmutableHeadersMixin, http.Headers):
                 key.startswith('HTTP_') and
                 key not in ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH')
             ):
-                yield (key[5:].replace('_', '-').title(),
-                       unicodify_header_value(value))
+                yield (
+                    key[5:].replace('_', '-').title(),
+                    unicodify_header_value(value),
+                )
             elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-                yield (key.replace('_', '-').title(),
-                       unicodify_header_value(value))
+                yield (
+                    key.replace('_', '-').title(),
+                    unicodify_header_value(value),
+                )
 
     def copy(self):
         raise TypeError('cannot create %r copies' % self.__class__.__name__)
@@ -350,8 +356,10 @@ class SharedDataMiddleware(object):
     :param cache_timeout: the cache timeout in seconds for the headers.
     """
 
-    def __init__(self, app, exports, disallow=None, cache=True,
-                 cache_timeout=60 * 60 * 12, fallback_mimetype='text/plain'):
+    def __init__(
+        self, app, exports, disallow=None, cache=True,
+        cache_timeout=60 * 60 * 12, fallback_mimetype='text/plain',
+    ):
         self.app = app
         self.exports = {}
         self.cache = cache
@@ -442,8 +450,10 @@ class SharedDataMiddleware(object):
         for sep in os.sep, os.altsep:
             if sep and sep != '/':
                 cleaned_path = cleaned_path.replace(sep, '/')
-        path = '/' + '/'.join(x for x in cleaned_path.split('/')
-                              if x and x != '..')
+        path = '/' + '/'.join(
+            x for x in cleaned_path.split('/')
+            if x and x != '..'
+        )
         file_loader = None
         for search_path, loader in self.exports.items():
             if search_path == path:

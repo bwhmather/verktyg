@@ -29,7 +29,7 @@ from verktyg.utils import cached_property, header_property, get_content_type
 from verktyg.datastructures import CallbackDict
 from verktyg.http import (
     Headers, ResponseCacheControl, ContentRange,
-    HTTP_STATUS_CODES, parse_cache_control_header,  parse_date, generate_etag,
+    HTTP_STATUS_CODES, parse_cache_control_header, parse_date, generate_etag,
     is_resource_modified, unquote_etag, quote_etag, parse_set_header,
     parse_www_authenticate_header, remove_entity_headers, parse_options_header,
     dump_options_header, http_date, dump_cookie, parse_content_range_header,
@@ -53,11 +53,12 @@ def _warn_if_string(iterable):
     """
     if isinstance(iterable, str):
         from warnings import warn
-        warn(Warning('response iterable was set to a string.  This appears '
-                     'to work but means that the server will send the '
-                     'data to the client char, by char.  This is almost '
-                     'never intended behavior, use response.data to assign '
-                     'strings to the response object.'), stacklevel=2)
+        warn(Warning(
+            'response iterable was set to a string.  This appears to work but '
+            'means that the server will send the data to the client char, by '
+            'char.  This is almost never intended behavior, use response.data '
+            'to assign strings to the response object.'
+        ), stacklevel=2)
 
 
 def _iter_encoded(iterable, charset):
@@ -156,8 +157,10 @@ class BaseResponse(object):
     #: header if possible?  This is true by default.
     automatically_set_content_length = True
 
-    def __init__(self, response=None, status=None, headers=None,
-                 mimetype=None, content_type=None, direct_passthrough=False):
+    def __init__(
+        self, response=None, status=None, headers=None,
+        mimetype=None, content_type=None, direct_passthrough=False,
+    ):
         if isinstance(headers, Headers):
             self.headers = headers
         elif not headers:
@@ -243,8 +246,10 @@ class BaseResponse(object):
         """
         if not isinstance(response, BaseResponse):
             if environ is None:
-                raise TypeError('cannot convert WSGI application into '
-                                'response objects without an environ')
+                raise TypeError(
+                    'cannot convert WSGI application into '
+                    'response objects without an environ'
+                )
             response = BaseResponse(*_run_wsgi_app(response, environ))
         response.__class__ = cls
         return response
@@ -274,8 +279,10 @@ class BaseResponse(object):
             self._status = '%d %s' % (code, HTTP_STATUS_CODES[code].upper())
         except KeyError:
             self._status = '%d UNKNOWN' % code
-    status_code = property(_get_status_code, _set_status_code,
-                           doc='The HTTP Status code as number')
+    status_code = property(
+        _get_status_code, _set_status_code,
+        doc='The HTTP Status code as number',
+    )
     del _get_status_code, _set_status_code
 
     def _get_status(self):
@@ -342,14 +349,16 @@ class BaseResponse(object):
                 self.response = list(self.response)
             return
         if self.direct_passthrough:
-            raise RuntimeError('Attempted implicit sequence conversion '
-                               'but the response object is in direct '
-                               'passthrough mode.')
+            raise RuntimeError(
+                'Attempted implicit sequence conversion but the response '
+                'object is in direct passthrough mode.'
+            )
         if not self.implicit_sequence_conversion:
-            raise RuntimeError('The response object required the iterable '
-                               'to be a sequence, but the implicit '
-                               'conversion was disabled.  Call '
-                               'make_sequence() yourself.')
+            raise RuntimeError(
+                'The response object required the iterable to be a sequence, '
+                'but the implicit conversion was disabled.  Call '
+                'make_sequence() yourself.'
+            )
         self.make_sequence()
 
     def make_sequence(self):
@@ -380,8 +389,10 @@ class BaseResponse(object):
         # value from get_app_iter or iter_encoded.
         return _iter_encoded(self.response, self.charset)
 
-    def set_cookie(self, key, value='', max_age=None, expires=None,
-                   path='/', domain=None, secure=None, httponly=False):
+    def set_cookie(
+        self, key, value='', max_age=None, expires=None,
+        path='/', domain=None, secure=None, httponly=False,
+    ):
         """Sets a cookie. The parameters are the same as in the cookie `Morsel`
         object in the Python standard library but it accepts unicode data, too.
 
@@ -634,9 +645,9 @@ class ETagResponseMixin(object):
                 del self.headers['cache-control']
             elif cache_control:
                 self.headers['Cache-Control'] = cache_control.to_header()
-        return parse_cache_control_header(self.headers.get('cache-control'),
-                                          on_update,
-                                          ResponseCacheControl)
+        return parse_cache_control_header(
+            self.headers.get('cache-control'), on_update, ResponseCacheControl,
+        )
 
     def make_conditional(self, request_or_environ):
         """Make the response conditional to the request.  This method works
@@ -714,8 +725,9 @@ class ETagResponseMixin(object):
                 del self.headers['content-range']
             else:
                 self.headers['Content-Range'] = rng.to_header()
-        rv = parse_content_range_header(self.headers.get('content-range'),
-                                        on_update)
+        rv = parse_content_range_header(
+            self.headers.get('content-range'), on_update,
+        )
         # always provide a content range object to make the descriptor
         # more user friendly.  It provides an unset() method that can be
         # used to remove the header quickly.
@@ -740,8 +752,8 @@ class ETagResponseMixin(object):
 
 class ResponseStream(object):
 
-    """A file descriptor like object used by the :class:`ResponseStreamMixin` to
-    represent the body of the stream.  It directly pushes into the response
+    """A file descriptor like object used by the :class:`ResponseStreamMixin`
+    to represent the body of the stream.  It directly pushes into the response
     iterable of the response object.
     """
 
@@ -869,10 +881,11 @@ class CommonResponseDescriptorsMixin(object):
         The Expires entity-header field gives the date/time after which the
         response is considered stale. A stale cache entry may not normally be
         returned by a cache.''')
-    last_modified = header_property('Last-Modified', None, parse_date,
-                                    http_date, doc='''
+    last_modified = header_property(
+        'Last-Modified', None, parse_date, http_date, doc='''
         The Last-Modified entity-header field indicates the date and time at
-        which the origin server believes the variant was last modified.''')
+        which the origin server believes the variant was last modified.'''
+    )
 
     def _get_retry_after(self):
         value = self.headers.get('retry-after')
@@ -958,9 +971,11 @@ class WWWAuthenticateMixin(object):
         return parse_www_authenticate_header(header, on_update)
 
 
-class Response(BaseResponse, ETagResponseMixin, ResponseStreamMixin,
-               CommonResponseDescriptorsMixin,
-               WWWAuthenticateMixin):
+class Response(
+    BaseResponse, ETagResponseMixin, ResponseStreamMixin,
+    CommonResponseDescriptorsMixin,
+    WWWAuthenticateMixin,
+):
 
     """Full featured response object implementing the following mixins:
 

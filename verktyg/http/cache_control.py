@@ -276,10 +276,12 @@ def parse_content_range_header(value, on_update=None):
 def cache_property(key, empty, type):
     """Return a new property object for a cache header.  Useful if you
     want to add support for a cache extension in a subclass."""
-    return property(lambda x: x._get_cache_value(key, empty, type),
-                    lambda x, v: x._set_cache_value(key, v, type),
-                    lambda x: x._del_cache_value(key),
-                    'accessor for %r' % key)
+    return property(
+        lambda x: x._get_cache_value(key, empty, type),
+        lambda x, v: x._set_cache_value(key, v, type),
+        lambda x: x._del_cache_value(key),
+        'accessor for %r' % key,
+    )
 
 
 class _CacheControl(datastructures.UpdateDictMixin, dict):

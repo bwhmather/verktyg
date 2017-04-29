@@ -32,8 +32,10 @@ from verktyg.wsgi import (
 from verktyg.requests import BaseRequest
 
 
-def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
-                            boundary=None, charset='utf-8'):
+def stream_encode_multipart(
+    values, use_tempfile=True, threshold=1024 * 500,
+    boundary=None, charset='utf-8',
+):
     """Encode a dict of values (either strings or file descriptors or
     :class:`FileStorage` objects.) into a multipart encoded string stored
     in a file descriptor.
@@ -71,12 +73,15 @@ def stream_encode_multipart(values, use_tempfile=True, threshold=1024 * 500,
 
     for key, values in values.lists():
         for value in values:
-            write('--%s\r\nContent-Disposition: form-data; name="%s"' %
-                  (boundary, key))
+            write(
+                '--%s\r\nContent-Disposition: form-data; name="%s"' %
+                (boundary, key),
+            )
             reader = getattr(value, 'read', None)
             if reader is not None:
-                filename = getattr(value, 'filename',
-                                   getattr(value, 'name', None))
+                filename = getattr(
+                    value, 'filename', getattr(value, 'name', None),
+                )
                 content_type = getattr(value, 'content_type', None)
                 if content_type is None and filename:
                     content_type = mimetypes.guess_type(filename)[0]
@@ -140,8 +145,8 @@ class _TestCookieHeaders(object):
 
 
 class _TestCookieResponse(object):
-    """Something that looks like a httplib.HTTPResponse, but is actually just an
-    adapter for our test responses to make them available for cookielib.
+    """Something that looks like a httplib.HTTPResponse, but is actually just
+    an adapter for our test responses to make them available for cookielib.
     """
 
     def __init__(self, headers):
@@ -309,11 +314,13 @@ class EnvironBuilder(object):
     #: the default request class for :meth:`get_request`
     request_class = BaseRequest
 
-    def __init__(self, path='/', base_url=None, query_string=None,
-                 method='GET', input_stream=None, content_type=None,
-                 content_length=None, errors_stream=None, multithread=False,
-                 multiprocess=False, run_once=False, headers=None, data=None,
-                 environ_base=None, environ_overrides=None, charset='utf-8'):
+    def __init__(
+        self, path='/', base_url=None, query_string=None,
+        method='GET', input_stream=None, content_type=None,
+        content_length=None, errors_stream=None, multithread=False,
+        multiprocess=False, run_once=False, headers=None, data=None,
+        environ_base=None, environ_overrides=None, charset='utf-8',
+    ):
         if query_string is None and '?' in path:
             path, query_string = path.split('?', 1)
         self.charset = charset
@@ -388,8 +395,9 @@ class EnvironBuilder(object):
         else:
             scheme, netloc, script_root, qs, anchor = urlsplit(value)
             if qs or anchor:
-                raise ValueError('base url must not contain a query string '
-                                 'or fragment')
+                raise ValueError(
+                    'base url must not contain a query string or fragment'
+                )
         self.script_root = script_root.rstrip('/')
         self.host = netloc
         self.url_scheme = scheme
@@ -582,23 +590,23 @@ class EnvironBuilder(object):
         qs = wsgi_encoding_dance(self.query_string)
 
         result.update({
-            'REQUEST_METHOD':       self.method,
-            'SCRIPT_NAME':          _path_encode(self.script_root),
-            'PATH_INFO':            _path_encode(self.path),
-            'QUERY_STRING':         qs,
-            'SERVER_NAME':          self.server_name,
-            'SERVER_PORT':          str(self.server_port),
-            'HTTP_HOST':            self.host,
-            'SERVER_PROTOCOL':      self.server_protocol,
-            'CONTENT_TYPE':         content_type or '',
-            'CONTENT_LENGTH':       str(content_length or '0'),
-            'wsgi.version':         self.wsgi_version,
-            'wsgi.url_scheme':      self.url_scheme,
-            'wsgi.input':           input_stream,
-            'wsgi.errors':          self.errors_stream,
-            'wsgi.multithread':     self.multithread,
-            'wsgi.multiprocess':    self.multiprocess,
-            'wsgi.run_once':        self.run_once
+            'REQUEST_METHOD': self.method,
+            'SCRIPT_NAME': _path_encode(self.script_root),
+            'PATH_INFO': _path_encode(self.path),
+            'QUERY_STRING': qs,
+            'SERVER_NAME': self.server_name,
+            'SERVER_PORT': str(self.server_port),
+            'HTTP_HOST': self.host,
+            'SERVER_PROTOCOL': self.server_protocol,
+            'CONTENT_TYPE': content_type or '',
+            'CONTENT_LENGTH': str(content_length or '0'),
+            'wsgi.version': self.wsgi_version,
+            'wsgi.url_scheme': self.url_scheme,
+            'wsgi.input': input_stream,
+            'wsgi.errors': self.errors_stream,
+            'wsgi.multithread': self.multithread,
+            'wsgi.multiprocess': self.multiprocess,
+            'wsgi.run_once': self.run_once
         })
         for key, value in self.headers.to_wsgi_list():
             result['HTTP_%s' % key.upper().replace('-', '_')] = value
@@ -652,9 +660,9 @@ class Client(object):
     """
 
     def __init__(
-                self, application, response_wrapper=None, use_cookies=True,
-                allow_subdomain_redirects=False
-            ):
+        self, application, response_wrapper=None, use_cookies=True,
+        allow_subdomain_redirects=False
+    ):
         self.application = application
         self.response_wrapper = response_wrapper
         if use_cookies:
@@ -664,25 +672,29 @@ class Client(object):
         self.allow_subdomain_redirects = allow_subdomain_redirects
 
     def set_cookie(
-                self, server_name, key, value='', max_age=None,
-                expires=None, path='/', domain=None, secure=None,
-                httponly=False, charset='utf-8'
-            ):
+        self, server_name, key, value='', max_age=None,
+        expires=None, path='/', domain=None, secure=None,
+        httponly=False, charset='utf-8'
+    ):
         """Sets a cookie in the client's cookie jar.  The server name
         is required and has to match the one that is also passed to
         the open call.
         """
         assert self.cookie_jar is not None, 'cookies disabled'
-        header = dump_cookie(key, value, max_age, expires, path, domain,
-                             secure, httponly, charset)
+        header = dump_cookie(
+            key, value, max_age, expires, path, domain,
+            secure, httponly, charset,
+        )
         environ = create_environ(path, base_url='http://' + server_name)
         headers = [('Set-Cookie', header)]
         self.cookie_jar.extract_wsgi(environ, headers)
 
     def delete_cookie(self, server_name, key, path='/', domain=None):
         """Deletes a cookie in the test client."""
-        self.set_cookie(server_name, key, expires=0, max_age=0,
-                        path=path, domain=domain)
+        self.set_cookie(
+            server_name, key, expires=0, max_age=0,
+            path=path, domain=domain,
+        )
 
     def run_wsgi_app(self, environ, buffered=False):
         """Runs the wrapped WSGI app with the given environment."""
@@ -694,8 +706,8 @@ class Client(object):
         return rv
 
     def resolve_redirect(
-                self, response, new_location, environ, buffered=False
-            ):
+        self, response, new_location, environ, buffered=False
+    ):
         """Resolves a single redirect and triggers the request again
         directly on this redirect client.
         """
@@ -711,8 +723,9 @@ class Client(object):
             allowed = cur_server_name == real_server_name
 
         if not allowed:
-            raise RuntimeError('%r does not support redirect to '
-                               'external targets' % self.__class__)
+            raise RuntimeError((
+                '{cls!r} does not support redirect to external targets'
+            ).format(cls=self.__class__))
 
         status_code = int(response[1].split(None, 1)[0])
         if status_code == 307:
@@ -726,9 +739,11 @@ class Client(object):
         old_response_wrapper = self.response_wrapper
         self.response_wrapper = None
         try:
-            return self.open(path=script_root, base_url=base_url,
-                             query_string=qs, as_tuple=True,
-                             buffered=buffered, method=method)
+            return self.open(
+                path=script_root, base_url=base_url,
+                query_string=qs, as_tuple=True,
+                buffered=buffered, method=method,
+            )
         finally:
             self.response_wrapper = old_response_wrapper
 
@@ -790,9 +805,9 @@ class Client(object):
             if new_redirect_entry in redirect_chain:
                 raise ClientRedirectError('loop detected')
             redirect_chain.append(new_redirect_entry)
-            environ, response = self.resolve_redirect(response, new_location,
-                                                      environ,
-                                                      buffered=buffered)
+            environ, response = self.resolve_redirect(
+                response, new_location, environ, buffered=buffered,
+            )
 
         if self.response_wrapper is not None:
             response = self.response_wrapper(*response)

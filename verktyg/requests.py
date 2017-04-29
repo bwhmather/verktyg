@@ -44,9 +44,10 @@ from verktyg.wsgi import (
 
 def _assert_not_shallow(request):
     if request.shallow:
-        raise RuntimeError('A shallow request tried to consume '
-                           'form data.  If you really want to do '
-                           'that, set `shallow` to False.')
+        raise RuntimeError(
+            'A shallow request tried to consume form data.  If you really '
+            'want to do that, set `shallow` to False.'
+        )
 
 
 class BaseRequest(object):
@@ -224,8 +225,9 @@ class BaseRequest(object):
                                not provided because webbrowsers do not provide
                                this value.
         """
-        return default_stream_factory(total_content_length, content_type,
-                                      filename, content_length)
+        return default_stream_factory(
+            total_content_length, content_type, filename, content_length,
+        )
 
     @property
     def want_form_data_parsed(self):
@@ -264,11 +266,15 @@ class BaseRequest(object):
             content_length = get_content_length(self.environ)
             mimetype, options = parse_options_header(content_type)
             parser = self.make_form_data_parser()
-            data = parser.parse(self._get_stream_for_parsing(),
-                                mimetype, content_length, options)
+            data = parser.parse(
+                self._get_stream_for_parsing(),
+                mimetype, content_length, options,
+            )
         else:
-            data = (self.stream, self.parameter_storage_class(),
-                    self.parameter_storage_class())
+            data = (
+                self.stream, self.parameter_storage_class(),
+                self.parameter_storage_class(),
+            )
 
         # inject the values into the instance dict so that we bypass
         # our cached_property non-data descriptor.
@@ -465,16 +471,19 @@ class BaseRequest(object):
         """The reconstructed current URL as IRI.
         See also: :attr:`trusted_hosts`.
         """
-        return get_current_url(self.environ,
-                               trusted_hosts=self.trusted_hosts)
+        return get_current_url(
+            self.environ, trusted_hosts=self.trusted_hosts,
+        )
 
     @cached_property
     def base_url(self):
         """Like :attr:`url` but without the querystring
         See also: :attr:`trusted_hosts`.
         """
-        return get_current_url(self.environ, strip_querystring=True,
-                               trusted_hosts=self.trusted_hosts)
+        return get_current_url(
+            self.environ, strip_querystring=True,
+            trusted_hosts=self.trusted_hosts,
+        )
 
     @cached_property
     def url_root(self):
@@ -482,16 +491,18 @@ class BaseRequest(object):
         root as IRI.
         See also: :attr:`trusted_hosts`.
         """
-        return get_current_url(self.environ, True,
-                               trusted_hosts=self.trusted_hosts)
+        return get_current_url(
+            self.environ, True, trusted_hosts=self.trusted_hosts,
+        )
 
     @cached_property
     def host_url(self):
         """Just the host with scheme as IRI.
         See also: :attr:`trusted_hosts`.
         """
-        return get_current_url(self.environ, host_only=True,
-                               trusted_hosts=self.trusted_hosts)
+        return get_current_url(
+            self.environ, host_only=True, trusted_hosts=self.trusted_hosts,
+        )
 
     @cached_property
     def host(self):
@@ -596,8 +607,9 @@ class ETagRequestMixin(object):
         for the incoming cache control headers.
         """
         cache_control = self.environ.get('HTTP_CACHE_CONTROL')
-        return parse_cache_control_header(cache_control, None,
-                                          RequestCacheControl)
+        return parse_cache_control_header(
+            cache_control, None, RequestCacheControl,
+        )
 
     @cached_property
     def if_match(self):
@@ -792,9 +804,11 @@ class CommonRequestDescriptorsMixin(object):
 
 
 # TODO deprecate.  Superseded by request class building in ApplicationBuilder
-class Request(BaseRequest, ETagRequestMixin,
-              UserAgentMixin, AuthorizationMixin,
-              CommonRequestDescriptorsMixin):
+class Request(
+    BaseRequest, ETagRequestMixin,
+    UserAgentMixin, AuthorizationMixin,
+    CommonRequestDescriptorsMixin,
+):
 
     """Full featured request object implementing the following mixins:
 

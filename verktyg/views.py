@@ -32,9 +32,9 @@ class View(BindingFactory):
     :param qs:
     """
     def __init__(
-                self, name, action, *, methods=None,
-                content_type=None, language=None, charset=None, qs=None
-            ):
+        self, name, action, *, methods=None,
+        content_type=None, language=None, charset=None, qs=None
+    ):
         self._name = name
 
         if methods is None:
@@ -66,8 +66,9 @@ class ClassView(BindingFactory):
     def get_bindings(self):
         for method in {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'}:  # TODO
             if hasattr(self, method):
-                yield Binding(self.name, getattr(self, method),
-                              method=method)
+                yield Binding(
+                    self.name, getattr(self, method), method=method,
+                )
 
 
 class JsonView(View):

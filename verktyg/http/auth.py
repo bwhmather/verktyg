@@ -97,8 +97,10 @@ def parse_authorization_header(value):
             username, password = base64.b64decode(auth_info).split(b':', 1)
         except Exception:
             return
-        return Authorization('basic', {'username':  bytes_to_wsgi(username),
-                                       'password': bytes_to_wsgi(password)})
+        return Authorization('basic', {
+            'username': bytes_to_wsgi(username),
+            'password': bytes_to_wsgi(password),
+        })
     elif auth_type == b'digest':
         auth_map = parse_dict_header(auth_info)
         for key in 'username', 'realm', 'nonce', 'uri', 'response':
@@ -148,14 +150,16 @@ class WWWAuthenticate(datastructures.UpdateDictMixin, dict):
         if self.on_update:
             self.on_update(self)
 
-    def set_digest(self, realm, nonce, qop=('auth',), opaque=None,
-                   algorithm=None, stale=False):
+    def set_digest(
+        self, realm, nonce, qop=('auth',), opaque=None,
+        algorithm=None, stale=False,
+    ):
         """Clear the auth info and enable digest auth."""
         d = {
-            '__auth_type__':    'digest',
-            'realm':            realm,
-            'nonce':            nonce,
-            'qop':              dump_header(qop)
+            '__auth_type__': 'digest',
+            'realm': realm,
+            'nonce': nonce,
+            'qop': dump_header(qop)
         }
         if stale:
             d['stale'] = 'TRUE'

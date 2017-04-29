@@ -23,10 +23,10 @@ class LanguageAccept(_base.Accept):
 
 class LanguageAcceptability(_base.Acceptability):
     def __init__(
-                self, content_type, *,
-                specificity, tail,
-                q, qs=None
-            ):
+        self, content_type, *,
+        specificity, tail,
+        q, qs=None
+    ):
         super(LanguageAcceptability, self).__init__(
             content_type, match_quality=(-tail, specificity), q=q, qs=qs
         )

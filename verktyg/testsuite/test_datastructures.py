@@ -93,8 +93,10 @@ class _MutableMultiDictTests(object):
         md = self.storage_class()
         self.assertIsInstance(md, dict)
 
-        mapping = [('a', 1), ('b', 2), ('a', 2), ('d', 3),
-                   ('a', 1), ('a', 3), ('d', 4), ('c', 3)]
+        mapping = [
+            ('a', 1), ('b', 2), ('a', 2), ('d', 3),
+            ('a', 1), ('a', 3), ('d', 4), ('c', 3),
+        ]
         md = self.storage_class(mapping)
 
         # simple getitem gives the first value
@@ -293,8 +295,8 @@ class _ImmutableDictTests(object):
 
 
 class ImmutableTypeConversionDictTestCase(
-            _ImmutableDictTests, unittest.TestCase
-        ):
+    _ImmutableDictTests, unittest.TestCase
+):
     storage_class = datastructures.ImmutableTypeConversionDict
 
 
@@ -319,13 +321,15 @@ class ImmutableMultiDictTestCase(_ImmutableDictTests, unittest.TestCase):
         self.assertIn(immutable2, x)
 
 
-class ImmutableDictTestCase(_ImmutableDictTests, unittest.TestCase):
+class ImmutableDictTestCase(
+    _ImmutableDictTests, unittest.TestCase,
+):
     storage_class = datastructures.ImmutableDict
 
 
 class ImmutableOrderedMultiDictTestCase(
-            _ImmutableDictTests, unittest.TestCase
-        ):
+    _ImmutableDictTests, unittest.TestCase
+):
     storage_class = datastructures.ImmutableOrderedMultiDict
 
     def test_ordered_multidict_is_hashable(self):

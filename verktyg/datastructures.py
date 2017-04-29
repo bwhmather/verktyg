@@ -408,9 +408,9 @@ class MultiDict(TypeConversionDict):
         return result
 
     def setlist(self, key, new_list):
-        """Remove the old values for a key and add new ones.  Note that the list
-        you pass the values in will be shallow-copied before it is inserted in
-        the dictionary.
+        """Remove the old values for a key and add new ones.  Note that the
+        list you pass the values in will be shallow-copied before it is
+        inserted in the dictionary.
 
         >>> d = MultiDict()
         >>> d.setlist('foo', ['1', '2'])
@@ -762,8 +762,9 @@ class OrderedMultiDict(MultiDict):
             self.add(key, value)
 
     def setlistdefault(self, key, default_list=None):
-        raise TypeError('setlistdefault is unsupported for '
-                        'ordered multi dicts')
+        raise TypeError(
+            'setlistdefault is unsupported for ordered multi dicts'
+        )
 
     def update(self, mapping):
         for key, value in iter_multi_items(mapping):
@@ -806,9 +807,9 @@ class OrderedMultiDict(MultiDict):
 
 
 class CombinedMultiDict(ImmutableMultiDictMixin, MultiDict):
-    """A read only :class:`MultiDict` that you can pass multiple :class:`MultiDict`
-    instances as sequence and it will combine the return values of all wrapped
-    dicts:
+    """A read only :class:`MultiDict` that you can pass multiple
+    :class:`MultiDict` instances as sequence and it will combine the return
+    values of all wrapped dicts:
 
     >>> from verktyg.datastructures import CombinedMultiDict, MultiDict
     >>> post = MultiDict([('foo', 'bar')])
@@ -836,8 +837,9 @@ class CombinedMultiDict(ImmutableMultiDictMixin, MultiDict):
 
     @classmethod
     def fromkeys(cls):
-        raise TypeError('cannot create %r instances by fromkeys' %
-                        cls.__name__)
+        raise TypeError((
+            'cannot create {cls!r} instances by fromkeys'
+        ).format(cls=cls.__name__))
 
     def __getitem__(self, key):
         for d in self.dicts:

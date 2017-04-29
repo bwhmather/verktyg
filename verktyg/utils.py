@@ -127,7 +127,8 @@ def secure_filename(filename):
         if sep:
             filename = filename.replace(sep, ' ')
     filename = str(_filename_ascii_strip_re.sub('', '_'.join(
-                   filename.split()))).strip('._')
+        filename.split()
+    ))).strip('._')
 
     # on nt a couple of special files are present in each folder.  We
     # have to ensure that the target file is not such a filename.  In

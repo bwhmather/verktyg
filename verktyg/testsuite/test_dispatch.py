@@ -138,10 +138,10 @@ class DispatchTestCase(unittest.TestCase):
     def test_nested(self):
         child = Dispatcher([
             Binding('nested', _make_view('Nested')),
-            ])
+        ])
         parent = Dispatcher([
             child,
-            ])
+        ])
 
         self.assertEqual(
             'Nested',

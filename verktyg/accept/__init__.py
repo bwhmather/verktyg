@@ -27,20 +27,22 @@ from verktyg.exceptions import NotAcceptable
 @functools.total_ordering
 class Acceptability(object):
     def __init__(
-                self, *,
-                content_type_acceptability,
-                language_acceptability,
-                charset_acceptability,
-                qs
-            ):
+        self, *,
+        content_type_acceptability,
+        language_acceptability,
+        charset_acceptability,
+        qs
+    ):
         self._content_type_acceptability = content_type_acceptability
         self._language_acceptability = language_acceptability
         self._charset_acceptability = charset_acceptability
         self._qs = qs
 
     def __eq__(self, other):
-        if (other._content_type_acceptability !=
-                self._content_type_acceptability):
+        if (
+            other._content_type_acceptability !=
+            self._content_type_acceptability
+        ):
             return False
         if other._language_acceptability != self._language_acceptability:
             return False
@@ -78,9 +80,9 @@ class Acceptability(object):
 
 
 def select_representation(
-            representations,
-            accept='*/*', accept_language='*', accept_charset='*'
-        ):
+    representations,
+    accept='*/*', accept_language='*', accept_charset='*'
+):
     highest_acceptability = None
     best_representation = None
 
@@ -121,8 +123,10 @@ def select_representation(
 
 
 class Representation(object):
-    def __init__(self, *, content_type=None, language=None,
-                 charset=None, qs=None):
+    def __init__(
+        self, *, content_type=None, language=None,
+        charset=None, qs=None
+    ):
         if isinstance(content_type, str):
             content_type = parse_content_type_header(content_type)
         self._content_type = content_type
@@ -140,11 +144,11 @@ class Representation(object):
         self._qs = max(min(float(qs), 1.0), 0.0)
 
     def acceptability(
-                self, *,
-                accept=None,
-                accept_charset=None,
-                accept_language=None
-            ):
+        self, *,
+        accept=None,
+        accept_charset=None,
+        accept_language=None
+    ):
         """
         :param accept:
             String in the same format as an http `Accept` header
