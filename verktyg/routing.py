@@ -101,8 +101,6 @@ from urllib.parse import (
 
 from pprint import pformat
 
-from werkzeug._internal import _get_environ
-
 from verktyg.datastructures import ImmutableDict, MultiDict
 from verktyg.wsgi import wsgi_decoding_dance
 from verktyg.exceptions import HTTPException, NotFound
@@ -1185,7 +1183,8 @@ class URLMap(object):
         :param subdomain:
             Optionally the current subdomain (see above).
         """
-        environ = _get_environ(environ)
+        environ = getattr(environ, 'environ', environ)
+        assert isinstance(environ, dict)
         if server_name is None:
             if 'HTTP_HOST' in environ:
                 server_name = environ['HTTP_HOST']

@@ -22,8 +22,6 @@
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
-from werkzeug._internal import _get_environ
-
 from verktyg.urls import iri_to_uri
 from verktyg.utils import cached_property, header_property, get_content_type
 from verktyg.datastructures import CallbackDict
@@ -692,7 +690,8 @@ class ETagResponseMixin(object):
             A request object or WSGI environment to be used to make the
             response conditional against.
         """
-        environ = _get_environ(request_or_environ)
+        environ = getattr(request_or_environ, 'environ', request_or_environ)
+        assert isinstance(environ, dict)
         if environ['REQUEST_METHOD'] in ('GET', 'HEAD'):
             # if the date is not in the headers, add it now.  We however
             # will not override an already existing header.  Unfortunately
