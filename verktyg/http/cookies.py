@@ -13,9 +13,7 @@ from itertools import chain
 from time import time
 from datetime import timedelta
 
-from werkzeug._internal import _encode_idna
-
-from verktyg.urls import iri_to_uri
+from verktyg.urls import iri_to_uri, encode_idna
 from verktyg import datastructures
 from verktyg.http.basic import _dump_date
 
@@ -106,7 +104,7 @@ def _cookie_unquote(b):
 def _make_cookie_domain(domain):
     if domain is None:
         return None
-    domain = _encode_idna(domain)
+    domain = encode_idna(domain)
     if b':' in domain:
         domain = domain.split(b':', 1)[0]
     if b'.' in domain:

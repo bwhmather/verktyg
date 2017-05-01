@@ -23,9 +23,8 @@ from functools import partial
 from urllib.parse import quote as urlquote
 
 from werkzeug._compat import wsgi_get_bytes
-from werkzeug._internal import _encode_idna
 
-from verktyg.urls import uri_to_iri
+from verktyg.urls import uri_to_iri, encode_idna
 from verktyg import http
 from verktyg.http import (
     is_resource_modified, http_date, unicodify_header_value,
@@ -121,7 +120,7 @@ def host_is_trusted(hostname, trusted_list):
     def _normalize(hostname):
         if ':' in hostname:
             hostname = hostname.rsplit(':', 1)[0]
-        return _encode_idna(hostname)
+        return encode_idna(hostname)
 
     hostname = _normalize(hostname)
     for ref in trusted_list:
