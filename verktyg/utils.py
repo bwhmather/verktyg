@@ -16,7 +16,7 @@ import os
 
 from html import escape
 
-from werkzeug._internal import _DictAccessorProperty, _missing
+from werkzeug._internal import _DictAccessorProperty
 
 
 _filename_ascii_strip_re = re.compile(r'[^A-Za-z0-9_.-]')
@@ -24,6 +24,7 @@ _windows_device_files = {
     'CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4',
     'LPT1', 'LPT2', 'LPT3', 'PRN', 'NUL',
 }
+_missing = object()
 
 
 class cached_property(property):
@@ -60,6 +61,7 @@ class cached_property(property):
     def __get__(self, obj, type=None):
         if obj is None:
             return self
+
         value = obj.__dict__.get(self.__name__, _missing)
         if value is _missing:
             value = self.func(obj)
