@@ -15,16 +15,18 @@ from email.utils import parsedate_tz
 from urllib.request import parse_http_list as _parse_list_header
 from datetime import datetime, timedelta
 
-from werkzeug._internal import _missing
-
 from verktyg.datastructures import is_immutable
 from verktyg import exceptions
 
 
+_missing = object()
+
 _cookie_charset = 'latin1'
 # for explanation of "media-range", etc. see Sections 5.3.{1,2} of RFC 7231
-_token_chars = frozenset("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                         '^_`abcdefghijklmnopqrstuvwxyz|~')
+_token_chars = frozenset(
+    "!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    '^_`abcdefghijklmnopqrstuvwxyz|~'
+)
 _unsafe_header_chars = set('()<>@,;:\"/[]?={} \t')
 _quoted_string_re = r'"[^"\\]*(?:\\.[^"\\]*)*"'
 _option_header_piece_re = re.compile(
@@ -375,8 +377,10 @@ class Headers(object):
         if not isinstance(value, str):
             raise TypeError('Value should be unicode.')
         if u'\n' in value or u'\r' in value:
-            raise ValueError('Detected newline in header value.  This is '
-                             'a potential security problem')
+            raise ValueError(
+                'Detected newline in header value.  '
+                'This is a potential security problem'
+            )
 
     def add_header(self, _key, _value, **_kw):
         """Add a new header tuple to the list.
@@ -455,8 +459,10 @@ class Headers(object):
     def to_list(self, charset='iso-8859-1'):
         """Convert the headers into a list suitable for WSGI."""
         from warnings import warn
-        warn(DeprecationWarning('Method removed, use to_wsgi_list instead'),
-             stacklevel=2)
+        warn(
+            DeprecationWarning('Method removed, use to_wsgi_list instead'),
+            stacklevel=2,
+        )
         return self.to_wsgi_list()
 
     def to_wsgi_list(self):
@@ -572,8 +578,10 @@ def dump_header(iterable, allow_token=True):
                     quote_header_value(value, allow_token=allow_token)
                 ))
     else:
-        items = [quote_header_value(x, allow_token=allow_token)
-                 for x in iterable]
+        items = [
+            quote_header_value(x, allow_token=allow_token)
+            for x in iterable
+        ]
     return ', '.join(items)
 
 
@@ -731,8 +739,10 @@ def _dump_date(d, delim):
     return '%s, %02d%s%s%s%s %02d:%02d:%02d GMT' % (
         ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')[d.tm_wday],
         d.tm_mday, delim,
-        ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-         'Oct', 'Nov', 'Dec')[d.tm_mon - 1],
+        (
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+            'Oct', 'Nov', 'Dec',
+        )[d.tm_mon - 1],
         delim, str(d.tm_year), d.tm_hour, d.tm_min, d.tm_sec
     )
 
@@ -765,8 +775,10 @@ def remove_entity_headers(headers, allowed=('expires', 'content-location')):
         entity headers.
     """
     allowed = set(x.lower() for x in allowed)
-    headers[:] = [(key, value) for key, value in headers if
-                  not is_entity_header(key) or key.lower() in allowed]
+    headers[:] = [
+        (key, value) for key, value in headers
+        if not is_entity_header(key) or key.lower() in allowed
+    ]
 
 
 def remove_hop_by_hop_headers(headers):
@@ -776,8 +788,10 @@ def remove_hop_by_hop_headers(headers):
     :param headers:
         A list or :class:`Headers` object.
     """
-    headers[:] = [(key, value) for key, value in headers if
-                  not is_hop_by_hop_header(key)]
+    headers[:] = [
+        (key, value) for key, value in headers
+        if not is_hop_by_hop_header(key)
+    ]
 
 
 def is_entity_header(header):
@@ -824,9 +838,11 @@ class FileStorage(object):
     ``storage.stream.read()``.
     """
 
-    def __init__(self, stream=None, filename=None, name=None,
-                 content_type=None, content_length=None,
-                 headers=None):
+    def __init__(
+        self, stream=None, filename=None, name=None,
+        content_type=None, content_length=None,
+        headers=None,
+    ):
         self.name = name
         self.stream = stream or BytesIO()
 

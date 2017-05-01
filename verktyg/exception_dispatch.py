@@ -79,8 +79,10 @@ class ExceptionDispatcher(ExceptionHandlerFactory):
     def get_exception_handlers(self):
         return iter(self._handlers)
 
-    def lookup(self, exception_class,
-               accept='*/*', accept_language=None, accept_charset=None):
+    def lookup(
+        self, exception_class,
+        accept='*/*', accept_language=None, accept_charset=None,
+    ):
         """ Given an exception class and the contents of a requests accept
         headers, returns the corresponding exception handler.
 

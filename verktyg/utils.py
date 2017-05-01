@@ -16,15 +16,13 @@ import os
 
 from html import escape
 
-from werkzeug._internal import (
-    _DictAccessorProperty, _parse_signature, _missing,
-)
 
 _filename_ascii_strip_re = re.compile(r'[^A-Za-z0-9_.-]')
 _windows_device_files = {
     'CON', 'AUX', 'COM1', 'COM2', 'COM3', 'COM4',
     'LPT1', 'LPT2', 'LPT3', 'PRN', 'NUL',
 }
+_missing = object()
 
 
 class cached_property(property):
@@ -61,6 +59,7 @@ class cached_property(property):
     def __get__(self, obj, type=None):
         if obj is None:
             return self
+
         value = obj.__dict__.get(self.__name__, _missing)
         if value is _missing:
             value = self.func(obj)
@@ -68,38 +67,51 @@ class cached_property(property):
         return value
 
 
-class environ_property(_DictAccessorProperty):
-    """Maps request attributes to environment variables. This works not only
-    for the Werzeug request object, but also any other class with an
-    environ attribute:
-
-    >>> class Test(object):
-    ...     environ = {'key': 'value'}
-    ...     test = environ_property('key')
-    >>> var = Test()
-    >>> var.test
-    'value'
-
-    If you pass it a second value it's used as default if the key does not
-    exist, the third one can be a converter that takes a value and converts
-    it.  If it raises :exc:`ValueError` or :exc:`TypeError` the default value
-    is used. If no default value is provided `None` is used.
-
-    Per default the property is read only.  You have to explicitly enable it
-    by passing ``read_only=False`` to the constructor.
+class header_property(object):
+    """Decorator to create properties that wrap a request header.
     """
 
-    read_only = True
+    def __init__(
+        self, name, default=None, load_func=None, dump_func=None,
+        read_only=False, doc=None,
+    ):
+        self.name = name
+        self.default = default
+        self.load_func = load_func
+        self.dump_func = dump_func
+        self.read_only = read_only
+        self.__doc__ = doc
 
-    def lookup(self, obj):
-        return obj.environ
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        if self.name not in obj.headers:
+            return self.default
+        rv = obj.headers[self.name]
+        if self.load_func is not None:
+            try:
+                rv = self.load_func(rv)
+            except (ValueError, TypeError):
+                rv = self.default
+        return rv
 
+    def __set__(self, obj, value):
+        if self.read_only:
+            raise AttributeError('read only property')
+        if self.dump_func is not None:
+            value = self.dump_func(value)
+        obj.headers[self.name] = value
 
-class header_property(_DictAccessorProperty):
-    """Like `environ_property` but for headers."""
+    def __delete__(self, obj):
+        if self.read_only:
+            raise AttributeError('read only property')
+        obj.headers.pop(self.name, None)
 
-    def lookup(self, obj):
-        return obj.headers
+    def __repr__(self):
+        return '<%s %s>' % (
+            self.__class__.__name__,
+            self.name
+        )
 
 
 def get_content_type(mimetype, charset):
@@ -155,7 +167,8 @@ def secure_filename(filename):
         if sep:
             filename = filename.replace(sep, ' ')
     filename = str(_filename_ascii_strip_re.sub('', '_'.join(
-                   filename.split()))).strip('._')
+        filename.split()
+    ))).strip('._')
 
     # on nt a couple of special files are present in each folder.  We
     # have to ensure that the target file is not such a filename.  In
@@ -220,116 +233,3 @@ def append_slash_redirect(environ, code=301):
     if query_string:
         new_path += '?' + query_string
     return redirect(new_path, code)
-
-
-def validate_arguments(func, args, kwargs, drop_extra=True):
-    """Checks if the function accepts the arguments and keyword arguments.
-    Returns a new ``(args, kwargs)`` tuple that can safely be passed to
-    the function without causing a `TypeError` because the function signature
-    is incompatible.  If `drop_extra` is set to `True` (which is the default)
-    any extra positional or keyword arguments are dropped automatically.
-
-    The exception raised provides three attributes:
-
-    `missing`
-        A set of argument names that the function expected but where
-        missing.
-
-    `extra`
-        A dict of keyword arguments that the function can not handle but
-        where provided.
-
-    `extra_positional`
-        A list of values that where given by positional argument but the
-        function cannot accept.
-
-    This can be useful for decorators that forward user submitted data to
-    a view function::
-
-        from verktyg.utils import ArgumentValidationError, validate_arguments
-
-        def sanitize(f):
-            def proxy(request):
-                data = request.values.to_dict()
-                try:
-                    args, kwargs = validate_arguments(f, (request,), data)
-                except ArgumentValidationError:
-                    raise BadRequest(
-                        'The browser failed to transmit all the data expected.'
-                    )
-                return f(*args, **kwargs)
-            return proxy
-
-    :param func:
-        The function the validation is performed against.
-    :param args:
-        A tuple of positional arguments.
-    :param kwargs:
-        A dict of keyword arguments.
-    :param drop_extra:
-        Set to `False` if you don't want extra arguments to be silently
-        dropped.
-    :return:
-        Tuple in the form ``(args, kwargs)``.
-    """
-    parser = _parse_signature(func)
-    args, kwargs, missing, extra, extra_positional = parser(args, kwargs)[:5]
-    if missing:
-        raise ArgumentValidationError(tuple(missing))
-    elif (extra or extra_positional) and not drop_extra:
-        raise ArgumentValidationError(None, extra, extra_positional)
-    return tuple(args), kwargs
-
-
-def bind_arguments(func, args, kwargs):
-    """Bind the arguments provided into a dict.  When passed a function,
-    a tuple of arguments and a dict of keyword arguments `bind_arguments`
-    returns a dict of names as the function would see it.  This can be useful
-    to implement a cache decorator that uses the function arguments to build
-    the cache key based on the values of the arguments.
-
-    :param func:
-        The function the arguments should be bound for.
-    :param args:
-        Tuple of positional arguments.
-    :param kwargs:
-        A dict of keyword arguments.
-    :return:
-        A :class:`dict` of bound keyword arguments.
-    """
-    args, kwargs, missing, extra, extra_positional, \
-        arg_spec, vararg_var, kwarg_var = _parse_signature(func)(args, kwargs)
-    values = {}
-    for (name, has_default, default), value in zip(arg_spec, args):
-        values[name] = value
-    if vararg_var is not None:
-        values[vararg_var] = tuple(extra_positional)
-    elif extra_positional:
-        raise TypeError('too many positional arguments')
-    if kwarg_var is not None:
-        multikw = set(extra) & set([x[0] for x in arg_spec])
-        if multikw:
-            raise TypeError(
-                'got multiple values for keyword argument ' +
-                repr(next(iter(multikw)))
-            )
-        values[kwarg_var] = extra
-    elif extra:
-        raise TypeError(
-            'got unexpected keyword argument ' + repr(next(iter(extra)))
-        )
-    return values
-
-
-class ArgumentValidationError(ValueError):
-
-    """Raised if :func:`validate_arguments` fails to validate"""
-
-    def __init__(self, missing=None, extra=None, extra_positional=None):
-        self.missing = set(missing or ())
-        self.extra = extra or {}
-        self.extra_positional = extra_positional or []
-        ValueError.__init__(
-            self, 'function arguments invalid.  (%d missing, %d additional)' %
-            (len(self.missing), len(self.extra) + len(self.extra_positional))
-        )

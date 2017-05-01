@@ -13,9 +13,7 @@ from itertools import chain
 from time import time
 from datetime import timedelta
 
-from werkzeug._internal import _encode_idna
-
-from verktyg.urls import iri_to_uri
+from verktyg.urls import iri_to_uri, encode_idna
 from verktyg import datastructures
 from verktyg.http.basic import _dump_date
 
@@ -106,7 +104,7 @@ def _cookie_unquote(b):
 def _make_cookie_domain(domain):
     if domain is None:
         return None
-    domain = _encode_idna(domain)
+    domain = encode_idna(domain)
     if b':' in domain:
         domain = domain.split(b':', 1)[0]
     if b'.' in domain:
@@ -197,9 +195,11 @@ def parse_cookie(header, charset='utf-8', errors='replace', cls=None):
     return cls(_parse_pairs())
 
 
-def dump_cookie(key, value='', max_age=None, expires=None, path='/',
-                domain=None, secure=False, httponly=False,
-                charset='utf-8', sync_expires=True):
+def dump_cookie(
+    key, value='', max_age=None, expires=None, path='/',
+    domain=None, secure=False, httponly=False,
+    charset='utf-8', sync_expires=True,
+):
     """Creates a new Set-Cookie header without the ``Set-Cookie`` prefix
     The parameters are the same as in the cookie Morsel object in the
     Python standard library but it accepts unicode data, too.
@@ -255,12 +255,14 @@ def dump_cookie(key, value='', max_age=None, expires=None, path='/',
     # XXX: In theory all of these parameters that are not marked with `None`
     # should be quoted.  Because stdlib did not quote it before I did not
     # want to introduce quoting there now.
-    for k, v, q in ((b'Domain', domain, True),
-                    (b'Expires', expires, False,),
-                    (b'Max-Age', max_age, False),
-                    (b'Secure', secure, None),
-                    (b'HttpOnly', httponly, None),
-                    (b'Path', path, False)):
+    for k, v, q in (
+        (b'Domain', domain, True),
+        (b'Expires', expires, False,),
+        (b'Max-Age', max_age, False),
+        (b'Secure', secure, None),
+        (b'HttpOnly', httponly, None),
+        (b'Path', path, False),
+    ):
         if q is None:
             if v:
                 buf.append(k)

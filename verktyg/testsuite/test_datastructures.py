@@ -60,7 +60,7 @@ class NativeItermethodsTestCase(unittest.TestCase):
         self.assertEqual(list(d.items(2)), expected_items * 2)
 
 
-class _MutableMultiDictTests(object):
+class _MutableMultiDictTestsMixin(object):
     storage_class = None
 
     def test_pickle(self):
@@ -93,8 +93,10 @@ class _MutableMultiDictTests(object):
         md = self.storage_class()
         self.assertIsInstance(md, dict)
 
-        mapping = [('a', 1), ('b', 2), ('a', 2), ('d', 3),
-                   ('a', 1), ('a', 3), ('d', 4), ('c', 3)]
+        mapping = [
+            ('a', 1), ('b', 2), ('a', 2), ('d', 3),
+            ('a', 1), ('a', 3), ('d', 4), ('c', 3),
+        ]
         md = self.storage_class(mapping)
 
         # simple getitem gives the first value
@@ -246,7 +248,7 @@ class _MutableMultiDictTests(object):
         self.assertEqual(md.getlist('foo'), [1, 2])
 
 
-class _ImmutableDictTests(object):
+class _ImmutableDictTestsMixin(object):
     storage_class = None
 
     def test_follows_dict_interface(self):
@@ -293,12 +295,12 @@ class _ImmutableDictTests(object):
 
 
 class ImmutableTypeConversionDictTestCase(
-            _ImmutableDictTests, unittest.TestCase
-        ):
+    _ImmutableDictTestsMixin, unittest.TestCase
+):
     storage_class = datastructures.ImmutableTypeConversionDict
 
 
-class ImmutableMultiDictTestCase(_ImmutableDictTests, unittest.TestCase):
+class ImmutableMultiDictTestCase(_ImmutableDictTestsMixin, unittest.TestCase):
     storage_class = datastructures.ImmutableMultiDict
 
     def test_multidict_is_hashable(self):
@@ -319,13 +321,15 @@ class ImmutableMultiDictTestCase(_ImmutableDictTests, unittest.TestCase):
         self.assertIn(immutable2, x)
 
 
-class ImmutableDictTestCase(_ImmutableDictTests, unittest.TestCase):
+class ImmutableDictTestCase(
+    _ImmutableDictTestsMixin, unittest.TestCase,
+):
     storage_class = datastructures.ImmutableDict
 
 
 class ImmutableOrderedMultiDictTestCase(
-            _ImmutableDictTests, unittest.TestCase
-        ):
+    _ImmutableDictTestsMixin, unittest.TestCase
+):
     storage_class = datastructures.ImmutableOrderedMultiDict
 
     def test_ordered_multidict_is_hashable(self):
@@ -334,7 +338,7 @@ class ImmutableOrderedMultiDictTestCase(
         self.assertNotEqual(hash(a), hash(b))
 
 
-class MultiDictTestCase(_MutableMultiDictTests, unittest.TestCase):
+class MultiDictTestCase(_MutableMultiDictTestsMixin, unittest.TestCase):
     storage_class = datastructures.MultiDict
 
     def test_multidict_pop(self):
@@ -375,7 +379,7 @@ class MultiDictTestCase(_MutableMultiDictTests, unittest.TestCase):
         )
 
 
-class OrderedMultiDictTestCase(_MutableMultiDictTests, unittest.TestCase):
+class OrderedMultiDictTestCase(_MutableMultiDictTestsMixin, unittest.TestCase):
     storage_class = datastructures.OrderedMultiDict
 
     def test_ordered_interface(self):
@@ -549,7 +553,8 @@ class ImmutableListTestCase(unittest.TestCase):
 def make_call_asserter(func=None):
     """Utility to assert a certain number of function calls.
 
-    :param func: Additional callback for each function call.
+    :param func:
+        Additional callback for each function call.
 
     >>> assert_calls, func = make_call_asserter()
     >>> with assert_calls(2):

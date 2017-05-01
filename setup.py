@@ -11,7 +11,7 @@ extras_require = {
 
 setup(
     name='verktyg',
-    version='0.8.6',
+    version='0.9.0',
     url='https://github.com/bwhmather/verktyg',
     license='BSD',
     author='Ben Mather',
@@ -30,7 +30,6 @@ setup(
     ],
     platforms='any',
     install_requires=[
-        'werkzeug >= 0.10, < 0.11',
     ],
     tests_require=list(set(sum(
         (extras_require[extra] for extra in {}), []

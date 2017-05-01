@@ -45,8 +45,13 @@ class ResponsesTestCase(unittest.TestCase):
         response.set_cookie('foo', 'bar', 60, 0, '/blub', 'example.org')
         self.assertEqual(response.headers.to_wsgi_list(), [
             ('Content-Type', 'text/plain; charset=utf-8'),
-            ('Set-Cookie', 'foo=bar; Domain=example.org; Expires=Thu, '
-             '01-Jan-1970 00:00:00 GMT; Max-Age=60; Path=/blub')
+            ('Set-Cookie', (
+                'foo=bar; '
+                'Domain=example.org; '
+                'Expires=Thu, 01-Jan-1970 00:00:00 GMT; '
+                'Max-Age=60; '
+                'Path=/blub'
+            )),
         ])
 
         # delete cookie
@@ -54,8 +59,12 @@ class ResponsesTestCase(unittest.TestCase):
         response.delete_cookie('foo')
         self.assertEqual(response.headers.to_wsgi_list(), [
             ('Content-Type', 'text/plain; charset=utf-8'),
-            ('Set-Cookie', 'foo=; Expires=Thu, 01-Jan-1970 00:00:00 GMT; '
-                           'Max-Age=0; Path=/'),
+            ('Set-Cookie', (
+                'foo=; '
+                'Expires=Thu, 01-Jan-1970 00:00:00 GMT; '
+                'Max-Age=0; '
+                'Path=/'
+            )),
         ])
 
         # close call forwarding
@@ -73,9 +82,9 @@ class ResponsesTestCase(unittest.TestCase):
                 closed.append(True)
         response = BaseResponse(Iterable())
         response.call_on_close(lambda: closed.append(True))
-        app_iter, status, headers = run_wsgi_app(response,
-                                                 create_environ(),
-                                                 buffered=True)
+        app_iter, status, headers = run_wsgi_app(
+            response, create_environ(), buffered=True,
+        )
         self.assertEqual(status, '200 OK')
         self.assertEqual(''.join(app_iter), '')
         self.assertEqual(len(closed), 2)
@@ -150,8 +159,8 @@ class ResponsesTestCase(unittest.TestCase):
         self.assertNotIn('date', response.headers)
         env = create_environ()
         env.update({
-            'REQUEST_METHOD':       'GET',
-            'HTTP_IF_NONE_MATCH':   response.get_etag()[0]
+            'REQUEST_METHOD': 'GET',
+            'HTTP_IF_NONE_MATCH': response.get_etag()[0]
         })
         response.make_conditional(env)
         self.assertIn('date', response.headers)
@@ -215,10 +224,9 @@ class ResponsesTestCase(unittest.TestCase):
         )
 
         actual = set((resp.headers['WWW-Authenticate'] + ',').split())
-        expected = set(
-            ('Digest nonce="NONCE", realm="REALM", '
-             'qop="auth, auth-int",').split()
-        )
+        expected = set((
+            'Digest nonce="NONCE", realm="REALM", qop="auth, auth-int",'
+        ).split())
         self.assertEqual(actual, expected)
 
         resp.www_authenticate.set_digest('REALM', 'NONCE', qop=("auth",))

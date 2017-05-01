@@ -22,14 +22,12 @@
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
-from werkzeug._internal import _get_environ
-
 from verktyg.urls import iri_to_uri
 from verktyg.utils import cached_property, header_property, get_content_type
 from verktyg.datastructures import CallbackDict
 from verktyg.http import (
     Headers, ResponseCacheControl, ContentRange,
-    HTTP_STATUS_CODES, parse_cache_control_header,  parse_date, generate_etag,
+    HTTP_STATUS_CODES, parse_cache_control_header, parse_date, generate_etag,
     is_resource_modified, unquote_etag, quote_etag, parse_set_header,
     parse_www_authenticate_header, remove_entity_headers, parse_options_header,
     dump_options_header, http_date, dump_cookie, parse_content_range_header,
@@ -53,11 +51,12 @@ def _warn_if_string(iterable):
     """
     if isinstance(iterable, str):
         from warnings import warn
-        warn(Warning('response iterable was set to a string.  This appears '
-                     'to work but means that the server will send the '
-                     'data to the client char, by char.  This is almost '
-                     'never intended behavior, use response.data to assign '
-                     'strings to the response object.'), stacklevel=2)
+        warn(Warning(
+            'response iterable was set to a string.  This appears to work but '
+            'means that the server will send the data to the client char, by '
+            'char.  This is almost never intended behavior, use response.data '
+            'to assign strings to the response object.'
+        ), stacklevel=2)
 
 
 def _iter_encoded(iterable, charset):
@@ -122,17 +121,20 @@ class BaseResponse(object):
     object is appended to it.  In contrast the `content_type` parameter is
     always added as header unmodified.
 
-    :param response: a string or response iterable.
-    :param status: a string with a status or an integer with the status code.
-    :param headers: a list of headers or a
-                    :class:`~verktyg.http.Headers` object.
-    :param mimetype: the mimetype for the request.  See notice above.
-    :param content_type: the content type for the request.  See notice above.
-    :param direct_passthrough: if set to `True` :meth:`iter_encoded` is not
-                               called before iteration which makes it
-                               possible to pass special iterators through
-                               unchanged (see :func:`wrap_file` for more
-                               details.)
+    :param response:
+        A string or response iterable.
+    :param status:
+        A string with a status or an integer with the status code.
+    :param headers:
+        A list of headers or a :class:`~verktyg.http.Headers` object.
+    :param mimetype:
+        The mimetype for the request.  See notice above.
+    :param content_type:
+        The content type for the request.  See notice above.
+    :param direct_passthrough:
+        If set to `True` :meth:`iter_encoded` is not called before iteration
+        which makes it possible to pass special iterators through unchanged
+        (see :func:`wrap_file` for more details.)
     """
 
     #: the charset of the response.
@@ -156,8 +158,10 @@ class BaseResponse(object):
     #: header if possible?  This is true by default.
     automatically_set_content_length = True
 
-    def __init__(self, response=None, status=None, headers=None,
-                 mimetype=None, content_type=None, direct_passthrough=False):
+    def __init__(
+        self, response=None, status=None, headers=None,
+        mimetype=None, content_type=None, direct_passthrough=False,
+    ):
         if isinstance(headers, Headers):
             self.headers = headers
         elif not headers:
@@ -237,14 +241,19 @@ class BaseResponse(object):
         Keep in mind that this will modify response objects in place if
         possible!
 
-        :param response: a response object or wsgi application.
-        :param environ: a WSGI environment object.
-        :return: a response object.
+        :param response:
+            A response object or wsgi application.
+        :param environ:
+            A WSGI environment object.
+        :return:
+            A response object.
         """
         if not isinstance(response, BaseResponse):
             if environ is None:
-                raise TypeError('cannot convert WSGI application into '
-                                'response objects without an environ')
+                raise TypeError(
+                    'cannot convert WSGI application into '
+                    'response objects without an environ'
+                )
             response = BaseResponse(*_run_wsgi_app(response, environ))
         response.__class__ = cls
         return response
@@ -258,10 +267,14 @@ class BaseResponse(object):
         edge cases automatically.  But if you don't get the expected output
         you should set `buffered` to `True` which enforces buffering.
 
-        :param app: the WSGI application to execute.
-        :param environ: the WSGI environment to execute against.
-        :param buffered: set to `True` to enforce buffering.
-        :return: a response object.
+        :param app:
+            The WSGI application to execute.
+        :param environ:
+            The WSGI environment to execute against.
+        :param buffered:
+            Set to `True` to enforce buffering.
+        :return:
+            A response object.
         """
         return cls(*_run_wsgi_app(app, environ, buffered))
 
@@ -274,8 +287,10 @@ class BaseResponse(object):
             self._status = '%d %s' % (code, HTTP_STATUS_CODES[code].upper())
         except KeyError:
             self._status = '%d UNKNOWN' % code
-    status_code = property(_get_status_code, _set_status_code,
-                           doc='The HTTP Status code as number')
+    status_code = property(
+        _get_status_code, _set_status_code,
+        doc='The HTTP Status code as number',
+    )
     del _get_status_code, _set_status_code
 
     def _get_status(self):
@@ -342,14 +357,16 @@ class BaseResponse(object):
                 self.response = list(self.response)
             return
         if self.direct_passthrough:
-            raise RuntimeError('Attempted implicit sequence conversion '
-                               'but the response object is in direct '
-                               'passthrough mode.')
+            raise RuntimeError(
+                'Attempted implicit sequence conversion but the response '
+                'object is in direct passthrough mode.'
+            )
         if not self.implicit_sequence_conversion:
-            raise RuntimeError('The response object required the iterable '
-                               'to be a sequence, but the implicit '
-                               'conversion was disabled.  Call '
-                               'make_sequence() yourself.')
+            raise RuntimeError(
+                'The response object required the iterable to be a sequence, '
+                'but the implicit conversion was disabled.  Call '
+                'make_sequence() yourself.'
+            )
         self.make_sequence()
 
     def make_sequence(self):
@@ -380,24 +397,30 @@ class BaseResponse(object):
         # value from get_app_iter or iter_encoded.
         return _iter_encoded(self.response, self.charset)
 
-    def set_cookie(self, key, value='', max_age=None, expires=None,
-                   path='/', domain=None, secure=None, httponly=False):
+    def set_cookie(
+        self, key, value='', max_age=None, expires=None,
+        path='/', domain=None, secure=None, httponly=False,
+    ):
         """Sets a cookie. The parameters are the same as in the cookie `Morsel`
         object in the Python standard library but it accepts unicode data, too.
 
-        :param key: the key (name) of the cookie to be set.
-        :param value: the value of the cookie.
-        :param max_age: should be a number of seconds, or `None` (default) if
-                        the cookie should last only as long as the client's
-                        browser session.
-        :param expires: should be a `datetime` object or UNIX timestamp.
-        :param domain: if you want to set a cross-domain cookie.  For example,
-                       ``domain=".example.com"`` will set a cookie that is
-                       readable by the domain ``www.example.com``,
-                       ``foo.example.com`` etc.  Otherwise, a cookie will only
-                       be readable by the domain that set it.
-        :param path: limits the cookie to a given path, per default it will
-                     span the whole domain.
+        :param key:
+            The key (name) of the cookie to be set.
+        :param value:
+            The value of the cookie.
+        :param max_age:
+            Should be a number of seconds, or `None` (default) if the cookie
+            should last only as long as the client's browser session.
+        :param expires:
+            Should be a `datetime` object or UNIX timestamp.
+        :param domain:
+            If you want to set a cross-domain cookie.  For example,
+            ``domain=".example.com"`` will set a cookie that is readable by the
+            domain ``www.example.com``, ``foo.example.com`` etc.  Otherwise, a
+            cookie will only be readable by the domain that set it.
+        :param path:
+            Limits the cookie to a given path, per default it will span the
+            whole domain.
         """
         self.headers.add(
             'Set-Cookie', dump_cookie(
@@ -410,11 +433,14 @@ class BaseResponse(object):
     def delete_cookie(self, key, path='/', domain=None):
         """Delete a cookie.  Fails silently if key doesn't exist.
 
-        :param key: the key (name) of the cookie to be deleted.
-        :param path: if the cookie that should be deleted was limited to a
-                     path, the path has to be defined here.
-        :param domain: if the cookie that should be deleted was limited to a
-                       domain, that domain has to be defined here.
+        :param key:
+            The key (name) of the cookie to be deleted.
+        :param path:
+            If the cookie that should be deleted was limited to a path, the
+            path has to be defined here.
+        :param domain:
+            If the cookie that should be deleted was limited to a domain, that
+            domain has to be defined here.
         """
         self.set_cookie(key, expires=0, max_age=0, path=path, domain=domain)
 
@@ -477,9 +503,10 @@ class BaseResponse(object):
         URL of the environment.  Also the content length is automatically set
         to zero here for certain status codes.
 
-        :param environ: the WSGI environment of the request.
-        :return: returns a new :class:`~verktyg.http.Headers`
-                 object.
+        :param environ:
+            The WSGI environment of the request.
+        :return:
+            Returns a new :class:`~verktyg.http.Headers` object.
         """
         headers = Headers(self.headers)
         location = None
@@ -554,8 +581,10 @@ class BaseResponse(object):
         where the HTTP specification requires an empty response, an empty
         iterable is returned.
 
-        :param environ: the WSGI environment of the request.
-        :return: a response iterable.
+        :param environ:
+            The WSGI environment of the request.
+        :return:
+            A response iterable.
         """
         status = self.status_code
         if (
@@ -579,8 +608,10 @@ class BaseResponse(object):
         method in the WSGI environment is ``'HEAD'`` the response will
         be empty and only the headers and status code will be present.
 
-        :param environ: the WSGI environment of the request.
-        :return: an ``(app_iter, status, headers)`` tuple.
+        :param environ:
+            The WSGI environment of the request.
+        :return:
+            An ``(app_iter, status, headers)`` tuple.
         """
         headers = self.get_wsgi_headers(environ)
         app_iter = self.get_app_iter(environ)
@@ -589,10 +620,12 @@ class BaseResponse(object):
     def __call__(self, environ, start_response):
         """Process this response as WSGI application.
 
-        :param environ: the WSGI environment.
-        :param start_response: the response callable provided by the WSGI
-                               server.
-        :return: an application iterator
+        :param environ:
+            The WSGI environment.
+        :param start_response:
+            The response callable provided by the WSGI server.
+        :return:
+            An application iterator
         """
         app_iter, status, headers = self.get_wsgi_response(environ)
         start_response(status, headers)
@@ -634,9 +667,9 @@ class ETagResponseMixin(object):
                 del self.headers['cache-control']
             elif cache_control:
                 self.headers['Cache-Control'] = cache_control.to_header()
-        return parse_cache_control_header(self.headers.get('cache-control'),
-                                          on_update,
-                                          ResponseCacheControl)
+        return parse_cache_control_header(
+            self.headers.get('cache-control'), on_update, ResponseCacheControl,
+        )
 
     def make_conditional(self, request_or_environ):
         """Make the response conditional to the request.  This method works
@@ -653,11 +686,12 @@ class ETagResponseMixin(object):
         Returns self so that you can do ``return resp.make_conditional(req)``
         but modifies the object in-place.
 
-        :param request_or_environ: a request object or WSGI environment to be
-                                   used to make the response conditional
-                                   against.
+        :param request_or_environ:
+            A request object or WSGI environment to be used to make the
+            response conditional against.
         """
-        environ = _get_environ(request_or_environ)
+        environ = getattr(request_or_environ, 'environ', request_or_environ)
+        assert isinstance(environ, dict)
         if environ['REQUEST_METHOD'] in ('GET', 'HEAD'):
             # if the date is not in the headers, add it now.  We however
             # will not override an already existing header.  Unfortunately
@@ -714,8 +748,9 @@ class ETagResponseMixin(object):
                 del self.headers['content-range']
             else:
                 self.headers['Content-Range'] = rng.to_header()
-        rv = parse_content_range_header(self.headers.get('content-range'),
-                                        on_update)
+        rv = parse_content_range_header(
+            self.headers.get('content-range'), on_update,
+        )
         # always provide a content range object to make the descriptor
         # more user friendly.  It provides an unset() method that can be
         # used to remove the header quickly.
@@ -740,8 +775,8 @@ class ETagResponseMixin(object):
 
 class ResponseStream(object):
 
-    """A file descriptor like object used by the :class:`ResponseStreamMixin` to
-    represent the body of the stream.  It directly pushes into the response
+    """A file descriptor like object used by the :class:`ResponseStreamMixin`
+    to represent the body of the stream.  It directly pushes into the response
     iterable of the response object.
     """
 
@@ -869,10 +904,11 @@ class CommonResponseDescriptorsMixin(object):
         The Expires entity-header field gives the date/time after which the
         response is considered stale. A stale cache entry may not normally be
         returned by a cache.''')
-    last_modified = header_property('Last-Modified', None, parse_date,
-                                    http_date, doc='''
+    last_modified = header_property(
+        'Last-Modified', None, parse_date, http_date, doc='''
         The Last-Modified entity-header field indicates the date and time at
-        which the origin server believes the variant was last modified.''')
+        which the origin server believes the variant was last modified.'''
+    )
 
     def _get_retry_after(self):
         value = self.headers.get('retry-after')
@@ -958,9 +994,11 @@ class WWWAuthenticateMixin(object):
         return parse_www_authenticate_header(header, on_update)
 
 
-class Response(BaseResponse, ETagResponseMixin, ResponseStreamMixin,
-               CommonResponseDescriptorsMixin,
-               WWWAuthenticateMixin):
+class Response(
+    BaseResponse, ETagResponseMixin, ResponseStreamMixin,
+    CommonResponseDescriptorsMixin,
+    WWWAuthenticateMixin,
+):
 
     """Full featured response object implementing the following mixins:
 

@@ -70,10 +70,10 @@ class ContentTypeAccept(_base.Accept):
 
 class ContentTypeAcceptability(_base.Acceptability):
     def __init__(
-                self, content_type, *,
-                type_matches, subtype_matches,
-                q, qs=None
-            ):
+        self, content_type, *,
+        type_matches, subtype_matches,
+        q, qs=None
+    ):
         super(ContentTypeAcceptability, self).__init__(
             content_type, match_quality=(
                 type_matches, subtype_matches

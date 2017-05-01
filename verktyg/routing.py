@@ -101,8 +101,6 @@ from urllib.parse import (
 
 from pprint import pformat
 
-from werkzeug._internal import _get_environ
-
 from verktyg.datastructures import ImmutableDict, MultiDict
 from verktyg.wsgi import wsgi_decoding_dance
 from verktyg.exceptions import HTTPException, NotFound
@@ -134,9 +132,9 @@ _converter_args_re = re.compile(r'''
 
 
 _PYTHON_CONSTANTS = {
-    'None':     None,
-    'True':     True,
-    'False':    False
+    'None': None,
+    'True': True,
+    'False': False
 }
 
 
@@ -254,9 +252,10 @@ class ValidationError(ValueError):
 
 
 class RouteFactory(object):
-    """As soon as you have more complex URL setups it's a good idea to use route
-    factories to avoid repetitive tasks.  Some of them are builtin, others can
-    be added by subclassing `RouteFactory` and overriding `get_routes`.
+    """As soon as you have more complex URL setups it's a good idea to use
+    route factories to avoid repetitive tasks.  Some of them are builtin,
+    others can be added by subclassing `RouteFactory` and overriding
+    `get_routes`.
     """
 
     def get_routes(self, router):
@@ -505,9 +504,11 @@ class Route(RouteFactory):
         that the subdomain feature is disabled.
     """
 
-    def __init__(self, string, defaults=None, subdomain=None,
-                 build_only=False, endpoint=None, strict_slashes=None,
-                 redirect_to=None, alias=False, host=None):
+    def __init__(
+        self, string, defaults=None, subdomain=None,
+        build_only=False, endpoint=None, strict_slashes=None,
+        redirect_to=None, alias=False, host=None,
+    ):
         if not string.startswith('/'):
             raise ValueError('urls must start with a leading slash')
         self.route = string
@@ -535,9 +536,11 @@ class Route(RouteFactory):
         defaults = None
         if self.defaults:
             defaults = dict(self.defaults)
-        return Route(self.route, defaults, self.subdomain,
-                     self.build_only, self.endpoint, self.strict_slashes,
-                     self.redirect_to, self.alias, self.host)
+        return Route(
+            self.route, defaults, self.subdomain,
+            self.build_only, self.endpoint, self.strict_slashes,
+            self.redirect_to, self.alias, self.host,
+        )
 
     def get_routes(self, router):
         yield self
@@ -557,8 +560,9 @@ class Route(RouteFactory):
         :internal:
         """
         if self.router is not None and not rebind:
-            raise RuntimeError('url route %r already bound to router %r' %
-                               (self, self.router))
+            raise RuntimeError((
+                'url route {route!r} already bound to router {router!r}'
+            ).format(route=self, router=self.router))
         self.router = router
         if self.strict_slashes is None:
             self.strict_slashes = router.strict_slashes
@@ -824,11 +828,14 @@ class UnicodeConverter(BaseConverter):
         Route('/pages/<page>'),
         Route('/<string(length=2):lang_code>')
 
-    :param router: the :class:`URLMap`.
-    :param minlength: the minimum length of the string.  Must be greater
-                      or equal 1.
-    :param maxlength: the maximum length of the string.
-    :param length: the exact length of the string.
+    :param router:
+        The :class:`URLMap`.
+    :param minlength:
+        The minimum length of the string.  Must be greater or equal to 1.
+    :param maxlength:
+        The maximum length of the string.
+    :param length:
+        The exact length of the string.
     """
 
     def __init__(self, router, minlength=1, maxlength=None, length=None):
@@ -853,9 +860,10 @@ class AnyConverter(BaseConverter):
 
         Route('/<any(about, help, imprint, class, "foo,bar"):page_name>')
 
-    :param router: the :class:`URLMap`.
-    :param items: this function accepts the possible items as positional
-                  arguments.
+    :param router:
+        The :class:`URLMap`.
+    :param items:
+        This function accepts the possible items as positional arguments.
     """
 
     def __init__(self, router, *items):
@@ -870,7 +878,8 @@ class PathConverter(BaseConverter):
         Route('/<path:wikipage>')
         Route('/<path:wikipage>/edit')
 
-    :param router: the :class:`URLMap`.
+    :param router:
+        The :class:`URLMap`.
     """
     regex = '[^/].*?'
     weight = 200
@@ -888,6 +897,11 @@ class NumberConverter(BaseConverter):
         self.fixed_digits = fixed_digits
         self.min = min
         self.max = max
+
+    def num_convert(self, value):
+        raise NotImplementedError(
+            "num_convert must be overridden by subclasses of NumberConverter"
+        )
 
     def to_python(self, value):
         if (self.fixed_digits and len(value) != self.fixed_digits):
@@ -914,13 +928,16 @@ class IntegerConverter(NumberConverter):
 
     This converter does not support negative values.
 
-    :param router: the :class:`URLMap`.
-    :param fixed_digits: the number of fixed digits in the URL.  If you set
-                         this to ``4`` for example, the application will
-                         only match if the url looks like ``/0001/``.  The
-                         default is variable length.
-    :param min: the minimal value.
-    :param max: the maximal value.
+    :param router:
+        The :class:`URLMap`.
+    :param fixed_digits:
+        The number of fixed digits in the URL.  If you set this to ``4`` for
+        example, the application will only match if the url looks like
+        ``/0001/``.  The default is variable length.
+    :param min:
+        The minimal value.
+    :param max:
+        The maximal value.
     """
     regex = r'\d+'
     num_convert = int
@@ -933,9 +950,12 @@ class FloatConverter(NumberConverter):
 
     This converter does not support negative values.
 
-    :param router: the :class:`URLMap`.
-    :param min: the minimal value.
-    :param max: the maximal value.
+    :param router:
+        The :class:`URLMap`.
+    :param min:
+        The minimal value.
+    :param max:
+        The maximal value.
     """
     regex = r'\d+\.\d+'
     num_convert = float
@@ -949,7 +969,8 @@ class UUIDConverter(BaseConverter):
 
         Route('/object/<uuid:identifier>')
 
-    :param router: the :class:`URLMap`.
+    :param router:
+        The :class:`URLMap`.
     """
     regex = (
         r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-'
@@ -965,13 +986,13 @@ class UUIDConverter(BaseConverter):
 
 #: the default converter mapping for the router.
 DEFAULT_CONVERTERS = {
-    'default':          UnicodeConverter,
-    'string':           UnicodeConverter,
-    'any':              AnyConverter,
-    'path':             PathConverter,
-    'int':              IntegerConverter,
-    'float':            FloatConverter,
-    'uuid':             UUIDConverter,
+    'default': UnicodeConverter,
+    'string': UnicodeConverter,
+    'any': AnyConverter,
+    'path': PathConverter,
+    'int': IntegerConverter,
+    'float': FloatConverter,
+    'uuid': UUIDConverter,
 }
 
 
@@ -982,34 +1003,42 @@ class URLMap(object):
     and can be overridden for each route.  Note that you have to specify all
     arguments besides the `routes` as keyword arguments!
 
-    :param routes: sequence of url routes for this router.
-    :param default_subdomain: The default subdomain for routes without a
-                              subdomain defined.
-    :param charset: charset of the url. defaults to ``"utf-8"``
-    :param strict_slashes: Take care of trailing slashes.
-    :param redirect_defaults: This will redirect to the default route if it
-                              wasn't visited that way. This helps creating
-                              unique URLs.
-    :param converters: A dict of converters that adds additional converters
-                       to the list of converters. If you redefine one
-                       converter this will override the original one.
-    :param sort_parameters: If set to `True` the url parameters are sorted.
-                            See `urlencode` for more details.
-    :param sort_key: The sort key function for `urlencode`.
-    :param encoding_errors: the error method to use for decoding
-    :param host_matching: if set to `True` it enables the host matching
-                          feature and disables the subdomain one.  If
-                          enabled the `host` parameter to routes is used
-                          instead of the `subdomain` one.
+    :param routes:
+        Sequence of url routes for this router.
+    :param default_subdomain:
+        The default subdomain for routes without a subdomain defined.
+    :param charset:
+        Charset of the url (defaults to ``"utf-8"``).
+    :param strict_slashes:
+        Take care of trailing slashes.
+    :param redirect_defaults:
+        This will redirect to the default route if it wasn't visited that way.
+        This helps creating unique URLs.
+    :param converters:
+        A dict of converters that adds additional converters to the list of
+        converters. If you redefine one converter this will override the
+        original one.
+    :param sort_parameters:
+        If set to `True` the url parameters are sorted.  See `urlencode` for
+        more details.
+    :param sort_key:
+        The sort key function for `urlencode`.
+    :param encoding_errors:
+        The error method to use for decoding
+    :param host_matching:
+        If set to `True` it enables the host matching feature and disables the
+        subdomain one.  If enabled the `host` parameter to routes is used
+        instead of the `subdomain` one.
     """
 
-    #:    a dict of default converters to be used.
     default_converters = ImmutableDict(DEFAULT_CONVERTERS)
 
-    def __init__(self, routes=None, default_subdomain='', charset='utf-8',
-                 strict_slashes=True, redirect_defaults=True,
-                 converters=None, sort_parameters=False, sort_key=None,
-                 encoding_errors='replace', host_matching=False):
+    def __init__(
+        self, routes=None, default_subdomain='', charset='utf-8',
+        strict_slashes=True, redirect_defaults=True,
+        converters=None, sort_parameters=False, sort_key=None,
+        encoding_errors='replace', host_matching=False,
+    ):
         self._routes = []
         self._routes_by_endpoint = {}
         self._remap = True
@@ -1038,10 +1067,11 @@ class URLMap(object):
         code is automatically added if not provided but endpoints expect
         it.
 
-        :param endpoint: the endpoint to check.
-        :param arguments: this function accepts one or more arguments
-                          as positional arguments.  Each one of them is
-                          checked.
+        :param endpoint:
+            The endpoint to check.
+        :param arguments:
+            This function accepts one or more arguments as positional
+            arguments.  Each one of them is checked.
         """
         self.update()
         arguments = set(arguments)
@@ -1053,8 +1083,8 @@ class URLMap(object):
     def iter_routes(self, endpoint=None):
         """Iterate over all routes or the routes of an endpoint.
 
-        :param endpoint: if provided only the routes for that endpoint
-                         are returned.
+        :param endpoint:
+            If provided only the routes for that endpoint are returned.
         :return: an iterator
         """
         self.update()
@@ -1063,10 +1093,11 @@ class URLMap(object):
         return iter(self._routes)
 
     def add_routes(self, *factories):
-        """Add a new route or factory to the router and bind it.  Requires that the
-        route is not bound to another router.
+        """Add a new route or factory to the router and bind it.  Requires that
+        the route is not bound to another router.
 
-        :param routefactory: a :class:`Route` or :class:`RouteFactory`
+        :param routefactory:
+            A :class:`Route` or :class:`RouteFactory`
         """
         for factory in factories:
             for route in factory.get_routes(self):
@@ -1077,8 +1108,10 @@ class URLMap(object):
                 ).append(route)
         self._remap = True
 
-    def bind(self, server_name, script_name=None, subdomain=None,
-             url_scheme='http', path_info=None, query_args=None):
+    def bind(
+        self, server_name, script_name=None, subdomain=None,
+        url_scheme='http', path_info=None, query_args=None,
+    ):
         """Return a new :class:`MapAdapter` with the details specified to the
         call.  Note that `script_name` will default to ``'/'`` if not further
         specified or `None`.  The `server_name` at least is a requirement
@@ -1097,8 +1130,9 @@ class URLMap(object):
         """
         if self.host_matching:
             if subdomain is not None:
-                raise RuntimeError('host matching enabled and a '
-                                   'subdomain was provided')
+                raise RuntimeError(
+                    'host matching enabled and a subdomain was provided'
+                )
         elif subdomain is None:
             subdomain = self.default_subdomain
 
@@ -1116,8 +1150,10 @@ class URLMap(object):
         if script_name is None:
             script_name = '/'
 
-        return MapAdapter(self, server_name, script_name, subdomain,
-                          url_scheme, path_info, query_args)
+        return MapAdapter(
+            self, server_name, script_name, subdomain,
+            url_scheme, path_info, query_args,
+        )
 
     def bind_to_environ(self, environ, server_name=None, subdomain=None):
         """Like :meth:`bind` but you can pass it an WSGI environment and it
@@ -1140,11 +1176,15 @@ class URLMap(object):
         :class:`MapAdapter` so that you don't have to pass the path info to
         the match method.
 
-        :param environ: a WSGI environment.
-        :param server_name: an optional server name hint (see above).
-        :param subdomain: optionally the current subdomain (see above).
+        :param environ:
+            A WSGI environment.
+        :param server_name:
+            An optional server name hint (see above).
+        :param subdomain:
+            Optionally the current subdomain (see above).
         """
-        environ = _get_environ(environ)
+        environ = getattr(environ, 'environ', environ)
+        assert isinstance(environ, dict)
         if server_name is None:
             if 'HTTP_HOST' in environ:
                 server_name = environ['HTTP_HOST']
@@ -1188,9 +1228,11 @@ class URLMap(object):
         script_name = _get_wsgi_string('SCRIPT_NAME')
         path_info = _get_wsgi_string('PATH_INFO')
         query_args = _get_wsgi_string('QUERY_STRING')
-        return URLMap.bind(self, server_name, script_name,
-                           subdomain, environ['wsgi.url_scheme'],
-                           path_info, query_args=query_args)
+        return URLMap.bind(
+            self, server_name, script_name,
+            subdomain, environ['wsgi.url_scheme'],
+            path_info, query_args=query_args,
+        )
 
     def update(self):
         """Called before matching and building to keep the compiled routes
@@ -1208,12 +1250,14 @@ class URLMap(object):
 
 
 class MapAdapter(object):
-    """Returned by :meth:`URLMap.bind` or :meth:`Router.bind_to_environ` and does
-    the URL matching and building based on runtime information.
+    """Returned by :meth:`URLMap.bind` or :meth:`Router.bind_to_environ` and
+    does the URL matching and building based on runtime information.
     """
 
-    def __init__(self, router, server_name, script_name, subdomain,
-                 url_scheme, path_info, query_args=None):
+    def __init__(
+        self, router, server_name, script_name, subdomain,
+        url_scheme, path_info, query_args=None,
+    ):
         self.router = router
         self.server_name = server_name
         script_name = script_name
@@ -1278,14 +1322,16 @@ class MapAdapter(object):
           ...
         NotFound: 404 Not Found
 
-        :param path_info: the path info to use for matching.  Overrides the
-                          path info specified on binding.
-        :param return_route: return the route that matched instead of just the
-                            endpoint (defaults to `False`).
-        :param query_args: optional query arguments that are used for
-                           automatic redirects as string or dictionary.  It's
-                           currently not possible to use the query arguments
-                           for URL matching.
+        :param path_info:
+            The path info to use for matching.  Overrides the path info
+            specified on binding.
+        :param return_route:
+            Return the route that matched instead of just the endpoint
+            (defaults to `False`).
+        :param query_args:
+            Optional query arguments that are used for automatic redirects as
+            string or dictionary.  It's currently not possible to use the query
+            arguments for URL matching.
         """
         self.router.update()
         if path_info is None:
@@ -1293,8 +1339,10 @@ class MapAdapter(object):
         if query_args is None:
             query_args = self.query_args
 
-        path = u'%s|/%s' % (self.router.host_matching and self.server_name or
-                            self.subdomain, path_info.lstrip('/'))
+        path = u'%s|/%s' % (
+            self.router.host_matching and self.server_name or
+            self.subdomain, path_info.lstrip('/')
+        )
 
         for route in self.router._routes:
             try:
@@ -1322,8 +1370,9 @@ class MapAdapter(object):
                     def _handle_match(match):
                         value = rv[match.group(1)]
                         return route._converters[match.group(1)].to_url(value)
-                    redirect_url = _simple_route_re.sub(_handle_match,
-                                                        route.redirect_to)
+                    redirect_url = _simple_route_re.sub(
+                        _handle_match, route.redirect_to,
+                    )
                 else:
                     redirect_url = route.redirect_to(self, **rv)
                 raise RequestRedirect(str(urljoin('%s://%s%s%s' % (
@@ -1344,8 +1393,9 @@ class MapAdapter(object):
         """Test if a route would match.  Works like `match` but returns `True`
         if the URL matches, or `False` if it does not exist.
 
-        :param path_info: the path info to use for matching.  Overrides the
-                          path info specified on binding.
+        :param path_info:
+            The path info to use for matching.  Overrides the path info
+            specified on binding.
         """
         try:
             self.match(path_info)
@@ -1417,8 +1467,9 @@ class MapAdapter(object):
 
     def make_alias_redirect_url(self, path, endpoint, values, query_args):
         """Internally called to make an alias redirect URL."""
-        url = self.build(endpoint, values, append_unknown=False,
-                         force_external=True)
+        url = self.build(
+            endpoint, values, append_unknown=False, force_external=True,
+        )
         if query_args:
             url += '?' + self.encode_query_args(query_args)
         assert url != path, (
@@ -1426,8 +1477,10 @@ class MapAdapter(object):
         )
         return url
 
-    def build(self, endpoint, values=None, force_external=False,
-              append_unknown=True):
+    def build(
+        self, endpoint, values=None, force_external=False,
+        append_unknown=True,
+    ):
         """Building URLs works pretty much the other way round.  Instead of
         `match` you call `build` and pass it the endpoint and a dict of
         arguments for the placeholders.
@@ -1463,13 +1516,17 @@ class MapAdapter(object):
         If a route does not exist when building a `BuildError` exception is
         raised.
 
-        :param endpoint: the endpoint of the URL to build.
-        :param values: the values for the URL to build.  Unhandled values are
-                       appended to the URL as query parameters.
-        :param force_external: enforce full canonical external URLs.
-        :param append_unknown: unknown parameters are appended to the generated
-                               URL as query string argument.  Disable this
-                               if you want the builder to ignore those.
+        :param endpoint:
+            The endpoint of the URL to build.
+        :param values:
+            The values for the URL to build.  Unhandled values are appended to
+            the URL as query parameters.
+        :param force_external:
+            Enforce full canonical external URLs.
+        :param append_unknown:
+            Unknown parameters are appended to the generated URL as query
+            string argument.  Disable this if you want the builder to ignore
+            those.
         """
         self.router.update()
         if values:

@@ -49,56 +49,6 @@ _content_type_value_re = re.compile(
 )
 
 
-# TODO better name
-class Value(object):
-    """Base class for a value that the server to be proposed during content
-    negotiation.
-    """
-    match_type = None
-
-    def __init__(self, value, *, qs=None):
-        self.value = value
-        self.qs = qs
-
-    def _acceptability_for_option(self, option):
-        if option.value == '*':
-            exact_match = False
-        elif self.value == option.value:
-            exact_match = True
-        else:
-            raise NotAcceptable()
-
-        return self.match_type(
-            self, exact_match=exact_match,
-            q=option.q, qs=self.qs
-        )
-
-    def acceptability(self, accept):
-        best_match = None
-
-        for option in accept:
-            try:
-                match = self._acceptability_for_option(option)
-            except NotAcceptable:
-                pass
-            else:
-                if best_match is None or match > best_match:
-                    best_match = match
-
-        if best_match is None:
-            raise NotAcceptable()
-
-        return best_match
-
-    def __str__(self):
-        return self.to_header()
-
-    def to_header(self):
-        """Returns a string suitable for use in the corresponding header
-        """
-        return self.value
-
-
 class Range(object):
     def __init__(self, value, q=1.0, params=None):
         self._validate_value(value)
@@ -224,6 +174,56 @@ class Acceptability(object):
             return True
 
         return False
+
+
+# TODO better name
+class Value(object):
+    """Base class for a value that the server can propose during content type
+    negotiation.
+    """
+    match_type = None
+
+    def __init__(self, value, *, qs=None) -> None:
+        self.value = value
+        self.qs = qs
+
+    def _acceptability_for_option(self, option):
+        if option.value == '*':
+            exact_match = False
+        elif self.value == option.value:
+            exact_match = True
+        else:
+            raise NotAcceptable()
+
+        return self.match_type(
+            self, exact_match=exact_match,
+            q=option.q, qs=self.qs
+        )
+
+    def acceptability(self, accept: Accept):
+        best_match = None
+
+        for option in accept:
+            try:
+                match = self._acceptability_for_option(option)
+            except NotAcceptable:
+                pass
+            else:
+                if best_match is None or match > best_match:
+                    best_match = match
+
+        if best_match is None:
+            raise NotAcceptable()
+
+        return best_match
+
+    def __str__(self):
+        return self.to_header()
+
+    def to_header(self):
+        """Returns a string suitable for use in the corresponding header
+        """
+        return self.value
 
 
 def split_accept_string(string):

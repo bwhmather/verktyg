@@ -27,10 +27,10 @@ def _default_redirect_handler(app, req, exc_type, exc_value, exc_traceback):
 
 class BaseApplication(object):
     def __init__(
-                self, app_root, config, *,
-                routes, converters, bindings, handlers,
-                middleware, request_class
-            ):
+        self, app_root, config, *,
+        routes, converters, bindings, handlers,
+        middleware, request_class
+    ):
         self.config = ImmutableDict(config)
 
         self._url_map = URLMap(routes, converters=converters)
@@ -107,9 +107,9 @@ class BaseApplication(object):
 
 class ApplicationBuilder(object):
     def __init__(
-                self, *,
-                default_redirect_handler=True, default_request_mixins=True
-            ):
+        self, *,
+        default_redirect_handler=True, default_request_mixins=True
+    ):
         self.config = {}
 
         self._application_bases = [BaseApplication]
@@ -131,7 +131,6 @@ class ApplicationBuilder(object):
             self.add_request_mixins(
                 requests.BaseRequest,
                 requests.ETagRequestMixin,
-                requests.UserAgentMixin,
                 requests.AuthorizationMixin,
                 requests.CommonRequestDescriptorsMixin,
             )

@@ -22,12 +22,7 @@ from datetime import datetime
 from functools import partial
 from urllib.parse import quote as urlquote
 
-from werkzeug._compat import (
-    make_literal_wrapper, wsgi_get_bytes,
-)
-from werkzeug._internal import _encode_idna
-
-from verktyg.urls import uri_to_iri
+from verktyg.urls import uri_to_iri, encode_idna
 from verktyg import http
 from verktyg.http import (
     is_resource_modified, http_date, unicodify_header_value,
@@ -44,8 +39,14 @@ def wsgi_encoding_dance(s, charset='utf-8', errors='replace'):
     return s.decode('latin1', errors)
 
 
-def get_current_url(environ, root_only=False, strip_querystring=False,
-                    host_only=False, trusted_hosts=None):
+def wsgi_get_bytes(s):
+    return s.encode('latin1')
+
+
+def get_current_url(
+    environ, root_only=False, strip_querystring=False,
+    host_only=False, trusted_hosts=None,
+):
     """A handy helper function that recreates the full URL as IRI for the
     current request or parts of it.  Here an example:
 
@@ -73,12 +74,17 @@ def get_current_url(environ, root_only=False, strip_querystring=False,
     >>> iri_to_uri(get_current_url(env))
     'http://localhost/script/?param=foo'
 
-    :param environ: the WSGI environment to get the current URL from.
-    :param root_only: set `True` if you only want the root URL.
-    :param strip_querystring: set to `True` if you don't want the querystring.
-    :param host_only: set to `True` if the host URL should be returned.
-    :param trusted_hosts: a list of trusted hosts, see :func:`host_is_trusted`
-                          for more information.
+    :param environ:
+        The WSGI environment to get the current URL from.
+    :param root_only:
+        Set `True` if you only want the root URL.
+    :param strip_querystring:
+        Set to `True` if you don't want the querystring.
+    :param host_only:
+        Set to `True` if the host URL should be returned.
+    :param trusted_hosts:
+        A list of trusted hosts, see :func:`host_is_trusted` for more
+        information.
     """
     tmp = [environ['wsgi.url_scheme'], '://', get_host(environ, trusted_hosts)]
     cat = tmp.append
@@ -101,10 +107,11 @@ def host_is_trusted(hostname, trusted_list):
     """Checks if a host is trusted against a list.  This also takes care
     of port normalization.
 
-    :param hostname: the hostname to check
-    :param trusted_list: a list of hostnames to check against.  If a
-                         hostname starts with a dot it will match against
-                         all subdomains as well.
+    :param hostname:
+        The hostname to check
+    :param trusted_list:
+        Alist of hostnames to check against.  If a hostname starts with a dot
+        it will match against all subdomains as well.
     """
     if not hostname:
         return False
@@ -115,7 +122,7 @@ def host_is_trusted(hostname, trusted_list):
     def _normalize(hostname):
         if ':' in hostname:
             hostname = hostname.rsplit(':', 1)[0]
-        return _encode_idna(hostname)
+        return encode_idna(hostname)
 
     hostname = _normalize(hostname)
     for ref in trusted_list:
@@ -141,9 +148,11 @@ def get_host(environ, trusted_hosts=None):
     If the host is not in there it will raise a
     :exc:`~verktyg.exceptions.SecurityError`.
 
-    :param environ: the WSGI environment to get the host of.
-    :param trusted_hosts: a list of trusted hosts, see :func:`host_is_trusted`
-                          for more information.
+    :param environ:
+        The WSGI environment to get the host of.
+    :param trusted_hosts:
+        A list of trusted hosts, see :func:`host_is_trusted` for more
+        information.
     """
     if 'HTTP_X_FORWARDED_HOST' in environ:
         rv = environ['HTTP_X_FORWARDED_HOST'].split(',', 1)[0].strip()
@@ -167,7 +176,8 @@ def get_content_length(environ):
     """Returns the content length from the WSGI environment as
     integer.  If it's not available `None` is returned.
 
-    :param environ: the WSGI environ to fetch the content length from.
+    :param environ:
+        The WSGI environ to fetch the content length from.
     """
     content_length = environ.get('CONTENT_LENGTH')
     if content_length is not None:
@@ -183,11 +193,13 @@ def get_input_stream(environ, safe_fallback=True):
     raw WSGI stream in most cases but one that is safe to read from
     without taking into account the content length.
 
-    :param environ: the WSGI environ to fetch the stream from.
-    :param safe: indicates whether the function should use an empty
-                 stream as safe fallback or just return the original
-                 WSGI input stream if it can't wrap it safely.  The
-                 default is to return an empty string in those cases.
+    :param environ:
+        The WSGI environ to fetch the stream from.
+    :param safe:
+        Indicates whether the function should use an empty stream as safe
+        fallback or just return the original WSGI input stream if it can't
+        wrap it safely.  The default is to return an empty string in those
+        cases.
     """
     stream = environ['wsgi.input']
     content_length = get_content_length(environ)
@@ -215,7 +227,8 @@ def get_query_string(environ):
     native string.  The string returned will be restricted to ASCII
     characters.
 
-    :param environ: the WSGI environment object to get the query string from.
+    :param environ:
+        The WSGI environment object to get the query string from.
     """
     qs = wsgi_get_bytes(environ.get('QUERY_STRING', ''))
     # QUERY_STRING really should be ascii safe but some browsers
@@ -230,10 +243,13 @@ def get_path_info(environ, charset='utf-8', errors='replace'):
     on Python 3 environments.  if the `charset` is set to `None` a
     bytestring is returned.
 
-    :param environ: the WSGI environment object to get the path from.
-    :param charset: the charset for the path info, or `None` if no
-                    decoding should be performed.
-    :param errors: the decoding error handling.
+    :param environ:
+        The WSGI environment object to get the path from.
+    :param charset:
+        The charset for the path info, or `None` if no decoding should be
+        performed.
+    :param errors:
+        The decoding error handling.
     """
     path = wsgi_get_bytes(environ.get('PATH_INFO', ''))
     if charset is None:
@@ -247,10 +263,12 @@ def get_script_name(environ, charset='utf-8', errors='replace'):
     on Python 3 environments.  if the `charset` is set to `None` a
     bytestring is returned.
 
-    :param environ: the WSGI environment object to get the path from.
-    :param charset: the charset for the path, or `None` if no
-                    decoding should be performed.
-    :param errors: the decoding error handling.
+    :param environ:
+        The WSGI environment object to get the path from.
+    :param charset:
+        The charset for the path, or `None` if no decoding should be performed.
+    :param errors:
+        The decoding error handling.
     """
     path = wsgi_get_bytes(environ.get('SCRIPT_NAME', ''))
     if charset is None:
@@ -289,11 +307,15 @@ class EnvironHeaders(http.ImmutableHeadersMixin, http.Headers):
                 key.startswith('HTTP_') and
                 key not in ('HTTP_CONTENT_TYPE', 'HTTP_CONTENT_LENGTH')
             ):
-                yield (key[5:].replace('_', '-').title(),
-                       unicodify_header_value(value))
+                yield (
+                    key[5:].replace('_', '-').title(),
+                    unicodify_header_value(value),
+                )
             elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-                yield (key.replace('_', '-').title(),
-                       unicodify_header_value(value))
+                yield (
+                    key.replace('_', '-').title(),
+                    unicodify_header_value(value),
+                )
 
     def copy(self):
         raise TypeError('cannot create %r copies' % self.__class__.__name__)
@@ -341,17 +363,25 @@ class SharedDataMiddleware(object):
     module.  If it's unable to figure out the charset it will fall back
     to `fallback_mimetype`.
 
-    :param app: the application to wrap.  If you don't want to wrap an
-                application you can pass it :exc:`NotFound`.
-    :param exports: a dict of exported files and folders.
-    :param disallow: a list of :func:`~fnmatch.fnmatch` rules.
-    :param fallback_mimetype: the fallback mimetype for unknown files.
-    :param cache: enable or disable caching headers.
-    :param cache_timeout: the cache timeout in seconds for the headers.
+    :param app:
+        The application to wrap.  If you don't want to wrap an application you
+        can pass it :exc:`NotFound`.
+    :param exports:
+        A dict of exported files and folders.
+    :param disallow:
+        A list of :func:`~fnmatch.fnmatch` rules.
+    :param fallback_mimetype:
+        The fallback mimetype for unknown files.
+    :param cache:
+        Enable or disable caching headers.
+    :param cache_timeout:
+        The cache timeout in seconds for the headers.
     """
 
-    def __init__(self, app, exports, disallow=None, cache=True,
-                 cache_timeout=60 * 60 * 12, fallback_mimetype='text/plain'):
+    def __init__(
+        self, app, exports, disallow=None, cache=True,
+        cache_timeout=60 * 60 * 12, fallback_mimetype='text/plain',
+    ):
         self.app = app
         self.exports = {}
         self.cache = cache
@@ -442,8 +472,10 @@ class SharedDataMiddleware(object):
         for sep in os.sep, os.altsep:
             if sep and sep != '/':
                 cleaned_path = cleaned_path.replace(sep, '/')
-        path = '/' + '/'.join(x for x in cleaned_path.split('/')
-                              if x and x != '..')
+        path = '/' + '/'.join(
+            x for x in cleaned_path.split('/')
+            if x and x != '..'
+        )
         file_loader = None
         for search_path, loader in self.exports.items():
             if search_path == path:
@@ -578,8 +610,10 @@ def wrap_file(environ, file, buffer_size=8192):
 
     More information about file wrappers are available in :pep:`333`.
 
-    :param file: a :class:`file`-like object with a :meth:`~file.read` method.
-    :param buffer_size: number of bytes for one iteration.
+    :param file:
+        A :class:`file`-like object with a :meth:`~file.read` method.
+    :param buffer_size:
+        The number of bytes for one iteration.
     """
     return environ.get('wsgi.file_wrapper', FileWrapper)(file, buffer_size)
 
@@ -597,8 +631,10 @@ class FileWrapper(object):
     If you're using this object together with a :class:`BaseResponse` you have
     to use the `direct_passthrough` mode.
 
-    :param file: a :class:`file`-like object with a :meth:`~file.read` method.
-    :param buffer_size: number of bytes for one iteration.
+    :param file:
+        A :class:`file`-like object with a :meth:`~file.read` method.
+    :param buffer_size:
+        The number of bytes for one iteration.
     """
 
     def __init__(self, file, buffer_size=8192):
@@ -654,28 +690,17 @@ def make_line_iter(stream, limit=None, buffer_size=10 * 1024):
     If you need line-by-line processing it's strongly recommended to iterate
     over the input stream using this helper function.
 
-    :param stream: the stream or iterate to iterate over.
-    :param limit: the limit in bytes for the stream.  (Usually
-                  content length.  Not necessary if the `stream`
-                  is a :class:`LimitedStream`.
-    :param buffer_size: The optional buffer size.
+    :param stream:
+        The stream or iterate to iterate over.
+    :param limit:
+        The limit in bytes for the stream.  (Usually content length.  Not
+        necessary if the `stream` is a :class:`LimitedStream`.
+    :param buffer_size:
+        The optional buffer size.
     """
     _iter = _make_chunk_iter(stream, limit, buffer_size)
 
-    first_item = next(_iter, '')
-    if not first_item:
-        return
-
-    s = make_literal_wrapper(first_item)
-    empty = s('')
-    cr = s('\r')
-    lf = s('\n')
-    crlf = s('\r\n')
-
-    _iter = chain((first_item,), _iter)
-
     def _iter_basic_lines():
-        _join = empty.join
         buffer = []
         while 1:
             new_data = next(_iter, '')
@@ -684,20 +709,20 @@ def make_line_iter(stream, limit=None, buffer_size=10 * 1024):
             new_buf = []
             for item in chain(buffer, new_data.splitlines(True)):
                 new_buf.append(item)
-                if item and item[-1:] in crlf:
-                    yield _join(new_buf)
+                if item and item[-1:] in '\r\n':
+                    yield ''.join(new_buf)
                     new_buf = []
             buffer = new_buf
         if buffer:
-            yield _join(buffer)
+            yield ''.join(buffer)
 
     # This hackery is necessary to merge 'foo\r' and '\n' into one item
     # of 'foo\r\n' if we were unlucky and we hit a chunk boundary.
-    previous = empty
+    previous = ''
     for item in _iter_basic_lines():
-        if item == lf and previous[-1:] == cr:
+        if item == '\n' and previous[-1:] == '\r':
             previous += item
-            item = empty
+            item = ''
         if previous:
             yield previous
         previous = item
@@ -711,12 +736,15 @@ def make_chunk_iter(stream, separator, limit=None, buffer_size=10 * 1024):
     you should use :func:`make_line_iter` instead as it
     supports arbitrary newline markers.
 
-    :param stream: the stream or iterate to iterate over.
-    :param separator: the separator that divides chunks.
-    :param limit: the limit in bytes for the stream.  (Usually
-                  content length.  Not necessary if the `stream`
-                  is otherwise already limited).
-    :param buffer_size: The optional buffer size.
+    :param stream:
+        The stream or iterate to iterate over.
+    :param separator:
+        The separator that divides chunks.
+    :param limit:
+        The limit in bytes for the stream.  (Usually content length.  Not
+        necessary if the `stream` is otherwise already limited).
+    :param buffer_size:
+        The optional buffer size.
     """
     _iter = _make_chunk_iter(stream, limit, buffer_size)
 
@@ -779,10 +807,11 @@ class LimitedStream(object):
        :func:`make_line_iter` which safely iterates line-based
        over a WSGI input stream.
 
-    :param stream: the stream to wrap.
-    :param limit: the limit for the stream, must not be longer than
-                  what the string can provide if the stream does not
-                  end with `EOF` (like `wsgi.input`)
+    :param stream:
+        The stream to wrap.
+    :param limit:
+        The limit for the stream, must not be longer than what the string can
+        provide if the stream does not end with `EOF` (like `wsgi.input`)
     """
 
     def __init__(self, stream, limit):
@@ -821,9 +850,9 @@ class LimitedStream(object):
         """Exhaust the stream.  This consumes all the data left until the
         limit is reached.
 
-        :param chunk_size: the size for a chunk.  It will read the chunk
-                           until the stream is exhausted and throw away
-                           the results.
+        :param chunk_size:
+            The size for a chunk.  It will read the chunk until the stream is
+            exhausted and throw away the results.
         """
         to_read = self.limit - self._pos
         chunk = chunk_size
@@ -835,7 +864,8 @@ class LimitedStream(object):
     def read(self, size=None):
         """Read `size` bytes or if size is not provided everything is read.
 
-        :param size: the number of bytes read.
+        :param size:
+            The number of bytes read.
         """
         if self._pos >= self.limit:
             return self.on_exhausted()

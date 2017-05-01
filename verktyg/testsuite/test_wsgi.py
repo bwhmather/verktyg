@@ -37,10 +37,9 @@ class WsgiTestCase(unittest.TestCase):
                 test_file.write('FOUND')
 
             app = wsgi.SharedDataMiddleware(null_application, {
-                '/':        path.join(path.dirname(__file__), 'resources'),
+                '/': path.join(path.dirname(__file__), 'resources'),
                 '/sources': path.join(path.dirname(__file__), 'resources'),
-                '/pkg':     ('werkzeug.debug', 'shared'),
-                '/foo':     test_dir
+                '/foo': test_dir
             })
 
             for p in '/test.txt', '/sources/test.txt', '/foo/äöü':
@@ -52,12 +51,6 @@ class WsgiTestCase(unittest.TestCase):
                     with closing(app_iter) as app_iter:
                         data = b''.join(app_iter).strip()
                     self.assertEqual(data, b'FOUND')
-
-            app_iter, status, headers = run_wsgi_app(
-                app, create_environ('/pkg/debugger.js'))
-            with closing(app_iter) as app_iter:
-                contents = b''.join(app_iter)
-            self.assertIn(b'$(function() {', contents)
 
             app_iter, status, headers = run_wsgi_app(
                 app, create_environ('/missing'))
@@ -238,17 +231,17 @@ class WsgiTestCase(unittest.TestCase):
     def test_get_host_fallback(self):
         self.assertEqual(
             wsgi.get_host({
-                'SERVER_NAME':      'foobar.example.com',
-                'wsgi.url_scheme':  'http',
-                'SERVER_PORT':      '80'
+                'SERVER_NAME': 'foobar.example.com',
+                'wsgi.url_scheme': 'http',
+                'SERVER_PORT': '80'
             }),
             'foobar.example.com'
         )
         self.assertEqual(
             wsgi.get_host({
-                'SERVER_NAME':      'foobar.example.com',
-                'wsgi.url_scheme':  'http',
-                'SERVER_PORT':      '81'
+                'SERVER_NAME': 'foobar.example.com',
+                'wsgi.url_scheme': 'http',
+                'SERVER_PORT': '81'
             }),
             'foobar.example.com:81'
         )
@@ -264,8 +257,9 @@ class WsgiTestCase(unittest.TestCase):
     def test_multi_part_line_breaks(self):
         data = 'abcdef\r\nghijkl\r\nmnopqrstuvwxyz\r\nABCDEFGHIJK'
         test_stream = StringIO(data)
-        lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
-                                         buffer_size=16))
+        lines = list(wsgi.make_line_iter(
+            test_stream, limit=len(data), buffer_size=16,
+        ))
         self.assertEqual(
             lines, [
                 'abcdef\r\n', 'ghijkl\r\n', 'mnopqrstuvwxyz\r\n', 'ABCDEFGHIJK'
@@ -277,8 +271,9 @@ class WsgiTestCase(unittest.TestCase):
             '\r\nFoo bar baz'
         )
         test_stream = StringIO(data)
-        lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
-                                         buffer_size=24))
+        lines = list(wsgi.make_line_iter(
+            test_stream, limit=len(data), buffer_size=24,
+        ))
         self.assertEqual(
             lines, [
                 'abc\r\n',
@@ -287,39 +282,14 @@ class WsgiTestCase(unittest.TestCase):
             ]
         )
 
-    def test_multi_part_line_breaks_bytes(self):
-        data = b'abcdef\r\nghijkl\r\nmnopqrstuvwxyz\r\nABCDEFGHIJK'
-        test_stream = BytesIO(data)
-        lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
-                                         buffer_size=16))
-        self.assertEqual(
-            lines, [
-                b'abcdef\r\n', b'ghijkl\r\n',
-                b'mnopqrstuvwxyz\r\n', b'ABCDEFGHIJK'
-            ]
-        )
-
-        data = (
-            b'abc\r\nThis line is broken by the buffer length.'
-            b'\r\nFoo bar baz'
-        )
-        test_stream = BytesIO(data)
-        lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
-                                         buffer_size=24))
-        self.assertEqual(
-            lines, [
-                b'abc\r\n',
-                b'This line is broken by the buffer length.\r\n',
-                b'Foo bar baz',
-            ]
-        )
-
     def test_multi_part_line_breaks_problematic(self):
         data = 'abc\rdef\r\nghi'
         for x in range(1, 10):
             test_stream = StringIO(data)
-            lines = list(wsgi.make_line_iter(test_stream, limit=len(data),
-                                             buffer_size=4))
+            lines = list(wsgi.make_line_iter(
+                test_stream, limit=len(data),
+                buffer_size=4
+            ))
             self.assertEqual(lines, ['abc\r', 'def\r\n', 'ghi'])
 
     def test_iter_functions_support_iterators(self):
@@ -335,13 +305,15 @@ class WsgiTestCase(unittest.TestCase):
         data = ['abcdefXghi', 'jklXmnopqrstuvwxyzX', 'ABCDEFGHIJK']
         rv = list(wsgi.make_chunk_iter(data, 'X'))
         self.assertEqual(
-            rv, ['abcdef', 'ghijkl', 'mnopqrstuvwxyz', 'ABCDEFGHIJK']
+            rv, ['abcdef', 'ghijkl', 'mnopqrstuvwxyz', 'ABCDEFGHIJK'],
         )
 
         data = 'abcdefXghijklXmnopqrstuvwxyzXABCDEFGHIJK'
         test_stream = StringIO(data)
-        rv = list(wsgi.make_chunk_iter(test_stream, 'X', limit=len(data),
-                                       buffer_size=4))
+        rv = list(wsgi.make_chunk_iter(
+            test_stream, 'X', limit=len(data),
+            buffer_size=4,
+        ))
         self.assertEqual(
             rv, ['abcdef', 'ghijkl', 'mnopqrstuvwxyz', 'ABCDEFGHIJK']
         )
@@ -376,12 +348,12 @@ class EnvironHeadersTestCase(unittest.TestCase):
         # this happens in multiple WSGI servers because they
         # use a vary naive way to convert the headers;
         broken_env = {
-            'HTTP_CONTENT_TYPE':        'text/html',
-            'CONTENT_TYPE':             'text/html',
-            'HTTP_CONTENT_LENGTH':      '0',
-            'CONTENT_LENGTH':           '0',
-            'HTTP_ACCEPT':              '*',
-            'wsgi.version':             (1, 0)
+            'HTTP_CONTENT_TYPE': 'text/html',
+            'CONTENT_TYPE': 'text/html',
+            'HTTP_CONTENT_LENGTH': '0',
+            'CONTENT_LENGTH': '0',
+            'HTTP_ACCEPT': '*',
+            'wsgi.version': (1, 0)
         }
         headers = wsgi.EnvironHeaders(broken_env)
         self.assertTrue(headers)

@@ -11,12 +11,10 @@
 """
 import unittest
 
-from datetime import datetime
 import inspect
 
 from verktyg.responses import BaseResponse
 from verktyg.test import Client
-from verktyg.http import parse_date, http_date
 from verktyg import utils
 
 
@@ -123,90 +121,6 @@ class UtilsTestCase(unittest.TestCase):
             if attr.name == '_prop':
                 break
         self.assertEqual(attr.kind, 'property')
-
-    def test_environ_property(self):
-        class A(object):
-            environ = {'string': 'abc', 'number': '42'}
-
-            string = utils.environ_property(
-                'string'
-            )
-            missing = utils.environ_property(
-                'missing', 'spam'
-            )
-            read_only = utils.environ_property(
-                'number'
-            )
-            number = utils.environ_property(
-                'number', load_func=int
-            )
-            broken_number = utils.environ_property(
-                'broken_number', load_func=int
-            )
-            date = utils.environ_property(
-                'date', None, parse_date, http_date, read_only=False
-            )
-            foo = utils.environ_property(
-                'foo'
-            )
-
-        a = A()
-        self.assertEqual(a.string, 'abc')
-        self.assertEqual(a.missing, 'spam')
-
-        def test_assign():
-            a.read_only = 'something'
-        self.assertRaises(AttributeError, test_assign)
-        self.assertEqual(a.number, 42)
-        self.assertIs(a.broken_number, None)
-        self.assertIs(a.date, None)
-        a.date = datetime(2008, 1, 22, 10, 0, 0, 0)
-        self.assertEqual(a.environ['date'], 'Tue, 22 Jan 2008 10:00:00 GMT')
-
-    def test_validate_arguments(self):
-        def take_none():
-            pass
-
-        def take_two(a, b):
-            pass
-
-        def take_two_one_default(a, b=0):
-            pass
-
-        self.assertEqual(
-            utils.validate_arguments(take_two, (1, 2,), {}),
-            ((1, 2), {})
-        )
-        self.assertEqual(
-            utils.validate_arguments(take_two, (1,), {'b': 2}),
-            ((1, 2), {})
-        )
-        self.assertEqual(
-            utils.validate_arguments(take_two_one_default, (1,), {}),
-            ((1, 0), {})
-        )
-        self.assertEqual(
-            utils.validate_arguments(take_two_one_default, (1, 2), {}),
-            ((1, 2), {})
-        )
-
-        self.assertRaises(
-            utils.ArgumentValidationError,
-            utils.validate_arguments, take_two, (), {}
-        )
-
-        self.assertEqual(
-            utils.validate_arguments(take_none, (1, 2,), {'c': 3}),
-            ((), {})
-        )
-        self.assertRaises(
-            utils.ArgumentValidationError,
-            utils.validate_arguments, take_none, (1,), {}, drop_extra=False
-        )
-        self.assertRaises(
-            utils.ArgumentValidationError,
-            utils.validate_arguments, take_none, (), {'a': 1}, drop_extra=False
-        )
 
     def test_append_slash_redirect(self):
         def app(env, sr):

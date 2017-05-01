@@ -1,18 +1,17 @@
 language: python
 sudo: false
 python:
-  - "3.4"
-  - "3.5"
+  - "3.6"
 
 install:
   - "pip install -e ."
   - "pip install coveralls"
   - "pip install pyflakes"
-  - "pip install pep8"
+  - "pip install git+git://github.com/bwhmather/pycodestyle.git@no-visual#egg=pycodestyle"
 
 script:
   - "coverage run --source=verktyg setup.py test"
-  - "pep8 verktyg setup.py"
+  - "pycodestyle --ignore=E741 --no-visual verktyg setup.py"
   - "pyflakes verktyg setup.py"
 
 after_success:
