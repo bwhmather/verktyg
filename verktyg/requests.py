@@ -22,12 +22,12 @@
 from io import BytesIO
 from urllib.parse import parse_qsl
 
-from werkzeug.formparser import FormDataParser, default_stream_factory
-
 from verktyg.utils import cached_property
 from verktyg.datastructures import (
-    MultiDict, CombinedMultiDict, ImmutableMultiDict,
-    ImmutableTypeConversionDict, ImmutableList, iter_multi_items,
+    ImmutableMultiDict,
+    ImmutableTypeConversionDict,
+    ImmutableList,
+    iter_multi_items,
 )
 from verktyg.http import (
     parse_cache_control_header, parse_etags,
@@ -132,10 +132,6 @@ class BaseRequest(object):
     #: (for example for :attr:`cookies`).
     dict_storage_class = ImmutableTypeConversionDict
 
-    #: The form data parser that shoud be used.  Can be replaced to customize
-    #: the form date parsing.
-    form_data_parser_class = FormDataParser
-
     #: Optionally a list of hosts that is trusted by this request.  By default
     #: all hosts are trusted which means that whatever the client sends the
     #: host is will be accepted.
@@ -202,86 +198,6 @@ class BaseRequest(object):
             return builder.get_request(cls)
         finally:
             builder.close()
-
-    def _get_file_stream(
-            self, total_content_length, content_type,
-            filename=None, content_length=None):
-        """Called to get a stream for the file upload.
-
-        This must provide a file-like class with `read()`, `readline()`
-        and `seek()` methods that is both writeable and readable.
-
-        The default implementation returns a temporary file if the total
-        content length is higher than 500KB.  Because many browsers do not
-        provide a content length for the files only the total content
-        length matters.
-
-        :param total_content_length:
-            The total content length of all the data in the request combined.
-            This value is guaranteed to be there.
-        :param content_type:
-            The mimetype of the uploaded file.
-        :param filename:
-            The filename of the uploaded file.  May be `None`.
-        :param content_length:
-            The length of this file.  This value is usually not provided
-            because webbrowsers do not provide this value.
-        """
-        return default_stream_factory(
-            total_content_length, content_type, filename, content_length,
-        )
-
-    @property
-    def want_form_data_parsed(self):
-        """Returns True if the request method carries content.  As of
-        Werkzeug 0.9 this will be the case if a content type is transmitted.
-        """
-        return bool(self.environ.get('CONTENT_TYPE'))
-
-    def make_form_data_parser(self):
-        """Creates the form data parser.  Instantiates the
-        :attr:`form_data_parser_class` with some parameters.
-        """
-        return self.form_data_parser_class(
-            self._get_file_stream,
-            errors=self.encoding_errors,
-            max_form_memory_size=self.max_form_memory_size,
-            max_content_length=self.max_content_length,
-            cls=self.parameter_storage_class
-        )
-
-    def _load_form_data(self):
-        """Method used internally to retrieve submitted data.  After calling
-        this sets `form` and `files` on the request object to multi dicts
-        filled with the incoming form data.  As a matter of fact the input
-        stream will be empty afterwards.  You can also call this method to
-        force the parsing of the form data.
-        """
-        # abort early if we have already consumed the stream
-        if 'form' in self.__dict__:
-            return
-
-        _assert_not_shallow(self)
-
-        if self.want_form_data_parsed:
-            content_type = self.environ.get('CONTENT_TYPE', '')
-            content_length = get_content_length(self.environ)
-            mimetype, options = parse_options_header(content_type)
-            parser = self.make_form_data_parser()
-            data = parser.parse(
-                self._get_stream_for_parsing(),
-                mimetype, content_length, options,
-            )
-        else:
-            data = (
-                self.stream, self.parameter_storage_class(),
-                self.parameter_storage_class(),
-            )
-
-        # inject the values into the instance dict so that we bypass
-        # our cached_property non-data descriptor.
-        d = self.__dict__
-        d['stream'], d['form'], d['files'] = data
 
     def _get_stream_for_parsing(self):
         """This is the same as accessing :attr:`stream` with the difference
@@ -354,7 +270,7 @@ class BaseRequest(object):
             qs, errors=self.encoding_errors,
         ))
 
-    def get_data(self, cache=True, as_text=False, parse_form_data=False):
+    def get_data(self, cache=True, as_text=False):
         """This reads the buffered incoming data from the client into one
         bytestring.  By default this is cached but that behavior can be
         changed by setting `cache` to `False`.
@@ -363,24 +279,11 @@ class BaseRequest(object):
         content length first as a client could send dozens of megabytes or more
         to cause memory problems on the server.
 
-        Note that if the form data was already parsed this method will not
-        return anything as form data parsing does not cache the data like
-        this method does.  To implicitly invoke form data parsing function
-        set `parse_form_data` to `True`.  When this is done the return value
-        of this method will be an empty string if the form parser handles
-        the data.  This generally is not necessary as if the whole data is
-        cached (which is the default) the form parser will used the cached
-        data to parse the form data.  Please be generally aware of checking
-        the content length first in any case before calling this method
-        to avoid exhausting server memory.
-
         If `as_text` is set to `True` the return value will be a decoded
         unicode string.
         """
         rv = getattr(self, '_cached_data', None)
         if rv is None:
-            if parse_form_data:
-                self._load_form_data()
             rv = self.stream.read()
             if cache:
                 self._cached_data = rv
@@ -388,45 +291,6 @@ class BaseRequest(object):
             # TODO charset
             rv = rv.decode('utf-8', self.encoding_errors)
         return rv
-
-    @cached_property
-    def form(self):
-        """The form parameters.  By default an
-        :class:`~verktyg.datastructures.ImmutableMultiDict`
-        is returned from this function.  This can be changed by setting
-        :attr:`parameter_storage_class` to a different type.  This might
-        be necessary if the order of the form data is important.
-        """
-        self._load_form_data()
-        return self.form
-
-    @cached_property
-    def values(self):
-        """Combined multi dict for :attr:`args` and :attr:`form`."""
-        args = []
-        for d in self.args, self.form:
-            if not isinstance(d, MultiDict):
-                d = MultiDict(d)
-            args.append(d)
-        return CombinedMultiDict(args)
-
-    @cached_property
-    def files(self):
-        """:class:`~verktyg.datastructures.MultiDict` object containing
-        all uploaded files.  Each key in :attr:`files` is the name from the
-        ``<input type="file" name="">``.  Each value in :attr:`files` is a
-        Werkzeug :class:`~verktyg.http.FileStorage` object.
-
-        Note that :attr:`files` will only contain data if the request method
-        was POST, PUT or PATCH and the ``<form>`` that posted to the request
-        had ``enctype="multipart/form-data"``.  It will be empty otherwise.
-
-        See the :class:`~verktyg.datastructures.MultiDict` /
-        :class:`~verktyg.http.FileStorage` documentation for
-        more details about the used data structure.
-        """
-        self._load_form_data()
-        return self.files
 
     @cached_property
     def cookies(self):

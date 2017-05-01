@@ -5,7 +5,7 @@
     Tests for request objects.
 
     :copyright:
-        (c) 2015 Ben Mather, based on Werkzeug, see AUTHORS for more details.
+        (c) 2017 Ben Mather, based on Werkzeug, see AUTHORS for more details.
     :license:
         BSD, see LICENSE for more details.
 """
@@ -16,13 +16,13 @@ from io import BytesIO
 from datetime import datetime
 
 from verktyg.datastructures import (
-    MultiDict, ImmutableOrderedMultiDict, ImmutableList,
-    ImmutableTypeConversionDict, CombinedMultiDict,
+    MultiDict, ImmutableList,
+    ImmutableTypeConversionDict,
 )
 from verktyg.test import Client
 from verktyg.wsgi import LimitedStream
 from verktyg.exceptions import SecurityError
-from verktyg.requests import BaseRequest, Request, PlainRequest
+from verktyg.requests import BaseRequest, Request
 from verktyg.responses import BaseResponse
 
 
@@ -48,8 +48,6 @@ def request_demo_app(environ, start_response):
     return [pickle.dumps({
         'args': request.args,
         'args_as_list': list(request.args.lists()),
-        'form': request.form,
-        'form_as_list': list(request.form.lists()),
         'environ': prepare_environ_pickle(request.environ),
         'data': request.get_data()
     })]
@@ -86,40 +84,8 @@ class RequestsTestCase(unittest.TestCase):
         self.assertEqual(
             response['args_as_list'], [('foo', [u'bar', u'hehe'])]
         )
-        self.assertEqual(response['form'], MultiDict())
-        self.assertEqual(response['form_as_list'], [])
         self.assertEqual(response['data'], b'')
         self.assert_environ(response['environ'], 'GET')
-
-        # post requests with form data
-        response = client.post(
-            '/?blub=blah', data='foo=blub+hehe&blah=42',
-            content_type='application/x-www-form-urlencoded'
-        )
-        self.assertEqual(response['args'], MultiDict([('blub', u'blah')]))
-        self.assertEqual(response['args_as_list'], [('blub', [u'blah'])])
-        self.assertEqual(
-            response['form'], MultiDict([
-                ('foo', u'blub hehe'), ('blah', u'42'),
-            ])
-        )
-        self.assertEqual(response['data'], b'')
-        self.assert_environ(response['environ'], 'POST')
-
-        # patch requests with form data
-        response = client.patch(
-            '/?blub=blah', data='foo=blub+hehe&blah=42',
-            content_type='application/x-www-form-urlencoded'
-        )
-        self.assertEqual(response['args'], MultiDict([('blub', u'blah')]))
-        self.assertEqual(response['args_as_list'], [('blub', [u'blah'])])
-        self.assertEqual(
-            response['form'], MultiDict([
-                ('foo', u'blub hehe'), ('blah', u'42'),
-            ])
-        )
-        self.assertEqual(response['data'], b'')
-        self.assert_environ(response['environ'], 'PATCH')
 
         # post requests with json data
         json = b'{"foo": "bar", "blub": "blah"}'
@@ -128,7 +94,6 @@ class RequestsTestCase(unittest.TestCase):
         )
         self.assertEqual(response['data'], json)
         self.assertEqual(response['args'], MultiDict([('a', u'b')]))
-        self.assertEqual(response['form'], MultiDict())
 
     def test_query_string_is_bytes(self):
         req = Request.from_values(u'/?foo=%2f')
@@ -229,15 +194,6 @@ class RequestsTestCase(unittest.TestCase):
         self.assertEqual(a.username, 'Aladdin')
         self.assertEqual(a.password, 'open sesame')
 
-    def test_stream_only_mixing(self):
-        request = PlainRequest.from_values(
-            data=b'foo=blub+hehe',
-            content_type='application/x-www-form-urlencoded'
-        )
-        self.assertEqual(list(request.files.items()), [])
-        self.assertEqual(list(request.form.items()), [])
-        self.assertEqual(request.stream.read(), b'foo=blub+hehe')
-
     def test_etag_request_mixin(self):
         request = Request({
             'HTTP_CACHE_CONTROL': 'no-store, no-cache',
@@ -261,68 +217,6 @@ class RequestsTestCase(unittest.TestCase):
         self.assertEqual(
             request.if_unmodified_since, datetime(2008, 1, 22, 11, 18, 44)
         )
-
-    def test_stream_wrapping(self):
-        class LowercasingStream(object):
-
-            def __init__(self, stream):
-                self._stream = stream
-
-            def read(self, size=-1):
-                return self._stream.read(size).lower()
-
-            def readline(self, size=-1):
-                return self._stream.readline(size).lower()
-
-        data = b'foo=Hello+World'
-        req = Request.from_values(
-            '/', method='POST', data=data,
-            content_type='application/x-www-form-urlencoded')
-        req.stream = LowercasingStream(req.stream)
-        self.assertEqual(req.form['foo'], 'hello world')
-
-    def test_data_descriptor_triggers_parsing(self):
-        data = b'foo=Hello+World'
-        req = Request.from_values(
-            '/', method='POST', data=data,
-            content_type='application/x-www-form-urlencoded')
-
-        self.assertEqual(req.get_data(parse_form_data=True), b'')
-        self.assertEqual(req.form['foo'], u'Hello World')
-
-    def test_get_data_method_parsing_caching_behavior(self):
-        data = b'foo=Hello+World'
-        req = Request.from_values(
-            '/', method='POST', data=data,
-            content_type='application/x-www-form-urlencoded')
-
-        # get_data() caches, so form stays available
-        self.assertEqual(req.get_data(), data)
-        self.assertEqual(req.form['foo'], u'Hello World')
-        self.assertEqual(req.get_data(), data)
-
-        # here we access the form data first, caching is bypassed
-        req = Request.from_values(
-            '/', method='POST', data=data,
-            content_type='application/x-www-form-urlencoded')
-        self.assertEqual(req.form['foo'], u'Hello World')
-        self.assertEqual(req.get_data(), b'')
-
-        # Another case is uncached get data which trashes everything
-        req = Request.from_values(
-            '/', method='POST', data=data,
-            content_type='application/x-www-form-urlencoded')
-        self.assertEqual(req.get_data(cache=False), data)
-        self.assertEqual(req.get_data(cache=False), b'')
-        self.assertEqual(req.form, {})
-
-        # Or we can implicitly start the form parser which is similar to
-        # the old .data behavior
-        req = Request.from_values(
-            '/', method='POST', data=data,
-            content_type='application/x-www-form-urlencoded')
-        self.assertEqual(req.get_data(parse_form_data=True), b'')
-        self.assertEqual(req.form['foo'], u'Hello World')
 
     def test_common_request_descriptors_mixin(self):
         request = Request.from_values(
@@ -358,65 +252,6 @@ class RequestsTestCase(unittest.TestCase):
     def test_shallow_mode(self):
         request = Request({'QUERY_STRING': 'foo=bar'}, shallow=True)
         self.assertEqual(request.args['foo'], 'bar')
-        self.assertRaises(RuntimeError, lambda: request.form['foo'])
-
-    def test_form_parsing_failed(self):
-        data = (
-            b'--blah\r\n'
-        )
-        data = Request.from_values(
-            input_stream=BytesIO(data),
-            content_length=len(data),
-            content_type='multipart/form-data; boundary=foo',
-            method='POST'
-        )
-        self.assertFalse(data.files)
-        self.assertFalse(data.form)
-
-    def test_file_closing(self):
-        data = (
-            b'--foo\r\n'
-            b'Content-Disposition: form-data; name="foo"; '
-            b'filename="foo.txt"\r\n'
-            b'Content-Type: text/plain; charset=utf-8\r\n\r\n'
-            b'file contents, just the contents\r\n'
-            b'--foo--'
-        )
-        req = Request.from_values(
-            input_stream=BytesIO(data),
-            content_length=len(data),
-            content_type='multipart/form-data; boundary=foo',
-            method='POST'
-        )
-        foo = req.files['foo']
-        self.assertEqual(foo.mimetype, 'text/plain')
-        self.assertEqual(foo.filename, 'foo.txt')
-
-        self.assertFalse(foo.closed)
-        req.close()
-        self.assertTrue(foo.closed)
-
-    def test_file_closing_with(self):
-        data = (
-            b'--foo\r\n'
-            b'Content-Disposition: form-data; name="foo"; '
-            b'filename="foo.txt"\r\n'
-            b'Content-Type: text/plain; charset=utf-8\r\n\r\n'
-            b'file contents, just the contents\r\n'
-            b'--foo--'
-        )
-        req = Request.from_values(
-            input_stream=BytesIO(data),
-            content_length=len(data),
-            content_type='multipart/form-data; boundary=foo',
-            method='POST'
-        )
-        with req:
-            foo = req.files['foo']
-            self.assertEqual(foo.mimetype, 'text/plain')
-            self.assertEqual(foo.filename, 'foo.txt')
-
-        self.assertTrue(foo.closed)
 
     def test_other_method_payload(self):
         data = b'Hello World'
@@ -426,22 +261,6 @@ class RequestsTestCase(unittest.TestCase):
         )
         self.assertEqual(req.get_data(), data)
         self.assertTrue(isinstance(req.stream, LimitedStream))
-
-    def test_form_data_ordering(self):
-        class MyRequest(Request):
-            parameter_storage_class = ImmutableOrderedMultiDict
-
-        req = MyRequest.from_values('/?foo=1&bar=0&foo=3')
-        self.assertEqual(list(req.args), ['foo', 'bar'])
-        self.assertEqual(list(req.args.items(multi=True)), [
-            ('foo', '1'),
-            ('bar', '0'),
-            ('foo', '3')
-        ])
-        self.assertIsInstance(req.args, ImmutableOrderedMultiDict)
-        self.assertIsInstance(req.values, CombinedMultiDict)
-        self.assertEqual(req.values['foo'], '1')
-        self.assertEqual(req.values.getlist('foo'), ['1', '3'])
 
     def test_storage_classes(self):
         class MyRequest(Request):
@@ -456,8 +275,6 @@ class RequestsTestCase(unittest.TestCase):
         self.assertIs(type(req.access_route), list)
 
         self.assertIs(type(req.args), dict)
-        self.assertIs(type(req.values), CombinedMultiDict)
-        self.assertEqual(req.values['foo'], u'baz')
 
         req = Request.from_values(headers={
             'Cookie': 'foo=bar'
