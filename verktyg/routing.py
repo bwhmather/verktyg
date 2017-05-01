@@ -830,11 +830,14 @@ class UnicodeConverter(BaseConverter):
         Route('/pages/<page>'),
         Route('/<string(length=2):lang_code>')
 
-    :param router: the :class:`URLMap`.
-    :param minlength: the minimum length of the string.  Must be greater
-                      or equal 1.
-    :param maxlength: the maximum length of the string.
-    :param length: the exact length of the string.
+    :param router:
+        The :class:`URLMap`.
+    :param minlength:
+        The minimum length of the string.  Must be greater or equal to 1.
+    :param maxlength:
+        The maximum length of the string.
+    :param length:
+        The exact length of the string.
     """
 
     def __init__(self, router, minlength=1, maxlength=None, length=None):
@@ -859,9 +862,10 @@ class AnyConverter(BaseConverter):
 
         Route('/<any(about, help, imprint, class, "foo,bar"):page_name>')
 
-    :param router: the :class:`URLMap`.
-    :param items: this function accepts the possible items as positional
-                  arguments.
+    :param router:
+        The :class:`URLMap`.
+    :param items:
+        This function accepts the possible items as positional arguments.
     """
 
     def __init__(self, router, *items):
@@ -876,7 +880,8 @@ class PathConverter(BaseConverter):
         Route('/<path:wikipage>')
         Route('/<path:wikipage>/edit')
 
-    :param router: the :class:`URLMap`.
+    :param router:
+        The :class:`URLMap`.
     """
     regex = '[^/].*?'
     weight = 200
@@ -920,13 +925,16 @@ class IntegerConverter(NumberConverter):
 
     This converter does not support negative values.
 
-    :param router: the :class:`URLMap`.
-    :param fixed_digits: the number of fixed digits in the URL.  If you set
-                         this to ``4`` for example, the application will
-                         only match if the url looks like ``/0001/``.  The
-                         default is variable length.
-    :param min: the minimal value.
-    :param max: the maximal value.
+    :param router:
+        The :class:`URLMap`.
+    :param fixed_digits:
+        The number of fixed digits in the URL.  If you set this to ``4`` for
+        example, the application will only match if the url looks like
+        ``/0001/``.  The default is variable length.
+    :param min:
+        The minimal value.
+    :param max:
+        The maximal value.
     """
     regex = r'\d+'
     num_convert = int
@@ -939,9 +947,12 @@ class FloatConverter(NumberConverter):
 
     This converter does not support negative values.
 
-    :param router: the :class:`URLMap`.
-    :param min: the minimal value.
-    :param max: the maximal value.
+    :param router:
+        The :class:`URLMap`.
+    :param min:
+        The minimal value.
+    :param max:
+        The maximal value.
     """
     regex = r'\d+\.\d+'
     num_convert = float
@@ -955,7 +966,8 @@ class UUIDConverter(BaseConverter):
 
         Route('/object/<uuid:identifier>')
 
-    :param router: the :class:`URLMap`.
+    :param router:
+        The :class:`URLMap`.
     """
     regex = (
         r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-'
@@ -988,25 +1000,32 @@ class URLMap(object):
     and can be overridden for each route.  Note that you have to specify all
     arguments besides the `routes` as keyword arguments!
 
-    :param routes: sequence of url routes for this router.
-    :param default_subdomain: The default subdomain for routes without a
-                              subdomain defined.
-    :param charset: charset of the url. defaults to ``"utf-8"``
-    :param strict_slashes: Take care of trailing slashes.
-    :param redirect_defaults: This will redirect to the default route if it
-                              wasn't visited that way. This helps creating
-                              unique URLs.
-    :param converters: A dict of converters that adds additional converters
-                       to the list of converters. If you redefine one
-                       converter this will override the original one.
-    :param sort_parameters: If set to `True` the url parameters are sorted.
-                            See `urlencode` for more details.
-    :param sort_key: The sort key function for `urlencode`.
-    :param encoding_errors: the error method to use for decoding
-    :param host_matching: if set to `True` it enables the host matching
-                          feature and disables the subdomain one.  If
-                          enabled the `host` parameter to routes is used
-                          instead of the `subdomain` one.
+    :param routes:
+        Sequence of url routes for this router.
+    :param default_subdomain:
+        The default subdomain for routes without a subdomain defined.
+    :param charset:
+        Charset of the url (defaults to ``"utf-8"``).
+    :param strict_slashes:
+        Take care of trailing slashes.
+    :param redirect_defaults:
+        This will redirect to the default route if it wasn't visited that way.
+        This helps creating unique URLs.
+    :param converters:
+        A dict of converters that adds additional converters to the list of
+        converters. If you redefine one converter this will override the
+        original one.
+    :param sort_parameters:
+        If set to `True` the url parameters are sorted.  See `urlencode` for
+        more details.
+    :param sort_key:
+        The sort key function for `urlencode`.
+    :param encoding_errors:
+        The error method to use for decoding
+    :param host_matching:
+        If set to `True` it enables the host matching feature and disables the
+        subdomain one.  If enabled the `host` parameter to routes is used
+        instead of the `subdomain` one.
     """
 
     default_converters = ImmutableDict(DEFAULT_CONVERTERS)
@@ -1045,10 +1064,11 @@ class URLMap(object):
         code is automatically added if not provided but endpoints expect
         it.
 
-        :param endpoint: the endpoint to check.
-        :param arguments: this function accepts one or more arguments
-                          as positional arguments.  Each one of them is
-                          checked.
+        :param endpoint:
+            The endpoint to check.
+        :param arguments:
+            This function accepts one or more arguments as positional
+            arguments.  Each one of them is checked.
         """
         self.update()
         arguments = set(arguments)
@@ -1060,8 +1080,8 @@ class URLMap(object):
     def iter_routes(self, endpoint=None):
         """Iterate over all routes or the routes of an endpoint.
 
-        :param endpoint: if provided only the routes for that endpoint
-                         are returned.
+        :param endpoint:
+            If provided only the routes for that endpoint are returned.
         :return: an iterator
         """
         self.update()
@@ -1073,7 +1093,8 @@ class URLMap(object):
         """Add a new route or factory to the router and bind it.  Requires that
         the route is not bound to another router.
 
-        :param routefactory: a :class:`Route` or :class:`RouteFactory`
+        :param routefactory:
+            A :class:`Route` or :class:`RouteFactory`
         """
         for factory in factories:
             for route in factory.get_routes(self):
@@ -1152,9 +1173,12 @@ class URLMap(object):
         :class:`MapAdapter` so that you don't have to pass the path info to
         the match method.
 
-        :param environ: a WSGI environment.
-        :param server_name: an optional server name hint (see above).
-        :param subdomain: optionally the current subdomain (see above).
+        :param environ:
+            A WSGI environment.
+        :param server_name:
+            An optional server name hint (see above).
+        :param subdomain:
+            Optionally the current subdomain (see above).
         """
         environ = _get_environ(environ)
         if server_name is None:
@@ -1294,14 +1318,16 @@ class MapAdapter(object):
           ...
         NotFound: 404 Not Found
 
-        :param path_info: the path info to use for matching.  Overrides the
-                          path info specified on binding.
-        :param return_route: return the route that matched instead of just the
-                            endpoint (defaults to `False`).
-        :param query_args: optional query arguments that are used for
-                           automatic redirects as string or dictionary.  It's
-                           currently not possible to use the query arguments
-                           for URL matching.
+        :param path_info:
+            The path info to use for matching.  Overrides the path info
+            specified on binding.
+        :param return_route:
+            Return the route that matched instead of just the endpoint
+            (defaults to `False`).
+        :param query_args:
+            Optional query arguments that are used for automatic redirects as
+            string or dictionary.  It's currently not possible to use the query
+            arguments for URL matching.
         """
         self.router.update()
         if path_info is None:
@@ -1363,8 +1389,9 @@ class MapAdapter(object):
         """Test if a route would match.  Works like `match` but returns `True`
         if the URL matches, or `False` if it does not exist.
 
-        :param path_info: the path info to use for matching.  Overrides the
-                          path info specified on binding.
+        :param path_info:
+            The path info to use for matching.  Overrides the path info
+            specified on binding.
         """
         try:
             self.match(path_info)
@@ -1485,13 +1512,17 @@ class MapAdapter(object):
         If a route does not exist when building a `BuildError` exception is
         raised.
 
-        :param endpoint: the endpoint of the URL to build.
-        :param values: the values for the URL to build.  Unhandled values are
-                       appended to the URL as query parameters.
-        :param force_external: enforce full canonical external URLs.
-        :param append_unknown: unknown parameters are appended to the generated
-                               URL as query string argument.  Disable this
-                               if you want the builder to ignore those.
+        :param endpoint:
+            The endpoint of the URL to build.
+        :param values:
+            The values for the URL to build.  Unhandled values are appended to
+            the URL as query parameters.
+        :param force_external:
+            Enforce full canonical external URLs.
+        :param append_unknown:
+            Unknown parameters are appended to the generated URL as query
+            string argument.  Disable this if you want the builder to ignore
+            those.
         """
         self.router.update()
         if values:

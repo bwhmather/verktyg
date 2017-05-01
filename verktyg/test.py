@@ -618,7 +618,8 @@ class EnvironBuilder(object):
         """Returns a request with the data.  If the request class is not
         specified :attr:`request_class` is used.
 
-        :param cls: The request wrapper to use.
+        :param cls:
+            The request wrapper to use.
         """
         if cls is None:
             cls = self.request_class
@@ -765,12 +766,13 @@ class Client(object):
 
         Additional parameters:
 
-        :param as_tuple: Returns a tuple in the form ``(environ, result)``
-        :param buffered: Set this to True to buffer the application run.
-                         This will automatically close the application for
-                         you as well.
-        :param follow_redirects: Set this to True if the `Client` should
-                                 follow HTTP redirects.
+        :param as_tuple:
+            Returns a tuple in the form ``(environ, result)``
+        :param buffered:
+            Set this to True to buffer the application run.  This will
+            automatically close the application for you as well.
+        :param follow_redirects:
+            Set this to True if the `Client` should follow HTTP redirects.
         """
         as_tuple = kwargs.pop('as_tuple', False)
         buffered = kwargs.pop('buffered', False)

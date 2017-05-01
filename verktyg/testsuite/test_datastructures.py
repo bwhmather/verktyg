@@ -553,7 +553,8 @@ class ImmutableListTestCase(unittest.TestCase):
 def make_call_asserter(func=None):
     """Utility to assert a certain number of function calls.
 
-    :param func: Additional callback for each function call.
+    :param func:
+        Additional callback for each function call.
 
     >>> assert_calls, func = make_call_asserter()
     >>> with assert_calls(2):

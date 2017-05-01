@@ -216,14 +216,16 @@ class BaseRequest(object):
         provide a content length for the files only the total content
         length matters.
 
-        :param total_content_length: the total content length of all the
-                                     data in the request combined.  This value
-                                     is guaranteed to be there.
-        :param content_type: the mimetype of the uploaded file.
-        :param filename: the filename of the uploaded file.  May be `None`.
-        :param content_length: the length of this file.  This value is usually
-                               not provided because webbrowsers do not provide
-                               this value.
+        :param total_content_length:
+            The total content length of all the data in the request combined.
+            This value is guaranteed to be there.
+        :param content_type:
+            The mimetype of the uploaded file.
+        :param filename:
+            The filename of the uploaded file.  May be `None`.
+        :param content_length:
+            The length of this file.  This value is usually not provided
+            because webbrowsers do not provide this value.
         """
         return default_stream_factory(
             total_content_length, content_type, filename, content_length,

@@ -123,17 +123,20 @@ class BaseResponse(object):
     object is appended to it.  In contrast the `content_type` parameter is
     always added as header unmodified.
 
-    :param response: a string or response iterable.
-    :param status: a string with a status or an integer with the status code.
-    :param headers: a list of headers or a
-                    :class:`~verktyg.http.Headers` object.
-    :param mimetype: the mimetype for the request.  See notice above.
-    :param content_type: the content type for the request.  See notice above.
-    :param direct_passthrough: if set to `True` :meth:`iter_encoded` is not
-                               called before iteration which makes it
-                               possible to pass special iterators through
-                               unchanged (see :func:`wrap_file` for more
-                               details.)
+    :param response:
+        A string or response iterable.
+    :param status:
+        A string with a status or an integer with the status code.
+    :param headers:
+        A list of headers or a :class:`~verktyg.http.Headers` object.
+    :param mimetype:
+        The mimetype for the request.  See notice above.
+    :param content_type:
+        The content type for the request.  See notice above.
+    :param direct_passthrough:
+        If set to `True` :meth:`iter_encoded` is not called before iteration
+        which makes it possible to pass special iterators through unchanged
+        (see :func:`wrap_file` for more details.)
     """
 
     #: the charset of the response.
@@ -240,9 +243,12 @@ class BaseResponse(object):
         Keep in mind that this will modify response objects in place if
         possible!
 
-        :param response: a response object or wsgi application.
-        :param environ: a WSGI environment object.
-        :return: a response object.
+        :param response:
+            A response object or wsgi application.
+        :param environ:
+            A WSGI environment object.
+        :return:
+            A response object.
         """
         if not isinstance(response, BaseResponse):
             if environ is None:
@@ -263,10 +269,14 @@ class BaseResponse(object):
         edge cases automatically.  But if you don't get the expected output
         you should set `buffered` to `True` which enforces buffering.
 
-        :param app: the WSGI application to execute.
-        :param environ: the WSGI environment to execute against.
-        :param buffered: set to `True` to enforce buffering.
-        :return: a response object.
+        :param app:
+            The WSGI application to execute.
+        :param environ:
+            The WSGI environment to execute against.
+        :param buffered:
+            Set to `True` to enforce buffering.
+        :return:
+            A response object.
         """
         return cls(*_run_wsgi_app(app, environ, buffered))
 
@@ -396,19 +406,23 @@ class BaseResponse(object):
         """Sets a cookie. The parameters are the same as in the cookie `Morsel`
         object in the Python standard library but it accepts unicode data, too.
 
-        :param key: the key (name) of the cookie to be set.
-        :param value: the value of the cookie.
-        :param max_age: should be a number of seconds, or `None` (default) if
-                        the cookie should last only as long as the client's
-                        browser session.
-        :param expires: should be a `datetime` object or UNIX timestamp.
-        :param domain: if you want to set a cross-domain cookie.  For example,
-                       ``domain=".example.com"`` will set a cookie that is
-                       readable by the domain ``www.example.com``,
-                       ``foo.example.com`` etc.  Otherwise, a cookie will only
-                       be readable by the domain that set it.
-        :param path: limits the cookie to a given path, per default it will
-                     span the whole domain.
+        :param key:
+            The key (name) of the cookie to be set.
+        :param value:
+            The value of the cookie.
+        :param max_age:
+            Should be a number of seconds, or `None` (default) if the cookie
+            should last only as long as the client's browser session.
+        :param expires:
+            Should be a `datetime` object or UNIX timestamp.
+        :param domain:
+            If you want to set a cross-domain cookie.  For example,
+            ``domain=".example.com"`` will set a cookie that is readable by the
+            domain ``www.example.com``, ``foo.example.com`` etc.  Otherwise, a
+            cookie will only be readable by the domain that set it.
+        :param path:
+            Limits the cookie to a given path, per default it will span the
+            whole domain.
         """
         self.headers.add(
             'Set-Cookie', dump_cookie(
@@ -421,11 +435,14 @@ class BaseResponse(object):
     def delete_cookie(self, key, path='/', domain=None):
         """Delete a cookie.  Fails silently if key doesn't exist.
 
-        :param key: the key (name) of the cookie to be deleted.
-        :param path: if the cookie that should be deleted was limited to a
-                     path, the path has to be defined here.
-        :param domain: if the cookie that should be deleted was limited to a
-                       domain, that domain has to be defined here.
+        :param key:
+            The key (name) of the cookie to be deleted.
+        :param path:
+            If the cookie that should be deleted was limited to a path, the
+            path has to be defined here.
+        :param domain:
+            If the cookie that should be deleted was limited to a domain, that
+            domain has to be defined here.
         """
         self.set_cookie(key, expires=0, max_age=0, path=path, domain=domain)
 
@@ -488,9 +505,10 @@ class BaseResponse(object):
         URL of the environment.  Also the content length is automatically set
         to zero here for certain status codes.
 
-        :param environ: the WSGI environment of the request.
-        :return: returns a new :class:`~verktyg.http.Headers`
-                 object.
+        :param environ:
+            The WSGI environment of the request.
+        :return:
+            Returns a new :class:`~verktyg.http.Headers` object.
         """
         headers = Headers(self.headers)
         location = None
@@ -565,8 +583,10 @@ class BaseResponse(object):
         where the HTTP specification requires an empty response, an empty
         iterable is returned.
 
-        :param environ: the WSGI environment of the request.
-        :return: a response iterable.
+        :param environ:
+            The WSGI environment of the request.
+        :return:
+            A response iterable.
         """
         status = self.status_code
         if (
@@ -590,8 +610,10 @@ class BaseResponse(object):
         method in the WSGI environment is ``'HEAD'`` the response will
         be empty and only the headers and status code will be present.
 
-        :param environ: the WSGI environment of the request.
-        :return: an ``(app_iter, status, headers)`` tuple.
+        :param environ:
+            The WSGI environment of the request.
+        :return:
+            An ``(app_iter, status, headers)`` tuple.
         """
         headers = self.get_wsgi_headers(environ)
         app_iter = self.get_app_iter(environ)
@@ -600,10 +622,12 @@ class BaseResponse(object):
     def __call__(self, environ, start_response):
         """Process this response as WSGI application.
 
-        :param environ: the WSGI environment.
-        :param start_response: the response callable provided by the WSGI
-                               server.
-        :return: an application iterator
+        :param environ:
+            The WSGI environment.
+        :param start_response:
+            The response callable provided by the WSGI server.
+        :return:
+            An application iterator
         """
         app_iter, status, headers = self.get_wsgi_response(environ)
         start_response(status, headers)
@@ -664,9 +688,9 @@ class ETagResponseMixin(object):
         Returns self so that you can do ``return resp.make_conditional(req)``
         but modifies the object in-place.
 
-        :param request_or_environ: a request object or WSGI environment to be
-                                   used to make the response conditional
-                                   against.
+        :param request_or_environ:
+            A request object or WSGI environment to be used to make the
+            response conditional against.
         """
         environ = _get_environ(request_or_environ)
         if environ['REQUEST_METHOD'] in ('GET', 'HEAD'):
