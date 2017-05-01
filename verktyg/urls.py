@@ -1,6 +1,6 @@
 """
-    werkzeug.urls
-    ~~~~~~~~~~~~~
+    verktyg.urls
+    ~~~~~~~~~~~~
 
     :copyright:
         (c) 2016 Ben Mather, based on Werkzeug, see AUTHORS for more details.
@@ -11,8 +11,6 @@ from urllib.parse import (
     urlsplit, urlunsplit,
     quote as urlquote, quote_plus as urlquote_plus,
 )
-
-from werkzeug._internal import _encode_idna, _decode_idna
 
 
 _hexdigits = '0123456789ABCDEFabcdef'
@@ -62,6 +60,48 @@ def _safe_urlunquote(string, charset='utf-8', errors='replace', unsafe=''):
     return rv
 
 
+def encode_idna(domain):
+    # If we're given bytes, make sure they fit into ASCII
+    if not isinstance(domain, str):
+        domain.decode('ascii')
+        return domain
+
+    # Otherwise check if it's already ascii, then return
+    try:
+        return domain.encode('ascii')
+    except UnicodeError:
+        pass
+
+    # Otherwise encode each part separately
+    parts = domain.split('.')
+    for idx, part in enumerate(parts):
+        parts[idx] = part.encode('idna')
+    return b'.'.join(parts)
+
+
+def decode_idna(domain):
+    # If the input is a string try to encode it to ascii to
+    # do the idna decoding.  if that fails because of an
+    # unicode error, then we already have a decoded idna domain
+    if isinstance(domain, str):
+        try:
+            domain = domain.encode('ascii')
+        except UnicodeError:
+            return domain
+
+    # Decode each part separately.  If a part fails, try to
+    # decode it with ascii and silently ignore errors.  This makes
+    # most sense because the idna codec does not have error handling
+    parts = domain.split(b'.')
+    for idx, part in enumerate(parts):
+        try:
+            parts[idx] = part.decode('idna')
+        except UnicodeError:
+            parts[idx] = part.decode('ascii', 'ignore')
+
+    return '.'.join(parts)
+
+
 def uri_to_iri(uri, errors='replace'):
     r"""Converts a URI in a given charset to a IRI.
 
@@ -87,7 +127,7 @@ def uri_to_iri(uri, errors='replace'):
     assert isinstance(uri, str)
     uri = urlsplit(uri)
 
-    host = _decode_idna(uri.hostname) if uri.hostname else ''
+    host = decode_idna(uri.hostname) if uri.hostname else ''
     if ':' in host:
         host = '[%s]' % host
 
@@ -133,7 +173,7 @@ def uri_to_iri(uri, errors='replace'):
 def _encode_netloc(components):
     host = ''
     if components.hostname:
-        host = _encode_idna(components.hostname).decode('ascii')
+        host = encode_idna(components.hostname).decode('ascii')
     if ':' in host:
         host = '[%s]' % host
 
