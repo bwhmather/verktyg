@@ -656,20 +656,6 @@ class ETagRequestMixin(object):
         return parse_range_header(self.environ.get('HTTP_RANGE'))
 
 
-class UserAgentMixin(object):
-
-    """Adds a `user_agent` attribute to the request object which contains the
-    parsed user agent of the browser that triggered the request as a
-    :class:`~werkzeug.useragents.UserAgent` object.
-    """
-
-    @cached_property
-    def user_agent(self):
-        """The current user agent."""
-        from werkzeug.useragents import UserAgent
-        return UserAgent(self.environ)
-
-
 class AuthorizationMixin(object):
 
     """Adds an :attr:`authorization` property that represents the parsed
@@ -807,8 +793,9 @@ class CommonRequestDescriptorsMixin(object):
 
 # TODO deprecate.  Superseded by request class building in ApplicationBuilder
 class Request(
-    BaseRequest, ETagRequestMixin,
-    UserAgentMixin, AuthorizationMixin,
+    BaseRequest,
+    ETagRequestMixin,
+    AuthorizationMixin,
     CommonRequestDescriptorsMixin,
 ):
 
@@ -816,7 +803,6 @@ class Request(
 
     - :class:`AcceptMixin` for accept header parsing
     - :class:`ETagRequestMixin` for etag and cache control handling
-    - :class:`UserAgentMixin` for user agent introspection
     - :class:`AuthorizationMixin` for http auth handling
     - :class:`CommonRequestDescriptorsMixin` for common headers
     """
