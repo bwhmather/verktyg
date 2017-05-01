@@ -22,8 +22,6 @@ from datetime import datetime
 from functools import partial
 from urllib.parse import quote as urlquote
 
-from werkzeug._compat import wsgi_get_bytes
-
 from verktyg.urls import uri_to_iri, encode_idna
 from verktyg import http
 from verktyg.http import (
@@ -39,6 +37,10 @@ def wsgi_encoding_dance(s, charset='utf-8', errors='replace'):
     if isinstance(s, str):
         s = s.encode(charset)
     return s.decode('latin1', errors)
+
+
+def wsgi_get_bytes(s):
+    return s.encode('latin1')
 
 
 def get_current_url(
