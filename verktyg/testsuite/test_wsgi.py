@@ -39,7 +39,6 @@ class WsgiTestCase(unittest.TestCase):
             app = wsgi.SharedDataMiddleware(null_application, {
                 '/': path.join(path.dirname(__file__), 'resources'),
                 '/sources': path.join(path.dirname(__file__), 'resources'),
-                '/pkg': ('werkzeug.debug', 'shared'),
                 '/foo': test_dir
             })
 
@@ -52,12 +51,6 @@ class WsgiTestCase(unittest.TestCase):
                     with closing(app_iter) as app_iter:
                         data = b''.join(app_iter).strip()
                     self.assertEqual(data, b'FOUND')
-
-            app_iter, status, headers = run_wsgi_app(
-                app, create_environ('/pkg/debugger.js'))
-            with closing(app_iter) as app_iter:
-                contents = b''.join(app_iter)
-            self.assertIn(b'$(function() {', contents)
 
             app_iter, status, headers = run_wsgi_app(
                 app, create_environ('/missing'))
