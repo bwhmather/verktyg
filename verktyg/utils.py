@@ -16,8 +16,6 @@ import os
 
 from html import escape
 
-from werkzeug._internal import _DictAccessorProperty
-
 
 _filename_ascii_strip_re = re.compile(r'[^A-Za-z0-9_.-]')
 _windows_device_files = {
@@ -69,11 +67,51 @@ class cached_property(property):
         return value
 
 
-class header_property(_DictAccessorProperty):
-    """Like `environ_property` but for headers."""
+class header_property(object):
+    """Decorator to create properties that wrap a request header.
+    """
 
-    def lookup(self, obj):
-        return obj.headers
+    def __init__(
+        self, name, default=None, load_func=None, dump_func=None,
+        read_only=False, doc=None,
+    ):
+        self.name = name
+        self.default = default
+        self.load_func = load_func
+        self.dump_func = dump_func
+        self.read_only = read_only
+        self.__doc__ = doc
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        if self.name not in obj.headers:
+            return self.default
+        rv = obj.headers[self.name]
+        if self.load_func is not None:
+            try:
+                rv = self.load_func(rv)
+            except (ValueError, TypeError):
+                rv = self.default
+        return rv
+
+    def __set__(self, obj, value):
+        if self.read_only:
+            raise AttributeError('read only property')
+        if self.dump_func is not None:
+            value = self.dump_func(value)
+        obj.headers[self.name] = value
+
+    def __delete__(self, obj):
+        if self.read_only:
+            raise AttributeError('read only property')
+        obj.headers.pop(self.name, None)
+
+    def __repr__(self):
+        return '<%s %s>' % (
+            self.__class__.__name__,
+            self.name
+        )
 
 
 def get_content_type(mimetype, charset):
