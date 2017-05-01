@@ -900,6 +900,11 @@ class NumberConverter(BaseConverter):
         self.min = min
         self.max = max
 
+    def num_convert(self, value):
+        raise NotImplementedError(
+            "num_convert must be overridden by subclasses of NumberConverter"
+        )
+
     def to_python(self, value):
         if (self.fixed_digits and len(value) != self.fixed_digits):
             raise ValidationError()
