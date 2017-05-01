@@ -289,36 +289,6 @@ class WsgiTestCase(unittest.TestCase):
             ]
         )
 
-    def test_multi_part_line_breaks_bytes(self):
-        data = b'abcdef\r\nghijkl\r\nmnopqrstuvwxyz\r\nABCDEFGHIJK'
-        test_stream = BytesIO(data)
-        lines = list(wsgi.make_line_iter(
-            test_stream, limit=len(data), buffer_size=16,
-        ))
-        self.assertEqual(
-            lines, [
-                b'abcdef\r\n', b'ghijkl\r\n',
-                b'mnopqrstuvwxyz\r\n', b'ABCDEFGHIJK'
-            ]
-        )
-
-        data = (
-            b'abc\r\nThis line is broken by the buffer length.'
-            b'\r\nFoo bar baz'
-        )
-        test_stream = BytesIO(data)
-        lines = list(wsgi.make_line_iter(
-            test_stream, limit=len(data),
-            buffer_size=24,
-        ))
-        self.assertEqual(
-            lines, [
-                b'abc\r\n',
-                b'This line is broken by the buffer length.\r\n',
-                b'Foo bar baz',
-            ]
-        )
-
     def test_multi_part_line_breaks_problematic(self):
         data = 'abc\rdef\r\nghi'
         for x in range(1, 10):

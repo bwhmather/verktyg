@@ -22,9 +22,7 @@ from datetime import datetime
 from functools import partial
 from urllib.parse import quote as urlquote
 
-from werkzeug._compat import (
-    make_literal_wrapper, wsgi_get_bytes,
-)
+from werkzeug._compat import wsgi_get_bytes
 from werkzeug._internal import _encode_idna
 
 from verktyg.urls import uri_to_iri
@@ -701,20 +699,7 @@ def make_line_iter(stream, limit=None, buffer_size=10 * 1024):
     """
     _iter = _make_chunk_iter(stream, limit, buffer_size)
 
-    first_item = next(_iter, '')
-    if not first_item:
-        return
-
-    s = make_literal_wrapper(first_item)
-    empty = s('')
-    cr = s('\r')
-    lf = s('\n')
-    crlf = s('\r\n')
-
-    _iter = chain((first_item,), _iter)
-
     def _iter_basic_lines():
-        _join = empty.join
         buffer = []
         while 1:
             new_data = next(_iter, '')
@@ -723,20 +708,20 @@ def make_line_iter(stream, limit=None, buffer_size=10 * 1024):
             new_buf = []
             for item in chain(buffer, new_data.splitlines(True)):
                 new_buf.append(item)
-                if item and item[-1:] in crlf:
-                    yield _join(new_buf)
+                if item and item[-1:] in '\r\n':
+                    yield ''.join(new_buf)
                     new_buf = []
             buffer = new_buf
         if buffer:
-            yield _join(buffer)
+            yield ''.join(buffer)
 
     # This hackery is necessary to merge 'foo\r' and '\n' into one item
     # of 'foo\r\n' if we were unlucky and we hit a chunk boundary.
-    previous = empty
+    previous = ''
     for item in _iter_basic_lines():
-        if item == lf and previous[-1:] == cr:
+        if item == '\n' and previous[-1:] == '\r':
             previous += item
-            item = empty
+            item = ''
         if previous:
             yield previous
         previous = item
