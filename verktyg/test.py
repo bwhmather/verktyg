@@ -760,7 +760,7 @@ class Client(object):
            If a dict is provided as file in the dict for the `data` parameter
            the content type has to be called `content_type` now instead of
            `mimetype`.  This change was made for consistency with
-           :class:`werkzeug.FileWrapper`.
+           :class:`verktyg.FileWrapper`.
 
             The `follow_redirects` parameter was added to :func:`open`.
 
