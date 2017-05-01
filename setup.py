@@ -30,7 +30,6 @@ setup(
     ],
     platforms='any',
     install_requires=[
-        'werkzeug >= 0.10, < 0.11',
     ],
     tests_require=list(set(sum(
         (extras_require[extra] for extra in {}), []
